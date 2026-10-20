@@ -7,7 +7,9 @@
   <meta name="description" content="HttpDash is a free, open-source desktop API client for Windows, macOS and Linux. Send requests, write tests, run collections, mock and monitor APIs. Tokens refresh themselves, environments build themselves from your service registry, and your data stays on your machine.">
   <meta name="theme-color" content="#e8590c">
   <link rel="canonical" href="https://httpdash.com/">
-  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://httpdash.com/">
@@ -52,7 +54,7 @@
         </div>
         <figure class="hero-shot">
           <div class="window">
-            <div class="window-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div>
             <img src="assets/hero.webp" width="1140" height="538" alt="HttpDash sending a request. A banner reads: Ran Get access token first (token missing), 200 OK, saved token.">
           </div>
           <figcaption>The login ran on its own because the token was missing, then the request went through.</figcaption>
@@ -138,41 +140,47 @@
 
         <article class="feature">
           <div class="feature-copy">
-            <h3>Tokens that refresh themselves</h3>
-            <p>Point a collection at its login request once. Before every call, HttpDash checks the token: if it's missing or about to expire, it runs the login first, saves the new token, and sends your request. If a server still answers 401, it refreshes and retries.</p>
+            <div class="feature-text">
+              <h3>Tokens that refresh themselves</h3>
+              <p>Point a collection at its login request once. Before every call, HttpDash checks the token: if it's missing or about to expire, it runs the login first, saves the new token, and sends your request. If a server still answers 401, it refreshes and retries.</p>
+            </div>
             <ul class="ticks">
               <li>Reads the token from any JSON path, such as <code>data.jwToken</code></li>
               <li>Knows when a JWT expires, or uses <code>expires_in</code></li>
               <li>Works the same in the runner, monitors and the CLI</li>
             </ul>
           </div>
-          <figure class="feature-shot"><img src="assets/auth-dependency.webp" width="1440" height="873" loading="lazy" alt="Auth dependency settings: run Get access token first when the token is missing or expired, save the token from data.access_token."></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/auth-dependency.webp" width="1440" height="873" loading="lazy" alt="Auth dependency settings: run Get access token first when the token is missing or expired, save the token from data.access_token."></div></figure>
         </article>
 
-        <article class="feature reverse">
+        <article class="feature">
           <div class="feature-copy">
-            <h3>Environments from your service registry</h3>
-            <p>Connect Consul, Eureka, Kubernetes or your own JSON endpoint, and HttpDash creates an environment with one variable per service, like <code>{{orders_url}}</code>. Re-sync whenever services move: addresses update, new services appear, and the variables you added yourself stay put.</p>
+            <div class="feature-text">
+              <h3>Environments from your service registry</h3>
+              <p>Connect Consul, Eureka, Kubernetes or your own JSON endpoint, and HttpDash creates an environment with one variable per service, like <code>{{orders_url}}</code>. Re-sync whenever services move: addresses update, new services appear, and the variables you added yourself stay put.</p>
+            </div>
             <ul class="ticks">
               <li>Preview before anything changes</li>
               <li>Healthy instances only, with tag and namespace filters</li>
               <li>Optional sync every time the app starts</li>
             </ul>
           </div>
-          <figure class="feature-shot"><img src="assets/discovery.webp" width="1440" height="873" loading="lazy" alt="Service discovery preview listing four services from Consul with their variables and URLs."></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/discovery.webp" width="1440" height="873" loading="lazy" alt="Service discovery preview listing four services from Consul with their variables and URLs."></div></figure>
         </article>
 
         <article class="feature">
           <div class="feature-copy">
-            <h3>Send exactly what you mean</h3>
-            <p>Requests leave from a native HTTP client, not a browser, so every header goes out as typed, including <code>Referer</code>, <code>Origin</code>, <code>User-Agent</code>, <code>Host</code> and <code>Cookie</code>. The timeline shows the exact request that was sent and how long each step took.</p>
+            <div class="feature-text">
+              <h3>Send exactly what you mean</h3>
+              <p>Requests leave from a native HTTP client, not a browser, so every header goes out as typed, including <code>Referer</code>, <code>Origin</code>, <code>User-Agent</code>, <code>Host</code> and <code>Cookie</code>. The timeline shows the exact request that was sent and how long each step took.</p>
+            </div>
             <ul class="ticks">
               <li>JSON, XML, form-data with files, URL-encoded, binary and GraphQL bodies</li>
               <li>Basic, Bearer, API key, Digest, OAuth 2.0 and AWS Signature auth</li>
               <li>Paste a cURL command into the URL bar to import it</li>
             </ul>
           </div>
-          <figure class="feature-shot"><img src="assets/dark.webp" width="1440" height="873" loading="lazy" alt="HttpDash in dark mode showing an environment with masked secret values."></figure>
+          <figure class="feature-shot"><div class="window window-dark"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/dark.webp" width="1440" height="873" loading="lazy" alt="HttpDash in dark mode showing an environment with masked secret values."></div></figure>
         </article>
       </div>
     </section>
@@ -205,8 +213,8 @@
           <h2>Know when an API breaks before your users do</h2>
         </header>
         <div class="duo">
-          <figure class="duo-shot"><img src="assets/monitor.webp" width="1440" height="873" loading="lazy" alt="A monitor with 80% success over 5 runs, a duration chart and the failed test highlighted."><figcaption><strong>Monitors</strong> keep a history of every run with the exact test that failed.</figcaption></figure>
-          <figure class="duo-shot"><img src="assets/mock.webp" width="1440" height="873" loading="lazy" alt="Mock server running on port 3999 with its routes and recent requests."><figcaption><strong>Mock servers</strong> stand in for an API that's down or not built yet.</figcaption></figure>
+          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/monitor.webp" width="1440" height="873" loading="lazy" alt="A monitor with 80% success over 5 runs, a duration chart and the failed test highlighted."></div><figcaption><strong>Monitors</strong> keep a history of every run with the exact test that failed.</figcaption></figure>
+          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/mock.webp" width="1440" height="873" loading="lazy" alt="Mock server running on port 3999 with its routes and recent requests."></div><figcaption><strong>Mock servers</strong> stand in for an API that's down or not built yet.</figcaption></figure>
         </div>
       </div>
     </section>
@@ -251,7 +259,7 @@ Total time 412 ms. <span class="t-green">PASSED</span></code></pre>
           <p class="section-lead">HttpDash has no account and no cloud sync. Collections, environments and history live in a folder on your computer.</p>
         </header>
         <div class="security">
-          <figure class="security-shot"><img src="assets/lock.webp" width="600" height="470" loading="lazy" alt="The HttpDash lock screen asking for an LDAP username and password."></figure>
+          <figure class="security-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/lock.webp" width="600" height="470" loading="lazy" alt="The HttpDash lock screen asking for an LDAP username and password."></div></figure>
           <ul class="security-list">
             <li><h3>Lock it with your directory</h3><p>Require an LDAP sign-in to open the app, limit it to certain users or a group, and lock it after a period of inactivity. While locked, the app shows no data at all.</p></li>
             <li><h3>Find secrets before they leak</h3><p>The secret scan spots keys, tokens and passwords typed straight into requests and moves them into masked variables with one click.</p></li>
@@ -272,25 +280,25 @@ Total time 412 ms. <span class="t-green">PASSED</span></code></pre>
         </header>
         <div class="downloads">
           <div class="dl-card" data-os="windows">
-            <h3>Windows</h3>
+              <h3>Windows</h3>
             <p>Windows 10 and 11, x64 and ARM64. Installer or portable app.</p>
             <a class="btn btn-primary" href="https://github.com/gethttpdash/httpdash/releases/latest">Download for Windows</a>
             <p class="dl-hint">Not signed yet: if SmartScreen appears, choose <em>More info → Run anyway</em>.</p>
           </div>
           <div class="dl-card" data-os="mac">
-            <h3>macOS</h3>
+              <h3>macOS</h3>
             <p>Apple Silicon and Intel. Disk image or zip.</p>
             <a class="btn btn-primary" href="https://github.com/gethttpdash/httpdash/releases/latest">Download for macOS</a>
             <p class="dl-hint">Not notarized yet: if macOS blocks it, open <em>System Settings → Privacy &amp; Security</em> and click <em>Open Anyway</em>.</p>
           </div>
           <div class="dl-card" data-os="linux">
-            <h3>Linux</h3>
+              <h3>Linux</h3>
             <p>x64 and ARM64. AppImage for any distribution, or a <code>.deb</code> for Debian and Ubuntu.</p>
             <a class="btn btn-primary" href="https://github.com/gethttpdash/httpdash/releases/latest">Download for Linux</a>
             <p class="dl-hint">AppImage: <code>chmod +x HttpDash-*.AppImage</code>, then run it.</p>
           </div>
           <div class="dl-card" data-os="cli">
-            <h3>Command line</h3>
+              <h3>Command line</h3>
             <p>For CI servers and schedulers. Needs Node.js 22 or later.</p>
             <div class="code-line"><code>npm install -g github:gethttpdash/httpdash</code><button class="copy" type="button" data-copy="npm install -g github:gethttpdash/httpdash" aria-label="Copy install command">Copy</button></div>
             <p class="dl-hint">Then run <code>httpdash run --help</code>.</p>
