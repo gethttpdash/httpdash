@@ -5,17 +5,19 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
-- Scripts can use `Buffer`, `TextEncoder` / `TextDecoder`, `URL.canParse`, SHA-224 and SHA-384, `CryptoJS.enc.Base64url`, and `require('buffer')`.
-- `console.log` supports format strings such as `%s` and `%d`, like Node.
-
 ### Changed
 - **Large responses stay fast.** Responses over 2 MB show their first 512 KB with **Show all** and **Save to file** buttons, instead of freezing the window: a 20 MB JSON response now renders in about 40 ms instead of 2 seconds. Highlighting and code folding are turned off when you show all of a large response. The limit is in Settings → General.
 - Switching between response tabs no longer re-formats the body.
 - The window opens fully drawn instead of showing an empty frame first.
 - **Smaller downloads:** builds keep only the English Chromium locale files (about 11 MB less per installer), and the extra Windows installer that bundled both x64 and ARM64 (193 MB) is no longer built.
 
+### Fixed
+- Postman collections using OAuth 2.0 with the password grant (`password_credentials`) now import correctly, and OAuth 2.0 settings export with Postman's parameter names, including the callback URL, PKCE method and client authentication.
+- Public OAuth clients (no client secret) send `client_id` in the request body instead of an empty Basic Auth header.
+
 ### Security
 - Scripts now run in a real sandbox: QuickJS, a separate JavaScript engine compiled to WebAssembly, with a fresh engine per script and limits on time (30 s), memory (256 MB) and stack depth. Scripts can no longer reach Node, files or other processes, which matters most for collections that arrive through team sync. Previously they ran in Node's `vm` module, which a script could escape.
+- OAuth 2.0 access and refresh tokens are never written to team repositories; each person keeps their own when pulling the team's changes. Refresh tokens are also left out of exports with "Leave out secrets" and flagged by the secret scan.
 
 ## [1.0.0] - 2026-10-21
 
