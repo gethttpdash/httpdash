@@ -236,7 +236,11 @@ For APIs that use mutual TLS, add a client certificate in **Settings → Certifi
 - The first enabled certificate that matches the request's host is used, on every hop of a redirect and through a proxy. The response **Timeline** shows which one was sent.
 - Certificate files are read when needed, so renewed certificates are picked up without restarting.
 
-**CA certificate** adds your company's certificate authority (a PEM bundle) to the trusted ones, so internal HTTPS servers work without turning off SSL verification.
+**Certificates installed on this computer** are trusted by default, as in a browser: HttpDash reads your system's store (macOS Keychain, Windows certificate store, the Linux system bundle) as well as its built-in list, so a company CA that IT has installed just works. You can turn this off in **Settings → Certificates**.
+
+**CA certificate** adds a certificate authority from a PEM file to the trusted ones, for CAs that aren't installed on the computer, so internal HTTPS servers work without turning off SSL verification.
+
+TLS settings are built once and reused, so client certificates and extra CAs don't slow requests down.
 
 Passphrases are left out of exports when you tick **Leave out secrets**. If a server asks for a certificate you haven't added, or the passphrase is wrong, the error says so in plain words.
 

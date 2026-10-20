@@ -256,6 +256,9 @@
     const ca = (s.caCertificate = s.caCertificate || { enabled: false, path: '' });
     panel.append(
       h('div.setting-row',
+        h('div', h('div.setting-label', 'Trust certificates installed on this computer'), h('div.setting-help', 'Uses the certificate authorities in your system\'s store (macOS Keychain, Windows certificate store), as browsers do, so company certificates work without extra setup.')),
+        h('label.switch', h('input', { type: 'checkbox', checked: s.useSystemCertificates !== false, onchange: (e) => { s.useSystemCertificates = e.target.checked; HD.save(); } }), h('span.slider'))),
+      h('div.setting-row',
         h('div', h('div.setting-label', 'CA certificate'), h('div.setting-help', ca.path ? h('span.mono', ca.path) : 'Trust an extra certificate authority, such as your company\'s, in addition to the built-in ones. PEM file.')),
         h('div.cert-actions',
           HD.button(ca.path ? 'Change…' : 'Choose…', async () => { const f = await choose(PEM); if (f) { ca.path = f; ca.enabled = true; HD.save(); rerender(); } }, { small: true }),

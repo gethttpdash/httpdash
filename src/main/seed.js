@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
   followRedirects: true,
   maxRedirects: 10,
   verifySSL: true,
+  useSystemCertificates: true,
   sendCookies: true,
   sendNoCache: true,
   userAgent: 'HttpDash/1.0',

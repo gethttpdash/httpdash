@@ -58,7 +58,7 @@ function connectTunnel(proxy, target, timeout) {
 /**
  * Performs a single HTTP exchange (no redirect handling).
  * opts: { method, url, headers: [[k, v]], body: Buffer|null, timeout, verifySSL, proxy,
- *         tlsFor(url) -> { cert, key, pfx, passphrase, ca, label } | null (client and CA certificates) }
+ *         tlsFor(url) -> { secureContext, label } | null (client and CA certificates) }
  */
 async function exchange(opts) {
   const url = new URL(opts.url);
@@ -86,12 +86,10 @@ async function exchange(opts) {
     agent: false,
     servername: url.hostname,
   };
+  // Client certificates and extra CAs come as a ready-made (cached) TLS context.
   const tlsOpts = isHttps && opts.tlsFor ? opts.tlsFor(url.href) : null;
-  const tlsExtra = {};
-  if (tlsOpts) {
-    for (const k of ['cert', 'key', 'pfx', 'passphrase', 'ca']) if (tlsOpts[k] !== undefined) tlsExtra[k] = tlsOpts[k];
-    Object.assign(reqOpts, tlsExtra);
-  }
+  const tlsExtra = tlsOpts && tlsOpts.secureContext ? { secureContext: tlsOpts.secureContext } : {};
+  Object.assign(reqOpts, tlsExtra);
 
   const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {

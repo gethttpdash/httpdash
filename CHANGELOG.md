@@ -7,6 +7,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ### Added
 - **Client certificates (mutual TLS):** add certificates per host (exact, wildcard or any) in **Settings → Certificates**, as CRT + KEY files or a PFX, with an optional passphrase. The Timeline shows which certificate was sent.
 - **Custom CA certificate:** trust your company's certificate authority without turning off SSL verification.
+- **Trust certificates installed on this computer** (on by default): CAs in the macOS Keychain, Windows certificate store or Linux system bundle are trusted, as in a browser, so company certificates work without setup.
 - Command-line runner: Newman's certificate flags `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` and `--ssl-extra-ca-certs`.
 - Clear errors when a server requires a client certificate, rejects one, or the passphrase is wrong.
 

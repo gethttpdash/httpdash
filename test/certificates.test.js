@@ -121,3 +121,22 @@ test('the CLI sends client certificates with Newman-compatible flags', async () 
   assert.strictEqual(without, 1);
   assert.match(lines.join('\n'), /requires a client certificate/);
 });
+
+test('certificates installed on the computer are trusted unless turned off', async (t) => {
+  const certificates = require('../src/core/certificates');
+  certificates.setSystemProvider(() => [fs.readFileSync(file('ca.crt'), 'utf8')]); // as if IT installed the test CA
+  t.after(() => certificates.setSystemProvider(() => []));
+  const viaSystem = await send({ caCertificate: null, certificates: [cert({ crt: file('client.crt'), key: file('client.key') })] });
+  assert.strictEqual(viaSystem.response && viaSystem.response.status, 200, viaSystem.error);
+  const off = await send({ caCertificate: null, useSystemCertificates: false, certificates: [cert({ crt: file('client.crt'), key: file('client.key') })] });
+  assert.match(off.error, /certificate/i);
+});
+
+test('TLS contexts are built once and reused', () => {
+  const { tlsFor } = require('../src/core/certificates');
+  const settings = { certificates: [cert({ crt: file('client.crt'), key: file('client.key') })], caCertificate: { path: file('ca.crt') } };
+  const a = tlsFor('https://localhost/a', settings);
+  const b = tlsFor('https://localhost/b', settings);
+  assert.strictEqual(a.secureContext, b.secureContext);
+  assert.strictEqual(tlsFor('http://localhost/a', settings), null);
+});
