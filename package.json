@@ -1,0 +1,148 @@
+{
+  "name": "httpdash",
+  "version": "1.0.0",
+  "description": "HttpDash: a fast, local-first, Postman-compatible API client for macOS, Windows and Linux. No account, no cloud.",
+  "homepage": "https://httpdash.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gethttpdash/httpdash.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gethttpdash/httpdash/issues"
+  },
+  "keywords": [
+    "api-client",
+    "http-client",
+    "rest",
+    "graphql",
+    "postman-alternative",
+    "api-testing",
+    "electron",
+    "desktop",
+    "local-first",
+    "cli"
+  ],
+  "main": "src/main/main.js",
+  "desktopName": "httpdash.desktop",
+  "author": {
+    "name": "HttpDash",
+    "email": "contact.httpdash@gmail.com",
+    "url": "https://httpdash.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "cli": "node bin/httpdash.js",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "dependencies": {
+    "chai": "4.5.0",
+    "codemirror": "5.65.21",
+    "ldapts": "^9.2.0"
+  },
+  "devDependencies": {
+    "electron": "43.7.8",
+    "electron-builder": "26.15.3",
+    "ldapjs": "^3.0.7"
+  },
+  "build": {
+    "appId": "com.httpdash.app",
+    "productName": "HttpDash",
+    "copyright": "Copyright © 2026 restimguay",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!node_modules/codemirror/{src,theme,keymap,bin}/**"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "${productName} ${version}"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Development",
+      "synopsis": "Local-first, Postman-compatible API client",
+      "maintainer": "HttpDash <contact.httpdash@gmail.com>",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
+      "syncDesktopName": true
+    },
+    "deb": {
+      "artifactName": "${name}_${version}_${arch}.${ext}"
+    }
+  },
+  "bin": {
+    "httpdash": "bin/httpdash.js"
+  }
+}
