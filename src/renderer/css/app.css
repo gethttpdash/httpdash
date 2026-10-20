@@ -792,7 +792,7 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .jt-caret { width: 0; height: 0; border-left: 4px solid currentColor; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; transition: transform .12s; }
 .jt-toggle.open .jt-caret { transform: rotate(90deg); }
 .jt-nested:not(:empty) { margin-top: 6px; }
-.jt-more td { text-align: center; background: none !important; }
+.jt-pad td { padding: 0 !important; border: 0 !important; background: none !important; }
 
 /* WebSocket requests (websocket.js) */
 .ws-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
