@@ -14,6 +14,7 @@ const runner = require('../core/runner');
 const { makeLookup } = require('../core/dependency');
 const discovery = require('../core/discovery');
 const openapiSync = require('../core/openapi-sync');
+const balancer = require('../core/balancer');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -770,6 +771,10 @@ handle('discovery:sync', async ({ config, values, collection, sourceId, settings
   if (!previewOnly) out.values = next;
   return out;
 });
+
+// Traffic by instance for a discovery source (counted by balancer.js as requests are sent).
+handle('discovery:metrics', (sourceId) => balancer.metrics(sourceId));
+handle('discovery:resetMetrics', (sourceId) => { balancer.reset(sourceId); return true; });
 
 handle('shell:openExternal', (url) => { if (/^https?:/.test(url)) shell.openExternal(url); });
 

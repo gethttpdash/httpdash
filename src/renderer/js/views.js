@@ -221,6 +221,9 @@
       if (run.summary && !run.running) {
         right.appendChild(h('div.runner-done', `Run ${run.summary.stopped ? 'stopped' : 'completed'} in ${HD.formatMs(run.summary.duration)} — ${run.summary.iterations} iteration(s).`));
       }
+      if (run.summary && !run.running && run.summary.instances && run.summary.instances.length) {
+        right.appendChild(h('details.runner-instances', { open: true }, h('summary', 'By instance'), HD.trafficTable(run.summary.instances)));
+      }
       if (run.error) right.appendChild(h('div.test-script-error', run.error));
       const filter = tab.ui && tab.ui.filter ? tab.ui.filter : 'all';
       right.appendChild(h('div.body-toolbar', HD.tabStrip([{ id: 'all', label: 'All' }, { id: 'passed', label: 'Passed' }, { id: 'failed', label: 'Failed' }], filter, (id) => { tab.ui = tab.ui || {}; tab.ui.filter = id; renderResults(); }, 'segmented')));

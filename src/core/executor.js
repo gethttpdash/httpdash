@@ -11,6 +11,7 @@ const { runScript, ScriptSession } = require('./sandbox');
 const certificates = require('./certificates');
 const sse = require('./sse');
 const dependency = require('./dependency');
+const balancer = require('./balancer');
 
 const MIME = {
   json: 'application/json', xml: 'application/xml', html: 'text/html', text: 'text/plain', javascript: 'application/javascript',
@@ -272,12 +273,14 @@ function buildResponse(raw, maxPreview) {
 /**
  * Executes a request with scripts.
  * opts: {
- *   request, chain (ancestors with scripts/auth), scopes {globals, collection, environment, data},
+ *   request, chain (ancestors with scripts/auth), scopes {globals, collection, environment, data, pools},
  *   jar (cookie array, mutated), settings, info, log(level, msg), signal,
  *   scriptSession (optional: a ScriptSession shared by several requests, e.g. a collection run),
  *   onStream(event) (optional: called for each Server-Sent Event as it arrives)
  * }
- * Returns { response, error, tests, preRequestError, testError, nextRequest, sentRequest, scopes, visualizer }
+ * `scopes.pools` spreads discovered services over their instances (see balancer.js).
+ * Returns { response, error, tests, preRequestError, testError, nextRequest, sentRequest, scopes, visualizer,
+ *   routing: [{ variable, service, instance, servedBy, ... }] (the instances this request went to) }
  */
 async function execute(opts) {
   if (opts.scriptSession) return executeRequest(opts);
@@ -304,6 +307,8 @@ async function executeRequest(opts) {
   const chain = opts.chain || [];
   const log = opts.log || (() => {});
   const result = { tests: [], scopes, nextRequest: undefined, visualizer: null };
+  const pools = opts.scopes.pools || null;
+  const picks = new Map(); // the instance each pooled variable went to, for this request
   const streamed = []; // Server-Sent Events, timed from when the request was sent
 
   const scriptSendRequest = async (req) => {
@@ -370,7 +375,7 @@ async function executeRequest(opts) {
   let raw;
   for (let attempt = 0; ; attempt++) {
     try {
-      prepared = prepare(request, { chain, vars: mergeScopes(scopes), settings, jar });
+      prepared = prepare(request, { chain, vars: balancer.bind(mergeScopes(scopes), pools, picks), settings, jar });
     } catch (e) {
       result.error = e.message;
       return result;
@@ -382,7 +387,11 @@ async function executeRequest(opts) {
       bodyText: prepared.body ? (prepared.body.length > 1e6 ? `<${prepared.body.length} bytes>` : prepared.body.toString('utf8')) : null,
     };
     raw = await sendPrepared(prepared);
-    if (!raw) return result;
+    if (!raw) {
+      // A request the user cancelled says nothing about the instance.
+      if (picks.size) result.routing = opts.signal && opts.signal.aborted ? [...picks.values()] : balancer.settle(picks, pools, { error: result.error });
+      return result;
+    }
     const canRetry = attempt === 0 && raw.status === 401 && depCfg && depCfg.retryOn401 && !result.dependencyRuns.length;
     if (!canRetry) break;
     log('net', `${prepared.method} ${prepared.url} -> 401; refreshing token`);
@@ -437,6 +446,7 @@ async function executeRequest(opts) {
   if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
   if (raw.cancelled) response.cancelled = true;
   result.response = response;
+  if (picks.size) result.routing = raw.cancelled ? [...picks.values()] : balancer.settle(picks, pools, { response });
   log('net', `${prepared.method} ${prepared.url} -> ${response.status} ${response.statusText} (${response.time} ms)`);
 
   // When the login request that others depend on is sent directly (or by the runner), store its

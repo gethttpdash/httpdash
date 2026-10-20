@@ -117,6 +117,7 @@
       collection: collection ? listToObject(collection.variables) : {},
       environment: env ? listToObject(env.values) : {},
       data: {},
+      pools: HD.discoveryPools ? HD.discoveryPools(env) : null,
     };
   };
 

@@ -1,5 +1,6 @@
 'use strict';
 
+const balancer = require('./balancer');
 const { execute } = require('./executor');
 const { ScriptSession } = require('./sandbox');
 const { makeLookup } = require('./dependency');
@@ -63,7 +64,7 @@ function parseDataFile(content, filename = '') {
 }
 
 /**
- * opts: { collection, folderId, scopes: {globals, environment}, iterations, data, delay, settings, jar,
+ * opts: { collection, folderId, scopes: {globals, environment, pools}, iterations, data, delay, settings, jar,
  *         stopOnFailure, onEvent(evt), signal }
  * Returns a summary; scopes are updated in place so the caller can persist them.
  */
@@ -80,6 +81,8 @@ async function run(opts) {
     environment: opts.scopes.environment || {},
     collection: opts.scopes.collection || {},
   };
+  const pools = opts.scopes.pools || null;
+  const routing = []; // every instance the run's requests went to
   const summary = { iterations, requests: 0, failedRequests: 0, tests: 0, passed: 0, failed: 0, skipped: 0, totalTime: 0, results: [], stopped: false };
   const started = Date.now();
   // Every script in the run shares one sandbox session, so its libraries load once, not per request.
@@ -99,7 +102,7 @@ async function run(opts) {
         const res = await execute({
           request: item.request,
           chain,
-          scopes: { ...scopes, data: dataRow },
+          scopes: { ...scopes, data: dataRow, pools },
           jar: opts.jar,
           lookup,
           settings: opts.settings,
@@ -136,7 +139,9 @@ async function run(opts) {
           dependencyRuns: res.dependencyRuns || [],
           response: res.response ? { headers: res.response.headers, bodyText: truncate(res.response.bodyText) } : null,
           sentRequest: res.sentRequest,
+          routing: res.routing,
         };
+        if (res.routing) routing.push(...res.routing);
         summary.results.push(entry);
         emit({ type: 'request-done', ...entry });
 
@@ -159,6 +164,7 @@ async function run(opts) {
     scriptSession.dispose();
   }
   summary.duration = Date.now() - started;
+  if (routing.length) summary.instances = balancer.summarize(routing);
   summary.scopes = scopes;
   emit({ type: 'done', summary: { ...summary, results: undefined } });
   return summary;

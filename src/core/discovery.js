@@ -19,7 +19,7 @@
  *   // eureka
  *   onlyUp: true,
  *   // kubernetes
- *   namespace: 'default', addressMode: 'cluster-dns' | 'cluster-ip' | 'external', labelSelector,
+ *   namespace: 'default', addressMode: 'cluster-dns' | 'cluster-ip' | 'external' | 'pods', labelSelector,
  *   // json
  *   listPath, nameField: 'name', urlField: 'url'  (urlField may be a template such as "http://{host}:{port}")
  *   // openapi (url is the document's)
@@ -123,6 +123,13 @@ async function discoverKubernetes(cfg, settings) {
   const path = ns === '*' ? `/api/v1/services${sel}` : `/api/v1/namespaces/${encodeURIComponent(ns)}/services${sel}`;
   const auth = cfg.token ? [['Authorization', `Bearer ${cfg.token}`]] : [];
   const json = await fetchJson(joinUrl(cfg.url, path), cfg, settings, auth);
+  const mode = cfg.addressMode || 'cluster-dns';
+  // In pods mode each ready pod behind a Service is an instance, read from the Service's endpoints.
+  let endpoints = null;
+  if (mode === 'pods') {
+    const list = await fetchJson(joinUrl(cfg.url, path.replace(/\/services(\?|$)/, '/endpoints$1')), cfg, settings, auth);
+    endpoints = new Map((list.items || []).map((e) => [`${e.metadata.namespace || ns}/${e.metadata.name}`, e]));
+  }
   const services = [];
   const warnings = [];
   for (const svc of json.items || []) {
@@ -134,7 +141,22 @@ async function discoverKubernetes(cfg, settings) {
     const scheme = port.name === 'https' || port.port === 443 ? 'https' : 'http';
     let host;
     let p = port.port;
-    const mode = cfg.addressMode || 'cluster-dns';
+    const svcName = ns === '*' ? `${svcNs}_${name}` : name;
+    if (mode === 'pods') {
+      const ep = endpoints.get(`${svcNs}/${name}`);
+      const instances = [];
+      for (const subset of (ep && ep.subsets) || []) {
+        // The endpoint port with the Service port's name (its target port on the pods), or the only one.
+        const epPort = (subset.ports || []).find((x) => (x.name || '') === (port.name || '')) || (subset.ports || [])[0];
+        if (!epPort) continue;
+        const inst = (a, healthy) => ({ id: (a.targetRef && a.targetRef.name) || a.hostname || a.ip, url: hostPort(scheme, a.ip, epPort.port), healthy });
+        instances.push(...(subset.addresses || []).map((a) => inst(a, true)), ...(subset.notReadyAddresses || []).map((a) => inst(a, false)));
+      }
+      const ready = instances.find((i) => i.healthy);
+      if (!ready) { warnings.push(`${name}: no ready pods`); continue; }
+      services.push({ name: svcName, url: ready.url, instances });
+      continue;
+    }
     if (mode === 'external') {
       const ing = ((svc.status && svc.status.loadBalancer && svc.status.loadBalancer.ingress) || [])[0];
       host = ing && (ing.hostname || ing.ip);
@@ -146,8 +168,7 @@ async function discoverKubernetes(cfg, settings) {
     } else {
       host = `${name}.${svcNs}.svc.cluster.local`;
     }
-    const svcName = ns === '*' ? `${svcNs}_${name}` : name;
-    services.push({ name: svcName, url: hostPort(scheme, host, p), instances: [{ url: hostPort(scheme, host, p), healthy: true }] });
+    services.push({ name: svcName, url: hostPort(scheme, host, p), instances: [{ id: name, url: hostPort(scheme, host, p), healthy: true }] });
   }
   return { services, warnings };
 }

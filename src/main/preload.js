@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld('api', {
   cancelOAuth2: invoke('oauth2:cancel'),
   clearOAuth2Sessions: invoke('oauth2:clearSessions'),
   syncDiscovery: invoke('discovery:sync'),
+  discoveryMetrics: invoke('discovery:metrics'),
+  resetDiscoveryMetrics: invoke('discovery:resetMetrics'),
   openExternal: invoke('shell:openExternal'),
   lock: {
     status: invoke('lock:status'),

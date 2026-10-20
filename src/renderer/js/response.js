@@ -100,7 +100,13 @@
     return c;
   };
 
-  const statusLine = (res, actions) => {
+  // Which instance of a discovered service answered (see Service discovery → Load balancing).
+  const instanceStat = (routing) => h('span.res-stat.res-instance.has-popover',
+    h('span.muted', 'Instance '), h('b', HD.instanceLabel(routing[0])), routing.length > 1 ? h('span.muted', ` +${routing.length - 1}`) : null,
+    h('div.popover', h('div.popover-title', 'Instances'),
+      routing.map((r) => h('div.kvline', h('span', `{{${r.variable}}}`), h('span', [r.instance, r.servedBy ? ` (${r.servedBy})` : ''].join(''))))));
+
+  const statusLine = (res, actions, routing) => {
     const t = res.timings || {};
     const timingRows = [
       ['DNS lookup', t.dns], ['TCP connect', t.connect != null ? t.connect - (t.dns || 0) : null],
@@ -118,6 +124,7 @@
       h('span.res-stat.has-popover', h('span.muted', 'Time '), h('b', HD.formatMs(res.time)), timeTip),
       h('span.res-stat.has-popover', h('span.muted', 'Size '), h('b', HD.formatBytes(res.size)), sizeTip),
       res.redirects && res.redirects.length ? h('span.res-stat.muted', `${res.redirects.length} redirect${res.redirects.length > 1 ? 's' : ''}`) : null,
+      routing && routing.length ? instanceStat(routing) : null,
       h('span.spacer'),
       actions);
   };
@@ -191,7 +198,7 @@
 
     const content = h('div.res-content');
     const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
-    root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions) : null));
+    root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing) : null));
     const banner = HD.dependencyBanner && HD.dependencyBanner(result.dependencyRuns);
     if (banner) root.appendChild(banner);
     if (result.savedVariables && result.savedVariables.length) {

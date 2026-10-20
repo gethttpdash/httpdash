@@ -41,7 +41,95 @@
     namespace: 'default', addressMode: 'cluster-dns', labelSelector: '',
     listPath: '', nameField: 'name', urlField: 'url', lastSync: null,
     serviceName: '', baseUrl: '', syncRequests: true, collectionId: null, history: [],
+    balance: 'first', instanceHeader: '',
   });
+
+  /**
+   * The instance pools for an environment's discovered variables, sent with each request's scopes
+   * (see balancer.js). A variable whose value was changed by hand isn't pooled: the user's value wins.
+   */
+  HD.discoveryPools = (env) => {
+    if (!env) return null;
+    const pools = {};
+    for (const src of sources()) {
+      const ls = src.lastSync;
+      if (src.environmentId !== env.id || !ls || !ls.services) continue;
+      for (const svc of ls.services) {
+        const row = env.values.find((v) => v.key === svc.variable && v.enabled !== false);
+        if (!row || row.value !== svc.url) continue;
+        pools[svc.variable] = {
+          sourceId: src.id, service: svc.name, strategy: src.balance || 'first', header: src.instanceHeader || '', default: row.value,
+          instances: (svc.instances || []).filter((i) => i.url),
+        };
+      }
+    }
+    return Object.keys(pools).length ? pools : null;
+  };
+
+  const hostOf = (url) => { try { return new URL(url).host; } catch { return url; } };
+  /** How an instance is named in tables: its ID (pod, service instance) and address. */
+  HD.instanceLabel = (r) => r.servedBy || r.instanceId || hostOf(r.instance);
+
+  /**
+   * Requests per instance: count, share of the service's requests, status classes, errors, p50/p95.
+   * `known` ({ service: [{ id, url, healthy }] }) lists instances that had no traffic yet as well,
+   * so an instance that never gets a request stands out.
+   */
+  HD.trafficTable = (rows, known = {}) => {
+    const all = [...rows];
+    for (const [service, instances] of Object.entries(known)) {
+      for (const i of instances) {
+        if (!all.some((r) => r.service === service && r.instance === i.url && !r.servedBy)) {
+          all.push({ service, instance: i.url, instanceId: i.id || '', servedBy: '', requests: 0, status: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 }, errors: 0, p50: null, p95: null, healthy: i.healthy });
+        }
+      }
+    }
+    const services = [...new Set(all.map((r) => r.service))].sort();
+    const ms = (v) => (v == null ? '—' : HD.formatMs(v));
+    // Flags an instance that answers much slower than its siblings, or fails often. Times are
+    // compared with the median of the service's other instances, each with enough requests.
+    const MIN = 5;
+    const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
+    const flags = (r, siblings) => {
+      const out = [];
+      const bad = r.status['5xx'] + r.errors;
+      if (r.requests >= MIN && bad / r.requests >= 0.2) out.push(h('span.pill.removed', { title: `${bad} of ${r.requests} requests ended in a 5xx or a connection error` }, 'failing'));
+      const others = siblings.filter((x) => x !== r && x.requests >= MIN && x.p50 != null);
+      if (r.requests >= MIN && r.p50 != null && others.length) {
+        for (const p of ['p50', 'p95']) {
+          const m = median(others.map((x) => x[p]));
+          if (m != null && r[p] >= 2 * m && r[p] - m >= 50) {
+            out.push(h('span.pill.changed', { title: `${p} ${HD.formatMs(r[p])} vs ${HD.formatMs(Math.round(m))} for the others` }, 'slow'));
+            break;
+          }
+        }
+      }
+      return out;
+    };
+    return h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
+      h('thead', h('tr', h('th', 'Instance'), h('th.num', { title: 'Requests' }, 'Req.'), h('th', 'Share'), h('th.num', { title: 'Median response time' }, 'p50'), h('th.num', { title: '95th percentile: 1 in 20 requests is slower' }, 'p95'),
+        h('th.num', { title: '2xx and 3xx responses' }, 'OK'), h('th.num', '4xx'), h('th.num', '5xx'), h('th.num', { title: 'Connection errors and timeouts' }, 'Err'))),
+      h('tbody', services.flatMap((service) => {
+        const list = all.filter((r) => r.service === service).sort((a, b) => b.requests - a.requests || HD.instanceLabel(a).localeCompare(HD.instanceLabel(b)));
+        const total = list.reduce((n, r) => n + r.requests, 0);
+        return [
+          services.length > 1 || list.length > 1 ? h('tr.traffic-service', h('td', { colspan: 9 }, h('strong', service), h('span.muted.small', ` · ${total} request${total === 1 ? '' : 's'}`))) : null,
+          ...list.map((r) => {
+            const share = total ? r.requests / total : 0;
+            return h('tr', { class: r.healthy === false ? 'muted' : '' },
+              h('td', h('div.traffic-name', HD.instanceLabel(r), r.healthy === false ? h('span.small.text-warn', 'not ready') : null, ...flags(r, list)),
+                h('div.muted.small.mono', r.servedBy ? `answered via ${hostOf(r.instance)}` : r.instanceId ? hostOf(r.instance) : '')),
+              h('td.num', String(r.requests)),
+              h('td', h('div.share', h('div.share-bar', h('span', { style: `width:${Math.round(share * 100)}%` })), h('span.small.muted', `${Math.round(share * 100)}%`))),
+              h('td.num', ms(r.p50)), h('td.num', ms(r.p95)),
+              h('td.num', String(r.status['2xx'] + r.status['3xx'])),
+              h('td.num', { class: r.status['4xx'] ? 'text-warn' : '' }, String(r.status['4xx'])),
+              h('td.num', { class: r.status['5xx'] ? 'text-error' : '' }, String(r.status['5xx'])),
+              h('td.num', { class: r.errors ? 'text-error' : '' }, String(r.errors)));
+          }),
+        ];
+      }))));
+  };
 
   HD.openDiscovery = (id) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'discovery' && t.refId === id);
@@ -116,7 +204,7 @@
       const rq = res.requests || null;
       src.lastSync = {
         time: Date.now(), count: res.operations ? res.operations.length : res.services.length, diff: res.diff, warnings: res.warnings, error: null,
-        services: res.services.map((s) => ({ name: s.name, variable: s.variable, url: s.url, instances: (s.instances || []).map((i) => ({ healthy: i.healthy })) })),
+        services: res.services.map((s) => ({ name: s.name, variable: s.variable, url: s.url, instances: (s.instances || []).map((i) => ({ id: i.id || '', url: i.url, healthy: i.healthy })) })),
         spec: res.spec || null, requests: trimReport(rq),
       };
       // Every version that changed something is kept in the source's history.
@@ -258,8 +346,8 @@
       providerFields = [check('onlyUp', 'Only instances with status UP')];
     } else if (src.provider === 'kubernetes') {
       providerFields = [text('namespace', 'Namespace', 'default', 'Use * for all namespaces (variables become namespace_service_url).'),
-        select('addressMode', 'Address to use', [['cluster-dns', 'Cluster DNS (name.namespace.svc.cluster.local)'], ['cluster-ip', 'Cluster IP'], ['external', 'External (LoadBalancer / external IP)']],
-          'Cluster DNS and Cluster IP only work from inside the cluster or over a VPN.'),
+        select('addressMode', 'Address to use', [['cluster-dns', 'Cluster DNS (name.namespace.svc.cluster.local)'], ['cluster-ip', 'Cluster IP'], ['pods', 'Pods (each ready pod, from the endpoints)'], ['external', 'External (LoadBalancer / external IP)']],
+          'Pods lists every pod behind a Service, so requests can be spread over them and counted per pod. Cluster DNS, Cluster IP and Pods only work from inside the cluster or over a VPN.'),
         text('labelSelector', 'Label selector', 'e.g. app.kubernetes.io/part-of=shop')];
     } else if (src.provider === 'openapi') {
       providerFields = [text('serviceName', 'Service name', 'default: the document\'s title', 'Names the base URL variable, e.g. "lots" gives {{lots_url}}.'),
@@ -272,6 +360,7 @@
 
     const envOptions = [['', 'Create a new environment'], ...S.ws.environments.map((e) => [e.id, e.name])];
     const results = h('div.discovery-results');
+    const traffic = h('div.discovery-traffic');
     const config = h('div.discovery-config',
       h('div.dep-grid',
         h('label.field', h('span', 'Registry type'), HD.select(Object.entries(PROVIDERS).map(([id, x]) => [id, x.label]), src.provider, (v) => {
@@ -293,6 +382,11 @@
       check('keepMissing', 'Keep variables for services that disappear from the registry'),
       check('verifySSL', 'Verify the registry\'s SSL certificate'),
       check('syncOnStartup', 'Sync automatically when HttpDash starts'),
+      h('div.section-title', 'Load balancing'),
+      h('div.dep-grid',
+        !isOpenApi(src) ? select('balance', 'Send requests to', [['first', 'The first instance (always the same)'], ['round-robin', 'Each instance in turn (round robin)'], ['random', 'A random instance']],
+          'For requests that use this source\'s variables, in Send, the Runner and Monitors. Instances that aren\'t healthy are skipped.') : null,
+        text('instanceHeader', 'Instance header', 'e.g. X-Served-By', 'When a load balancer sits in front, the response header that names the instance that answered. Requests are counted by its value too.')),
       h('details.discovery-headers', h('summary', `Extra request headers${(src.headers || []).filter((x) => x.key).length ? ` (${src.headers.filter((x) => x.key).length})` : ''}`),
         HD.kvTable({ rows: (src.headers = src.headers || []), onChange: touch, bulk: false })),
       isOpenApi(src) ? h('div.button-row.discovery-actions',
@@ -340,6 +434,28 @@
           h('td.mono.break', s.url),
           h('td.muted', s.instances && s.instances.length ? `${s.instances.filter((i) => i.healthy).length}/${s.instances.length} healthy` : '—'),
           diff ? h('td', changed.get(s.variable) ? h(`span.pill.${changed.get(s.variable)}`, changed.get(s.variable)) : null) : null))))));
+    };
+
+    // Traffic by instance, refreshed every second while this tab is shown.
+    const renderTraffic = async () => {
+      if (!traffic.isConnected && traffic.dataset.drawn) return; // the tab was closed or drawn anew
+      let m;
+      try { m = await window.api.discoveryMetrics(src.id); } catch { return; }
+      const known = {};
+      for (const svc of (src.lastSync && src.lastSync.services) || []) if (svc.instances && svc.instances.some((i) => i.url)) known[svc.name] = svc.instances.filter((i) => i.url);
+      const strategy = { 'round-robin': 'round robin', random: 'random' }[src.balance] || 'first instance';
+      HD.clear(traffic);
+      traffic.dataset.drawn = '1';
+      traffic.appendChild(h('div.section-title.traffic-title', 'Traffic by instance', h('span.spacer'),
+        h('span.muted.small', `${isOpenApi(src) ? '' : `${strategy} · `}since ${new Date(m.since).toLocaleTimeString()}`),
+        m.rows.length ? HD.button('Reset', async () => { await window.api.resetDiscoveryMetrics(src.id); renderTraffic(); }, { small: true, ghost: true }) : null));
+      if (!m.rows.length && !Object.keys(known).length) {
+        traffic.appendChild(h('div.muted.small', 'Sync first. Requests that use this source\'s variables are then counted here, per instance.'));
+      } else {
+        traffic.appendChild(HD.trafficTable(m.rows, isOpenApi(src) ? {} : known));
+        if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${(src.lastSync.services || []).slice(0, 2).map((s) => `{{${s.variable}}}`).join(' or ')}.`));
+      }
+      setTimeout(() => { if (traffic.isConnected) renderTraffic(); }, document.hidden ? 5000 : 1000);
     };
 
     // Applies a reviewed version; expectHash refuses a document that changed again since the review.
@@ -443,7 +559,8 @@
           } })),
         ls ? h('span.muted.small', ls.error ? h('span.text-error', `Last sync failed: ${ls.error}`) : `Last synced ${new Date(ls.time).toLocaleString()} · ${plural(ls.count, isOpenApi(src) ? 'operation' : 'service')}`) : null),
       h('div.panel-pad', h('div.muted.small', p.help)),
-      h('div.discovery-layout', config, results)));
+      h('div.discovery-layout', config, h('div.discovery-side', results, traffic))));
+    renderTraffic();
 
     if (isOpenApi(src) && ls && !ls.error && ls.spec) {
       renderReport({ spec: ls.spec, requests: ls.requests, diff: ls.diff, services: ls.services, warnings: ls.warnings }, true);

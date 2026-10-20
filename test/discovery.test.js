@@ -31,6 +31,14 @@ test.before(async () => {
         { metadata: { name: 'db', namespace: 'shop' }, spec: { clusterIP: 'None', ports: [{ port: 5432 }] }, status: {} },
       ] });
     }
+    if (p === '/api/v1/namespaces/shop/endpoints') {
+      return json({ items: [
+        { metadata: { name: 'cart', namespace: 'shop' }, subsets: [{ ports: [{ name: 'metrics', port: 9100 }, { name: 'http', port: 8081 }],
+          addresses: [{ ip: '10.244.0.5', targetRef: { name: 'cart-7f9c-abc' } }, { ip: '10.244.1.7', targetRef: { name: 'cart-7f9c-def' } }],
+          notReadyAddresses: [{ ip: '10.244.2.9', targetRef: { name: 'cart-7f9c-ghi' } }] }] },
+        { metadata: { name: 'web', namespace: 'shop' }, subsets: [] },
+      ] });
+    }
     if (p === '/registry.json') return json({ data: { services: [{ id: 'search', host: '10.1.1.1', port: 7700 }, { id: 'broken' }] } });
     if (p === '/map.json') return json({ inventory: 'http://inv:8080/', reports: { url: 'http://rep:9000' } });
     if (p === '/openapi.json') return json({ openapi: '3.1.0', info: { title: 'MES services' }, servers: [{ url: 'http://x/svc/v1' }], paths: { '/lots_for_erp': { get: {} } } });
@@ -120,4 +128,16 @@ test('OpenAPI: the server, resolved against the document URL, becomes the base U
   const legacy = await discover({ provider: 'openapi', url: `${base}/spec.yaml` });
   assert.strictEqual(legacy.services[0].url, `${base}/legacy`);
   await assert.rejects(discover({ provider: 'openapi', url: `${base}/map.json` }), /not an OpenAPI/);
+});
+
+test('Kubernetes pods mode: every pod behind a Service is an instance', async () => {
+  const r = await discover({ provider: 'kubernetes', url: base, token: 'k8s-token', namespace: 'shop', addressMode: 'pods' });
+  const cart = r.services.find((s) => s.name === 'cart');
+  assert.strictEqual(cart.url, 'http://10.244.0.5:8081');
+  assert.deepStrictEqual(cart.instances, [
+    { id: 'cart-7f9c-abc', url: 'http://10.244.0.5:8081', healthy: true },
+    { id: 'cart-7f9c-def', url: 'http://10.244.1.7:8081', healthy: true },
+    { id: 'cart-7f9c-ghi', url: 'http://10.244.2.9:8081', healthy: false },
+  ]);
+  assert.ok(r.warnings.includes('web: no ready pods'));
 });
