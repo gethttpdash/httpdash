@@ -10,6 +10,11 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Trust certificates installed on this computer** (on by default): CAs in the macOS Keychain, Windows certificate store or Linux system bundle are trusted, as in a browser, so company certificates work without setup.
 - Command-line runner: Newman's certificate flags `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` and `--ssl-extra-ca-certs`.
 - Clear errors when a server requires a client certificate, rejects one, or the passphrase is wrong.
+- **YAML OpenAPI and Swagger import** (from files, drag and drop, paste and the CLI), with OpenAPI 3.1 support.
+- OpenAPI imports now keep response examples, so the mock server works right after importing, and turn security schemes into auth (Bearer, Basic, API key, OAuth 2.0 with PKCE).
+
+### Fixed
+- OpenAPI import: chained and escaped `$ref`s, relative server URLs, JSON variants such as `application/vnd.api+json`, named examples, parameter examples and Swagger 2 form fields.
 
 ## [1.1.0] - 2026-10-21
 

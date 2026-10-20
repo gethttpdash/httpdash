@@ -118,9 +118,10 @@ function clientCertificates(opts) {
   return list;
 }
 
+// Reads a JSON file, or YAML (OpenAPI specs are usually YAML).
 const readJson = (file) => {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return postman.parseDocument(fs.readFileSync(file, 'utf8'));
   } catch (e) {
     throw usage(`Could not read ${file}: ${e.message}`);
   }

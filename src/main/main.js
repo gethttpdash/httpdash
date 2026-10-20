@@ -265,16 +265,16 @@ handle('codegen:generate', ({ target, request, chain, scopes }) => {
 });
 
 handle('import:curl', (text) => parseCurl(text));
-handle('import:text', (text) => postman.importAny(JSON.parse(text)));
+handle('import:text', (text) => postman.importText(text));
 handle('import:files', async () => {
   const r = await dialog.showOpenDialog(win, {
     title: 'Import', properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'Collections, environments, OpenAPI', extensions: ['json'] }, { name: 'All files', extensions: ['*'] }],
+    filters: [{ name: 'Collections, environments, OpenAPI', extensions: ['json', 'yaml', 'yml'] }, { name: 'All files', extensions: ['*'] }],
   });
   if (r.canceled) return [];
   const items = r.filePaths.map((f) => {
     try {
-      return { file: path.basename(f), ...postman.importAny(JSON.parse(fs.readFileSync(f, 'utf8'))) };
+      return { file: path.basename(f), ...postman.importText(fs.readFileSync(f, 'utf8')) };
     } catch (e) {
       return { file: path.basename(f), error: e.message };
     }

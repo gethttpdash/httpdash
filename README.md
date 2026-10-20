@@ -299,7 +299,8 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Optionally persists variable changes made during the run
 
 **Import / export & tools**
-- Import HttpDash backups, Postman collections (v2.0 / v2.1), environments and globals, OpenAPI 3 / Swagger 2 (JSON) and cURL; drag files onto the window to import
+- Import HttpDash backups, Postman collections (v2.0 / v2.1), environments and globals, OpenAPI 3.0 / 3.1 and Swagger 2 (JSON or YAML) and cURL; drag files onto the window to import
+- OpenAPI imports keep each operation's examples (request bodies, parameters and responses), so the collection's **mock server** works right away, and turn security schemes into auth settings (Bearer, Basic, API key, and OAuth 2.0 including PKCE). They follow `$ref`s, read OpenAPI 3.1 types, and handle large specs: GitHub's 10 MB API description imports in about a second.
 - Export everything as a restorable backup or as Postman files, or export single collections, environments and globals
 - Code generation: cURL, raw HTTP, JavaScript fetch, Node.js Axios, Python requests, Go, PHP cURL, C# HttpClient, Java OkHttp, PowerShell, wget
 - Cookie manager (view / add / edit / delete per domain)
@@ -317,7 +318,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 
 ## Not included
 
-Compared with Postman, these are not implemented: WebSocket, gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead); YAML OpenAPI import.
+Compared with Postman, these are not implemented: WebSocket, gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead).
 
 Scripts run in a sandbox: QuickJS, a separate JavaScript engine compiled to WebAssembly, with a fresh engine per script and limits of 30 seconds and 256 MB. They can't reach Node, files, other processes or HttpDash's own data. They can still send requests with `pm.sendRequest` and read the variables in scope, so review scripts from people you don't trust before running them. See [SECURITY.md](SECURITY.md).
 

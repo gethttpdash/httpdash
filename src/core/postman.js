@@ -1,8 +1,10 @@
 'use strict';
 
-// Import/export of Postman collection (v2.0 / v2.1) and environment files, plus OpenAPI/Swagger JSON import.
+// Import/export of Postman collection (v2.0 / v2.1) and environment files, plus OpenAPI/Swagger import (JSON or YAML).
 const { uid, newRequestDef, newCollection, newFolder, newEnvironment } = require('./model');
 const { paramsFromUrl } = require('./curl');
+const { STATUS_CODES } = require('http');
+const YAML = require('yaml');
 const oauth2 = require('./oauth2');
 
 const SCHEMA_V21 = 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json';
@@ -120,65 +122,143 @@ function importPostmanEnvironment(json) {
 }
 
 // Imports OpenAPI 3 / Swagger 2 JSON documents as a collection with one folder per tag.
+// Media types treated as JSON: application/json, application/problem+json, application/vnd.api+json, text/json...
+const JSON_TYPE = /(^|\/|\+)json\b/i;
+const METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
+
 function importOpenApi(doc) {
   const col = newCollection((doc.info && doc.info.title) || 'OpenAPI Import');
   col.description = (doc.info && doc.info.description) || '';
+
+  // Follows local references ("#/components/schemas/Pet"), including chains, and stops on cycles.
+  // References to other files aren't followed.
+  const resolveRef = (o) => {
+    const seen = new Set();
+    while (o && typeof o.$ref === 'string') {
+      if (!o.$ref.startsWith('#/') || seen.has(o.$ref)) return {};
+      seen.add(o.$ref);
+      o = o.$ref.slice(2).split('/')
+        .map((p) => decodeURIComponent(p).replace(/~1/g, '/').replace(/~0/g, '~'))
+        .reduce((acc, p) => (acc == null ? undefined : acc[p]), doc);
+    }
+    return o || {};
+  };
+
   let baseUrl = '';
   if (doc.openapi && doc.servers && doc.servers[0]) {
-    baseUrl = doc.servers[0].url;
+    baseUrl = doc.servers[0].url || '';
     for (const [k, v] of Object.entries(doc.servers[0].variables || {})) baseUrl = baseUrl.replace(`{${k}}`, v.default);
   } else if (doc.swagger) {
     baseUrl = `${(doc.schemes && doc.schemes[0]) || 'https'}://${doc.host || 'localhost'}${doc.basePath || ''}`;
   }
+  // A relative server ("/api/v1") is relative to wherever the spec is hosted, which we don't know.
+  if (!/^[a-z]+:\/\//i.test(baseUrl)) baseUrl = `http://localhost${baseUrl.startsWith('/') ? baseUrl : ''}`;
   col.variables = [{ key: 'baseUrl', value: baseUrl.replace(/\/$/, ''), enabled: true }];
-  const folders = new Map();
-  const resolveRef = (o) => {
-    if (o && o.$ref) {
-      const parts = o.$ref.replace(/^#\//, '').split('/');
-      return parts.reduce((acc, p) => (acc ? acc[p] : undefined), doc) || {};
-    }
-    return o || {};
-  };
+
   const sample = (schema, depth = 0) => {
     schema = resolveRef(schema);
     if (depth > 6) return null;
     if (schema.example !== undefined) return schema.example;
+    if (Array.isArray(schema.examples) && schema.examples.length) return schema.examples[0];
+    if (schema.const !== undefined) return schema.const;
+    if (schema.default !== undefined) return schema.default;
     if (schema.enum) return schema.enum[0];
     if (schema.allOf) return Object.assign({}, ...schema.allOf.map((s) => sample(s, depth + 1)));
     if (schema.oneOf || schema.anyOf) return sample((schema.oneOf || schema.anyOf)[0], depth + 1);
-    switch (schema.type) {
+    // OpenAPI 3.1 allows a list of types, such as ["string", "null"].
+    const type = Array.isArray(schema.type) ? schema.type.find((t) => t !== 'null') : schema.type;
+    switch (type) {
       case 'object': case undefined: {
-        if (!schema.properties) return schema.type ? {} : null;
+        if (!schema.properties) return type ? {} : null;
         return Object.fromEntries(Object.entries(schema.properties).map(([k, v]) => [k, sample(v, depth + 1)]));
       }
       case 'array': return [sample(schema.items, depth + 1)];
       case 'integer': case 'number': return 0;
       case 'boolean': return true;
-      default: return schema.format === 'date-time' ? new Date(0).toISOString() : 'string';
+      default: return { 'date-time': new Date(0).toISOString(), date: '1970-01-01', uuid: '00000000-0000-0000-0000-000000000000', email: 'user@example.com', uri: 'https://example.com' }[schema.format] || 'string';
     }
   };
+  // The example for a media type object: its example, the first of its examples, or one built from its schema.
+  const mediaExample = (media) => {
+    if (media.example !== undefined) return media.example;
+    const first = media.examples && Object.values(media.examples)[0];
+    if (first) return resolveRef(first).value;
+    return sample(media.schema);
+  };
+  const paramValue = (x) => {
+    const first = x.examples && Object.values(x.examples)[0];
+    const s = resolveRef(x.schema);
+    const v = x.example !== undefined ? x.example : first ? resolveRef(first).value : s.example !== undefined ? s.example : s.default;
+    return v === undefined || v === null ? '' : String(v);
+  };
+  const pickContent = (content, test) => Object.entries(content || {}).find(([type]) => test.test(type));
 
-  for (const [p, ops] of Object.entries(doc.paths || {})) {
+  // Security schemes become auth settings, with variables for the secrets.
+  const schemes = (doc.components && doc.components.securitySchemes) || doc.securityDefinitions || {};
+  const neededVars = new Set();
+  const schemeAuth = (s, scopes) => {
+    const type = String(s.type || '').toLowerCase();
+    const scheme = String(s.scheme || '').toLowerCase();
+    if (type === 'http' && scheme === 'bearer') { neededVars.add('token'); return { type: 'bearer', bearer: { token: '{{token}}' } }; }
+    if ((type === 'http' && scheme === 'basic') || type === 'basic') { neededVars.add('username').add('password'); return { type: 'basic', basic: { username: '{{username}}', password: '{{password}}' } }; }
+    if (type === 'apikey' && s.in !== 'cookie') { neededVars.add('apiKey'); return { type: 'apikey', apikey: { key: s.name || 'X-API-Key', value: '{{apiKey}}', in: s.in === 'query' ? 'query' : 'header' } }; }
+    if (type === 'oauth2') {
+      const flows = s.flows || {};
+      const v2 = { accessCode: 'authorizationCode', application: 'clientCredentials', implicit: 'implicit', password: 'password' }[s.flow];
+      if (v2) flows[v2] = { authorizationUrl: s.authorizationUrl, tokenUrl: s.tokenUrl };
+      const [flow, f] = ['authorizationCode', 'clientCredentials', 'password', 'implicit'].map((k) => [k, flows[k]]).find(([, v]) => v) || [];
+      if (!flow) return null;
+      neededVars.add('clientId');
+      if (flow !== 'authorizationCode' && flow !== 'implicit') neededVars.add('clientSecret');
+      return {
+        type: 'oauth2',
+        oauth2: {
+          grantType: { authorizationCode: 'authorization_code_with_pkce', clientCredentials: 'client_credentials', password: 'password', implicit: 'implicit' }[flow],
+          authUrl: f.authorizationUrl || '', accessTokenUrl: f.tokenUrl || '', callbackUrl: '', clientId: '{{clientId}}',
+          clientSecret: flow === 'clientCredentials' || flow === 'password' ? '{{clientSecret}}' : '', scope: (scopes || []).join(' '),
+          accessToken: '', headerPrefix: 'Bearer', addTo: 'header', clientAuth: 'header', pkceMethod: 'S256',
+        },
+      };
+    }
+    return null;
+  };
+  // A security requirement list: [] means no auth; otherwise the first scheme we support.
+  const authFor = (requirements) => {
+    if (!Array.isArray(requirements)) return null;
+    if (!requirements.length) return { type: 'none' };
+    for (const req of requirements) {
+      for (const [name, scopes] of Object.entries(req || {})) {
+        const a = schemeAuth(resolveRef(schemes[name]), scopes);
+        if (a) return a;
+      }
+    }
+    return null;
+  };
+  col.auth = authFor(doc.security) || { type: 'none' };
+
+  const folders = new Map();
+  for (const [p, rawOps] of Object.entries(doc.paths || {})) {
+    const ops = resolveRef(rawOps);
     for (const [method, op] of Object.entries(ops)) {
-      if (!['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) continue;
+      if (!METHODS.includes(method) || !op) continue;
       const params = [...(ops.parameters || []), ...(op.parameters || [])].map(resolveRef);
-      const query = params.filter((x) => x.in === 'query').map((x) => ({ key: x.name, value: '', enabled: !!x.required, description: x.description || '' }));
-      const headers = params.filter((x) => x.in === 'header').map((x) => ({ key: x.name, value: '', enabled: true, description: x.description || '' }));
-      const pathVariables = params.filter((x) => x.in === 'path').map((x) => ({ key: x.name, value: '', enabled: true, description: x.description || '' }));
+      const query = params.filter((x) => x.in === 'query').map((x) => ({ key: x.name, value: paramValue(x), enabled: !!x.required, description: x.description || '' }));
+      const headers = params.filter((x) => x.in === 'header').map((x) => ({ key: x.name, value: paramValue(x), enabled: true, description: x.description || '' }));
+      const pathVariables = params.filter((x) => x.in === 'path').map((x) => ({ key: x.name, value: paramValue(x), enabled: true, description: x.description || '' }));
       const pathPart = p.replace(/\{([^}]+)\}/g, ':$1');
-      const qs = query.filter((q) => q.enabled).map((q) => `${q.key}=`).join('&');
+      const qs = query.filter((q) => q.enabled).map((q) => `${encodeURIComponent(q.key)}=${encodeURIComponent(q.value)}`).join('&');
       const def = newRequestDef({
         method: method.toUpperCase(), url: `{{baseUrl}}${pathPart}${qs ? '?' + qs : ''}`, params: query, headers, pathVariables,
         description: op.description || op.summary || '',
       });
       if (op.requestBody) {
         const content = resolveRef(op.requestBody).content || {};
-        const json = content['application/json'];
+        const json = pickContent(content, JSON_TYPE);
         if (json) {
           def.body.mode = 'raw';
           def.body.rawLanguage = 'json';
-          def.body.raw = JSON.stringify(json.example || sample(json.schema), null, 2);
-          def.headers.push({ key: 'Content-Type', value: 'application/json', enabled: true });
+          def.body.raw = JSON.stringify(mediaExample(json[1]), null, 2);
+          def.headers.push({ key: 'Content-Type', value: json[0], enabled: true });
         } else if (content['application/x-www-form-urlencoded']) {
           const s = resolveRef(content['application/x-www-form-urlencoded'].schema);
           def.body.mode = 'urlencoded';
@@ -186,17 +266,54 @@ function importOpenApi(doc) {
         } else if (content['multipart/form-data']) {
           const s = resolveRef(content['multipart/form-data'].schema);
           def.body.mode = 'formdata';
-          def.body.formdata = Object.entries(s.properties || {}).map(([k, v]) => ({ key: k, value: '', type: v.format === 'binary' ? 'file' : 'text', enabled: true }));
+          def.body.formdata = Object.entries(s.properties || {}).map(([k, v]) => ({ key: k, value: '', type: resolveRef(v).format === 'binary' ? 'file' : 'text', enabled: true }));
+        } else {
+          const other = Object.entries(content)[0];
+          if (other) {
+            const ex = mediaExample(other[1]);
+            def.body.mode = 'raw';
+            def.body.rawLanguage = /xml/.test(other[0]) ? 'xml' : 'text';
+            def.body.raw = typeof ex === 'string' ? ex : ex == null ? '' : JSON.stringify(ex, null, 2);
+            def.headers.push({ key: 'Content-Type', value: other[0], enabled: true });
+          }
         }
       } else {
         const bodyParam = params.find((x) => x.in === 'body');
+        const formParams = params.filter((x) => x.in === 'formData');
         if (bodyParam) {
           def.body.mode = 'raw';
           def.body.rawLanguage = 'json';
           def.body.raw = JSON.stringify(sample(bodyParam.schema), null, 2);
+        } else if (formParams.length) {
+          const files = formParams.some((x) => x.type === 'file');
+          def.body.mode = files ? 'formdata' : 'urlencoded';
+          def.body[def.body.mode] = formParams.map((x) => ({ key: x.name, value: '', enabled: true, ...(files ? { type: x.type === 'file' ? 'file' : 'text' } : {}) }));
         }
       }
-      const item = { id: uid(), type: 'request', name: op.summary || op.operationId || `${method.toUpperCase()} ${p}`, request: def };
+      const opAuth = authFor(op.security);
+      if (opAuth && JSON.stringify(opAuth) !== JSON.stringify(col.auth)) def.auth = opAuth;
+
+      // Response examples, so the collection's mock server works straight after importing.
+      const examples = [];
+      for (const [code, rawResponse] of Object.entries(op.responses || {})) {
+        const r = resolveRef(rawResponse);
+        const status = /^\d{3}$/.test(code) ? Number(code) : /^\dXX$/i.test(code) ? Number(code[0]) * 100 : null;
+        if (!status) continue;
+        let type = null;
+        let body;
+        const json = pickContent(r.content, JSON_TYPE);
+        if (json) [type, body] = [json[0], mediaExample(json[1])];
+        else if (r.examples && r.examples['application/json'] !== undefined) [type, body] = ['application/json', r.examples['application/json']];
+        else if (r.schema) [type, body] = ['application/json', sample(r.schema)];
+        if (body === undefined && status !== 204) continue;
+        examples.push({
+          id: uid(), name: `${code} ${r.description || STATUS_CODES[status] || ''}`.trim(), status, statusText: STATUS_CODES[status] || '',
+          headers: type ? [['Content-Type', type]] : [], body: body === undefined ? '' : typeof body === 'string' ? body : JSON.stringify(body, null, 2),
+          request: JSON.parse(JSON.stringify(def)),
+        });
+      }
+
+      const item = { id: uid(), type: 'request', name: op.summary || op.operationId || `${method.toUpperCase()} ${p}`, request: def, examples };
       const tag = (op.tags && op.tags[0]) || null;
       if (tag) {
         if (!folders.has(tag)) {
@@ -208,8 +325,29 @@ function importOpenApi(doc) {
       } else col.items.push(item);
     }
   }
+  for (const key of neededVars) col.variables.push({ key, value: '', enabled: true });
   return col;
 }
+
+/**
+ * Reads an imported file's text: JSON, or YAML (used by most OpenAPI specs). YAML aliases are
+ * limited, so a malicious file can't expand into gigabytes.
+ */
+function parseDocument(text) {
+  const t = String(text).replace(/^﻿/, '');
+  try {
+    return JSON.parse(t);
+  } catch (jsonError) {
+    if (/^\s*[{[]/.test(t)) throw new Error(`Invalid JSON: ${jsonError.message}`);
+    let doc;
+    try { doc = YAML.parse(t, { maxAliasCount: 100 }); } catch (e) { throw new Error(`Could not read the file as JSON or YAML: ${e.message}`); }
+    if (!doc || typeof doc !== 'object') throw new Error('Unrecognised file format: expected a JSON or YAML document.');
+    return doc;
+  }
+}
+
+// Detects the type of an imported file's text (JSON or YAML) and converts it.
+const importText = (text) => importAny(parseDocument(text));
 
 /** Detects the type of an imported JSON document and converts it. */
 function importAny(json) {
@@ -222,7 +360,7 @@ function importAny(json) {
     return { kind: 'environment', data: importPostmanEnvironment(json) };
   }
   if (json.type === 'collection' && Array.isArray(json.items)) return { kind: 'collection', data: reId(json) };
-  throw new Error('Unrecognised file format. Supported: HttpDash backup, Postman collection v2/v2.1, Postman environment / globals, OpenAPI 3 / Swagger 2 (JSON).');
+  throw new Error('Unrecognised file format. Supported: HttpDash backup, Postman collection v2/v2.1, Postman environment / globals, OpenAPI 3 / Swagger 2 (JSON or YAML).');
 }
 
 // Gives every node of a native collection fresh ids so re-importing never collides.
@@ -328,4 +466,4 @@ function exportEnvironment(env) {
   };
 }
 
-module.exports = { importAny, importPostmanCollection, importPostmanEnvironment, importOpenApi, exportCollection, exportEnvironment };
+module.exports = { importAny, importText, parseDocument, importPostmanCollection, importPostmanEnvironment, importOpenApi, exportCollection, exportEnvironment };
