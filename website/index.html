@@ -92,23 +92,23 @@
             <p>Requests per second, running 500 requests that each have a pre-request script and two tests. Higher is better.</p>
           </figcaption>
           <div class="bench-chart" role="list">
-            <div class="bench-row is-us" role="listitem" tabindex="0" aria-label="HttpDash 1.2.0: 1,141 requests per second, 0.44 seconds in total, 108 MB peak memory">
+            <div class="bench-row is-us" role="listitem" tabindex="0" aria-label="HttpDash 1.3.0: 1,176 requests per second, 0.43 seconds in total, 109 MB peak memory">
               <span class="bench-name">HttpDash</span>
-              <span class="bench-track"><span class="bench-bar" style="--v: 1141"></span></span>
-              <span class="bench-value">1,141/s</span>
-              <span class="bench-tip" role="tooltip"><b>HttpDash 1.2.0</b><span>0.44 s for 500 requests</span><span>108 MB peak memory</span></span>
+              <span class="bench-track"><span class="bench-bar" style="--v: 1176"></span></span>
+              <span class="bench-value">1,176/s</span>
+              <span class="bench-tip" role="tooltip"><b>HttpDash 1.3.0</b><span>0.43 s for 500 requests</span><span>109 MB peak memory</span></span>
             </div>
-            <div class="bench-row" role="listitem" tabindex="0" aria-label="Postman's runner, Newman 6.2.3: 93 requests per second, 5.36 seconds in total, 241 MB peak memory">
+            <div class="bench-row" role="listitem" tabindex="0" aria-label="Postman's runner, Newman 6.2.3: 95 requests per second, 5.26 seconds in total, 252 MB peak memory">
               <span class="bench-name">Postman <small>(Newman)</small></span>
-              <span class="bench-track"><span class="bench-bar" style="--v: 93"></span></span>
-              <span class="bench-value">93/s</span>
-              <span class="bench-tip" role="tooltip"><b>Newman 6.2.3</b><span>5.36 s for 500 requests</span><span>241 MB peak memory</span></span>
+              <span class="bench-track"><span class="bench-bar" style="--v: 95"></span></span>
+              <span class="bench-value">95/s</span>
+              <span class="bench-tip" role="tooltip"><b>Newman 6.2.3</b><span>5.26 s for 500 requests</span><span>252 MB peak memory</span></span>
             </div>
-            <div class="bench-row" role="listitem" tabindex="0" aria-label="Bruno CLI 4.2.1: 12 requests per second, 42.60 seconds in total, 427 MB peak memory">
+            <div class="bench-row" role="listitem" tabindex="0" aria-label="Bruno CLI 4.2.1: 12 requests per second, 42.63 seconds in total, 421 MB peak memory">
               <span class="bench-name">Bruno <small>(CLI)</small></span>
               <span class="bench-track"><span class="bench-bar" style="--v: 12"></span></span>
               <span class="bench-value">12/s</span>
-              <span class="bench-tip" role="tooltip"><b>Bruno CLI 4.2.1</b><span>42.60 s for 500 requests</span><span>427 MB peak memory</span></span>
+              <span class="bench-tip" role="tooltip"><b>Bruno CLI 4.2.1</b><span>42.63 s for 500 requests</span><span>421 MB peak memory</span></span>
             </div>
           </div>
           <details class="bench-details">
@@ -117,9 +117,9 @@
               <table>
                 <thead><tr><th scope="col">Runner</th><th scope="col">Total time</th><th scope="col">Requests/s</th><th scope="col">Peak memory</th></tr></thead>
                 <tbody>
-                  <tr><th scope="row">HttpDash 1.2.0</th><td>0.44 s</td><td>1,141</td><td>108 MB</td></tr>
-                  <tr><th scope="row">Postman's Newman 6.2.3</th><td>5.36 s</td><td>93</td><td>241 MB</td></tr>
-                  <tr><th scope="row">Bruno CLI 4.2.1</th><td>42.60 s</td><td>12</td><td>427 MB</td></tr>
+                  <tr><th scope="row">HttpDash 1.3.0</th><td>0.43 s</td><td>1,176</td><td>109 MB</td></tr>
+                  <tr><th scope="row">Postman's Newman 6.2.3</th><td>5.26 s</td><td>95</td><td>252 MB</td></tr>
+                  <tr><th scope="row">Bruno CLI 4.2.1</th><td>42.63 s</td><td>12</td><td>421 MB</td></tr>
                 </tbody>
               </table>
             </div>
@@ -160,12 +160,27 @@
               <p>Connect Consul, Eureka, Kubernetes or your own JSON endpoint, and HttpDash creates an environment with one variable per service, like <code>{{orders_url}}</code>. Re-sync whenever services move: addresses update, new services appear, and the variables you added yourself stay put.</p>
             </div>
             <ul class="ticks">
-              <li>Preview before anything changes</li>
-              <li>Healthy instances only, with tag and namespace filters</li>
-              <li>Optional sync every time the app starts</li>
+              <li>Healthy instances only, with tag and namespace filters, or every pod behind a Kubernetes Service</li>
+              <li>Point it at an OpenAPI document and every operation becomes a request, kept in step with the spec</li>
+              <li>Each new version of the spec is compared with the last: review what changed, then apply it, with your own edits kept</li>
             </ul>
           </div>
           <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/discovery.webp" width="1440" height="873" loading="lazy" alt="Service discovery preview listing four services from Consul with their variables and URLs."></div></figure>
+        </article>
+
+        <article class="feature">
+          <div class="feature-copy">
+            <div class="feature-text">
+              <h3>Find the slow instance, or the slow payload</h3>
+              <p>Send to each instance of a service in turn and HttpDash counts what every one of them answers: requests, p50 and p95 times, errors. Give a request several payloads and it counts those too, so a pod that is slow for everyone can be told apart from an order that is slow on every pod.</p>
+            </div>
+            <ul class="ticks">
+              <li>Flags instances that are slow or failing, and payloads that are worse than their siblings</li>
+              <li>Behind a load balancer, counts by the header that names who answered, such as <code>X-Served-By</code></li>
+              <li>Export the report to Excel, CSV, PDF, an image or Markdown</li>
+            </ul>
+          </div>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/traffic.webp" width="2880" height="1736" loading="lazy" alt="Traffic by instance for a Consul cluster: orders-2 flagged failing, orders-3 flagged slow at 312 ms, and by payload, a large payment flagged slow at 370 ms while other payloads answer in about 20 ms."></div></figure>
         </article>
 
         <article class="feature">
@@ -237,7 +252,7 @@
         <ul class="grid">
           <li class="card"><span class="card-icon" aria-hidden="true">{ }</span><h3>Collections &amp; environments</h3><p>Folders, tabs, history, globals and secret variables with <code>{{autocomplete}}</code> and hover previews.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">✓</span><h3>Scripts &amp; tests</h3><p>Pre-request and test scripts with a familiar <code>pm</code> API, Chai assertions, JSON Schema checks and a snippet library.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">▶</span><h3>Collection runner</h3><p>Iterations, CSV/JSON data files, request ordering, delays and a detailed, exportable report.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">▶</span><h3>Collection runner</h3><p>Iterations, CSV/JSON data files, request ordering, a gap in milliseconds between requests and a detailed, exportable report.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">≈</span><h3>Mock server</h3><p>Serve saved examples on a local port, pick responses with a header, and switch an environment to the mock in one click.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">♥</span><h3>Monitors</h3><p>Run a collection every few minutes and get a desktop notification when it fails, and again when it recovers.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">&lt;/&gt;</span><h3>Code generation</h3><p>Turn any request into cURL, fetch, Axios, Python, Go, PHP, C#, Java, PowerShell, wget or raw HTTP.</p></li>
@@ -246,6 +261,10 @@
           <li class="card"><span class="card-icon" aria-hidden="true">⇄</span><h3>WebSocket</h3><p>Connect, send text or JSON, and follow a live log of every message, with your headers and auth in the handshake.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇶</span><h3>Streaming responses</h3><p>Server-Sent Events appear as they arrive, so streaming and AI APIs are easy to watch and debug.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">▦</span><h3>Table view &amp; export</h3><p>Read JSON arrays as sortable tables and export them to Excel, CSV or an image.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">⟳</span><h3>OpenAPI sync</h3><p>A collection that follows your OpenAPI document. Each new version shows what changed, operation by operation, before you apply it.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">⚖</span><h3>Load balancing</h3><p>Send to the first instance, each in turn or a random one, from Consul, Eureka or Kubernetes pods. Unhealthy instances are skipped.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">≡</span><h3>Payloads</h3><p>Give a request the variations it should be called with, typed in or imported from CSV or JSON, and send them in turn or at random.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">▤</span><h3>Traffic reports</h3><p>Requests, timings and errors per instance and per payload, live, with slow and failing ones flagged. Export to Excel, PDF or an image.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⚿</span><h3>Client certificates</h3><p>Mutual TLS per host, your company's CA, and certificates already installed on your computer, trusted as in a browser.</p></li>
         </ul>
       </div>

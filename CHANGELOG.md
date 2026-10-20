@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-21
+
 ### Added
 - **Payloads:** give a request the variations it should be called with: named payloads, each with variables (used anywhere in the request, such as `{{orderId}}` in the URL or body, for that call only) and optionally its own body. Each call sends the next payload in turn or a random one, in Send, the Runner and Monitors; **Send with this** sends a chosen one. Import payloads from a CSV or JSON file (one per row: `name`, `body` and variables). The response, the Runner's results and the Traffic page say which payload was sent, and Traffic adds a **By payload** table, so a slow payload (say, a large payment's fraud check) can be told from a slow instance. With round robin, every payload goes to every instance in turn, so the two are never mixed up. A Runner run starts from the first payload; Monitors keep rotating.
 - **Load balancing and traffic by instance:** a discovery source keeps every instance it finds (Consul and Eureka instances, and, with the new Kubernetes **Pods** address mode, every pod behind a Service). Requests that use its variables can go to the first instance, each instance in turn (round robin) or a random one, in Send, the Runner and Monitors alike; unhealthy instances are skipped, and a value you set yourself (in the environment or a script) always wins. Each source has a **Traffic** page beside its configuration, live: requests and share, p50 and p95 response times, 2xx/4xx/5xx and connection errors, with instances that are much **slower** than their siblings or **failing** often flagged, and instances that got no requests listed too. Behind a load balancer, name the response header that says which instance answered (such as `X-Served-By`) and requests are counted by it. The Traffic report **exports** as Excel (by instance and recent requests), CSV, PDF, a PNG image, an HTML page, Markdown or JSON; instances that dropped out of the registry are marked **left the pool**. A **Recent requests** list shows each request as it happens: when it was sent, the gap in milliseconds since the previous response, the instance and its status and time. The response shows which instance answered, and a run's results add a table by instance.
@@ -77,7 +79,8 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.0.0

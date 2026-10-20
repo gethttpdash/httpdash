@@ -182,7 +182,7 @@ p { margin: 0; }
 .bench-name small { font-weight: 500; color: var(--ink-3); font-size: 13px; }
 .bench-track { height: 22px; display: flex; align-items: center; }
 /* Bars start at the axis (square) and round only at the data end. Width is relative to the top value. */
-.bench-bar { display: block; height: 100%; width: calc(var(--v) / 1141 * 100%); min-width: 3px; background: var(--bar-them); border-radius: 0 4px 4px 0; }
+.bench-bar { display: block; height: 100%; width: calc(var(--v) / 1176 * 100%); min-width: 3px; background: var(--bar-them); border-radius: 0 4px 4px 0; }
 .bench-row.is-us .bench-bar { background: var(--bar-us); }
 .bench-value { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
 .bench-row.is-us .bench-name, .bench-row.is-us .bench-value { font-weight: 750; }
