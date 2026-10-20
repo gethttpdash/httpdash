@@ -34,11 +34,12 @@
     return addTab({ id: HD.uid(), kind: 'request', refId: itemId, draft: { name: found.node.name, request: HD.clone(found.node.request) }, dirty: false, ui: {} });
   };
 
-  HD.openNewRequest = (request, name) => addTab({
-    id: HD.uid(), kind: 'request', refId: null,
-    draft: { name: name || 'Untitled Request', request: HD.newRequestDef({ auth: { type: 'none' }, ...(request || {}) }) },
-    dirty: !!request, ui: {},
-  });
+  HD.openNewRequest = (request, name) => {
+    const def = HD.newRequestDef({ auth: { type: 'none' }, ...(request || {}) });
+    // A URL with a query string fills the Params table, as typing it would.
+    if (def.url && !(def.params && def.params.length) && !HD.isWebSocket(def)) HD.syncParamsFromUrl(def);
+    return addTab({ id: HD.uid(), kind: 'request', refId: null, draft: { name: name || 'Untitled Request', request: def }, dirty: !!request, ui: {} });
+  };
 
   HD.openContainer = (id, sub) => {
     const found = HD.find(id);

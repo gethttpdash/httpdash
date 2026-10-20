@@ -1,6 +1,6 @@
 {
   "name": "httpdash",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "HttpDash: a fast, local-first, Postman-compatible API client for macOS, Windows and Linux. No account, no cloud.",
   "homepage": "https://httpdash.com",
   "repository": {

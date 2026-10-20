@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-21
+
 ### Added
 - **Client certificates (mutual TLS):** add certificates per host (exact, wildcard or any) in **Settings → Certificates**, as CRT + KEY files or a PFX, with an optional passphrase. The Timeline shows which certificate was sent.
 - **Custom CA certificate:** trust your company's certificate authority without turning off SSL verification.
@@ -59,6 +61,7 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.0.0
