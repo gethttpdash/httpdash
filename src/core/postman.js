@@ -291,7 +291,8 @@ function importOpenApi(doc) {
         }
       }
       const opAuth = authFor(op.security);
-      if (opAuth && JSON.stringify(opAuth) !== JSON.stringify(col.auth)) def.auth = opAuth;
+      // An explicit opt-out (security: []) stays "No auth", even if the collection later gets auth.
+      if (opAuth && (opAuth.type === 'none' || JSON.stringify(opAuth) !== JSON.stringify(col.auth))) def.auth = opAuth;
 
       // Response examples, so the collection's mock server works straight after importing.
       const examples = [];
