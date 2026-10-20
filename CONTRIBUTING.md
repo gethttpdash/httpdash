@@ -56,4 +56,4 @@ Running Postman collections unchanged is one of HttpDash's main promises. If a c
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions are licensed under the project's license, the [Functional Source License, Version 1.1, ALv2 Future License](LICENSE) (FSL-1.1-ALv2), including its future Apache 2.0 grant.

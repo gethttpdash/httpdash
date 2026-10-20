@@ -1,10 +1,10 @@
 # HttpDash
 
 [![Build](https://github.com/gethttpdash/httpdash/actions/workflows/build.yml/badge.svg)](https://github.com/gethttpdash/httpdash/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/gethttpdash/httpdash)](https://github.com/gethttpdash/httpdash/releases/latest)
 
-**A free, open-source API client that runs your Postman collections and scripts, keeps everything on your machine, and logs in for you.** No account, no cloud. For macOS, Windows and Linux.
+**A free, source-available API client that runs your Postman collections and scripts, keeps everything on your machine, and logs in for you.** No account, no cloud. For macOS, Windows and Linux.
 
 Website: [httpdash.com](https://httpdash.com) · [Download](https://github.com/gethttpdash/httpdash/releases/latest) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
@@ -382,4 +382,10 @@ Bug reports, fixes and features are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 ## License
 
-[MIT](LICENSE)
+HttpDash is free to use and its source is available, under the [Functional Source License, Version 1.1, ALv2 Future License](LICENSE) (FSL-1.1-ALv2):
+
+- **You may** use HttpDash for any purpose, at work or at home, and read, modify and share its code, except for a *Competing Use*: offering HttpDash, or something built from it, as a commercial product or service that competes with it.
+- **After two years**, each version becomes available under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) as well, with no restrictions on competing use.
+- **Earlier versions:** HttpDash 1.2.0 and earlier were released under the MIT License, and remain so.
+
+Third-party code keeps its own license, such as the bundled copy of chai (MIT).
