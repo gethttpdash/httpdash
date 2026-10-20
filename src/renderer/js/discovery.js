@@ -163,7 +163,7 @@
     const p = PROVIDERS[src.provider];
 
     const text = (key, label, placeholder, help, type = 'text') => h('label.field', h('span', label),
-      h('input.input', { type, value: src[key] == null ? '' : src[key], placeholder, spellcheck: 'false', oninput: (e) => { src[key] = e.target.value; touch(); } }),
+      (type === 'password' ? HD.revealable : (x) => x)(h('input.input', { type, value: src[key] == null ? '' : src[key], placeholder, spellcheck: 'false', autocomplete: type === 'password' ? 'off' : undefined, oninput: (e) => { src[key] = e.target.value; touch(); } })),
       help ? h('span.field-help', help) : null);
     const check = (key, label) => h('label.check', h('input', { type: 'checkbox', checked: src[key] !== false && !!src[key], onchange: (e) => { src[key] = e.target.checked; touch(); } }), label);
     const select = (key, label, options, help) => h('label.field', h('span', label), HD.select(options, src[key], (v) => { src[key] = v; touch(); }), help ? h('span.field-help', help) : null);

@@ -255,7 +255,7 @@
       const tok = h('input.input', { type: 'password', placeholder: info.saved ? 'Saved (enter a new one to replace it)' : 'Personal access token', autocomplete: 'off' });
       tokenBox.append(
         h('label.field', h('span', 'User name'), user),
-        h('label.field', h('span', 'Access token'), tok),
+        h('label.field', h('span', 'Access token'), HD.revealable(tok)),
         h('div.team-token-actions',
           HD.button(info.saved ? 'Replace token' : 'Save token', async () => {
             if (!tok.value) { HD.toast('Enter the token first.', 'warn'); return; }

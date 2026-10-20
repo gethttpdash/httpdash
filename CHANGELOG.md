@@ -6,6 +6,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ### Added
 - **Import from a link:** paste the URL of an OpenAPI/Swagger spec or a Postman collection in the Import dialog, with an optional Bearer token for protected specs. It's fetched with your proxy, certificates and SSL settings.
+- **Show / hide on every masked field:** an eye button in each token, password and secret field (service discovery, Import from a link, request auth, team access token, certificate passphrase, the lock) shows what you typed or pasted, so a long token can be checked before it's used.
 
 ### Changed
 - **Readable everywhere:** all text now meets WCAG AA contrast (4.5:1) in both themes. Toasts (success, warning, error) were hard to read, and so were the primary buttons in dark mode, muted labels and timestamps, status badges and method tags, placeholders in dark mode, and some code colors. `npm run audit:contrast` checks every screen in both themes.

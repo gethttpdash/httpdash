@@ -538,7 +538,7 @@
       const cfg = (auth[t] = auth[t] || {});
       const field = (key, label, { type = 'text', placeholder = '', options, rerender } = {}) => h('label.field', h('span', label), options
         ? HD.select(options, cfg[key] || options[0][0], (v) => { cfg[key] = v; onChange(); if (rerender) render(); })
-        : h('input.input', { type, value: cfg[key] || '', placeholder, spellcheck: 'false', oninput: (e) => { cfg[key] = e.target.value; onChange(); } }));
+        : (type === 'password' ? HD.revealable : (x) => x)(h('input.input', { type, value: cfg[key] || '', placeholder, spellcheck: 'false', oninput: (e) => { cfg[key] = e.target.value; onChange(); } })));
 
       if (t === 'inherit') {
         const inh = inheritFrom ? inheritFrom() : { auth: { type: 'none' } };

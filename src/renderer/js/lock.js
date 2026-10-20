@@ -36,7 +36,7 @@
               render(HD.cleanErr(err));
             }
           },
-        }, h('div.muted.small', 'Sign in with your directory (LDAP) account.'), h('label.field', h('span', 'Username'), user), h('label.field', h('span', 'Password'), pass), msg, btn);
+        }, h('div.muted.small', 'Sign in with your directory (LDAP) account.'), h('label.field', h('span', 'Username'), user), h('label.field', h('span', 'Password'), HD.revealable(pass)), msg, btn);
         card.append(form, h('a.lock-link', { href: '#', onclick: (e) => { e.preventDefault(); mode = 'recovery'; render(); } }, 'LDAP server unavailable? Use a recovery code'));
         setTimeout(() => (user.value ? pass : user).focus(), 0);
       } else {
@@ -151,7 +151,7 @@
           input('searchFilter', 'Search filter', '(uid={username})', 'e.g. (&(objectClass=inetOrgPerson)(uid={username})) or (mail={username})'),
           input('bindDn', 'Service account DN (empty = anonymous search)', 'cn=readonly,dc=example,dc=com'),
           h('label.field', h('span', 'Service account password'),
-            h('input.input', { type: 'password', placeholder: cfg.bindPasswordSet ? '•••••••• (stored, leave empty to keep)' : '', oninput: (e) => { f.bindPassword = e.target.value; } })));
+            HD.revealable(h('input.input', { type: 'password', placeholder: cfg.bindPasswordSet ? '•••••••• (stored, leave empty to keep)' : '', oninput: (e) => { f.bindPassword = e.target.value; } }))));
       }
     };
     renderMode();
@@ -198,7 +198,7 @@
       modeFields,
       input('groupDn', 'Required group (optional)', 'cn=api-admins,ou=groups,dc=example,dc=com', 'Checks member, uniqueMember and memberUid.'),
       h('div.section-title', '2. Test a sign-in'),
-      h('div.field-row', h('label.field', h('span', 'Username'), testUser), h('label.field', h('span', 'Password'), testPass)),
+      h('div.field-row', h('label.field', h('span', 'Username'), testUser), h('label.field', h('span', 'Password'), HD.revealable(testPass))),
       h('div.button-row', HD.button('Test sign-in', async () => {
         HD.clear(testResult).appendChild(h('div.runner-progress', h('div.spinner.small'), 'Signing in…'));
         try {
@@ -226,7 +226,7 @@
     const pass = h('input.input', { type: 'password', placeholder: 'Password' });
     HD.modal({
       title, width: 400,
-      body: h('div', h('p.confirm-text', message), h('label.field', h('span', 'Username'), user), h('label.field', h('span', 'Password'), pass)),
+      body: h('div', h('p.confirm-text', message), h('label.field', h('span', 'Username'), user), h('label.field', h('span', 'Password'), HD.revealable(pass))),
       buttons: [
         { label: 'Cancel', onClick: () => { done = true; resolve(null); } },
         { label: 'Confirm', primary: true, onClick: () => { done = true; resolve({ username: user.value, password: pass.value }); } },

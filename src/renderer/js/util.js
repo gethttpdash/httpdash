@@ -96,6 +96,19 @@ HD.icon = (name) => {
   return svg;
 };
 
+// A masked field (a token, password or secret) with an eye button that shows what was typed or pasted, so a long
+// token can be checked before it's used. It's masked again whenever the field is drawn anew.
+HD.revealable = (input) => {
+  const btn = h('button.secret-reveal', { type: 'button', title: 'Show / hide', 'aria-label': 'Show value', 'aria-pressed': 'false', onclick: () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.setAttribute('aria-pressed', String(show));
+    btn.setAttribute('aria-label', show ? 'Hide value' : 'Show value');
+    input.focus();
+  } }, HD.icon('eye'));
+  return h('span.secret-field', input, btn);
+};
+
 HD.button = (label, onClick, opts = {}) => h('button', {
   class: ['btn', opts.primary && 'btn-primary', opts.danger && 'btn-danger', opts.ghost && 'btn-ghost', opts.small && 'btn-small', opts.icon && !label && 'btn-icon', opts.class].filter(Boolean).join(' '),
   title: opts.title || (typeof label === 'string' ? label : ''),

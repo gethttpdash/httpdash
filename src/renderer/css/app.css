@@ -389,6 +389,12 @@ textarea.input { height: auto; padding: 8px; resize: vertical; font-family: var(
 .kv-delete:hover { color: var(--err); background: var(--err-soft); }
 .kv-reveal { position: absolute; right: 4px; }
 .kv-reveal:hover { color: var(--text); }
+/* A masked field with its show / hide button inside the field's right edge (HD.revealable). */
+.secret-field { position: relative; display: flex; min-width: 0; }
+.secret-field > .input { flex: 1; min-width: 0; padding-right: 32px; }
+.secret-reveal { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: none; cursor: pointer; color: var(--text-3); padding: 4px; border-radius: 4px; display: grid; place-items: center; }
+.secret-reveal:hover, .secret-reveal[aria-pressed="true"] { color: var(--text); }
+.secret-reveal:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* CodeMirror */
 .CodeMirror { font-family: var(--mono); font-size: var(--editor-font-size); background: var(--bg); color: var(--text); height: 100%; }
@@ -861,7 +867,7 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .sse-detail-actions { position: absolute; right: 8px; top: 4px; }
 .import-link-row { display: flex; gap: 8px; align-items: center; }
 .import-link-row .import-link { flex: 1; }
-.import-link-row .import-token { width: 200px; }
+.import-link-row .secret-field { width: 200px; }
 
 /* Placeholders use the muted text color (the browser default is too faint on dark backgrounds). */
 ::placeholder { color: var(--text-3); opacity: 1; }

@@ -97,7 +97,7 @@
           }, { primary: true, icon: 'upload' }),
           h('div.muted.small', 'HttpDash backups, Postman collections (v2.0 / v2.1), environments and globals, OpenAPI 3 / Swagger 2 (JSON or YAML). Select several files at once to import a whole Postman export folder.')),
         h('div.or', 'or import from a link'),
-        h('div.import-link-row', link, linkToken, HD.button('Fetch', () => fromLink(), { small: true })),
+        h('div.import-link-row', link, HD.revealable(linkToken), HD.button('Fetch', () => fromLink(), { small: true })),
         h('div.or', 'or paste raw text'),
         ta),
       buttons: [
@@ -300,7 +300,7 @@
       const btn = HD.button('Choose…', async () => { const f = await choose(filters); if (f) { draft[key] = f; name.textContent = base(f); name.title = f; } }, { small: true });
       return h('div.field', h('span', label), h('div.cert-file-row', btn, name));
     };
-    const input = (key, label, opts = {}) => h('label.field', h('span', label), h('input.input', { type: opts.type || 'text', placeholder: opts.placeholder || '', spellcheck: 'false', oninput: (e) => { draft[key] = e.target.value; } }));
+    const input = (key, label, opts = {}) => h('label.field', h('span', label), (opts.type === 'password' ? HD.revealable : (x) => x)(h('input.input', { type: opts.type || 'text', placeholder: opts.placeholder || '', spellcheck: 'false', oninput: (e) => { draft[key] = e.target.value; } })));
     const form = h('div.cert-form',
       h('div.field-row', input('host', 'Host', { placeholder: 'api.example.com or *.example.com' }), input('port', 'Port (optional)', { placeholder: '443' })),
       h('div.field-row', fileField('crt', 'CRT file', PEM), fileField('key', 'KEY file', PEM)),
