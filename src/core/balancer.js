@@ -20,7 +20,10 @@ function pick(variable, pool) {
   const all = (pool.instances || []).filter((i) => i && i.url);
   const healthy = all.filter((i) => i.healthy !== false);
   const list = healthy.length ? healthy : all;
-  if (!list.length || pool.strategy === 'first' || !pool.strategy) return { id: '', url: String(pool.default) };
+  if (!list.length || pool.strategy === 'first' || !pool.strategy) {
+    const own = all.find((i) => i.url === String(pool.default));
+    return { id: own ? own.id || '' : '', url: String(pool.default) };
+  }
   if (pool.strategy === 'random') return list[Math.floor(Math.random() * list.length)];
   const key = `${pool.sourceId}|${variable}`;
   const n = positions.get(key) || 0;

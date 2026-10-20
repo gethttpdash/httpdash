@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('api', {
   syncDiscovery: invoke('discovery:sync'),
   discoveryMetrics: invoke('discovery:metrics'),
   resetDiscoveryMetrics: invoke('discovery:resetMetrics'),
+  exportReport: invoke('report:export'),
   openExternal: invoke('shell:openExternal'),
   lock: {
     status: invoke('lock:status'),

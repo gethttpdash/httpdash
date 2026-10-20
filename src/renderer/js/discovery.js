@@ -66,6 +66,8 @@
     return Object.keys(pools).length ? pools : null;
   };
 
+  // 2026-10-21-0447, in local time, for file names.
+  HD.localStamp = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
   const hostOf = (url) => { try { return new URL(url).host; } catch { return url; } };
   /** How an instance is named in tables: its ID (pod, service instance) and address. */
   HD.instanceLabel = (r) => r.servedBy || r.instanceId || hostOf(r.instance);
@@ -98,39 +100,58 @@
    * `known` ({ service: [{ id, url, healthy }] }) lists instances that had no traffic yet as well,
    * so an instance that never gets a request stands out.
    */
-  HD.trafficTable = (rows, known = {}) => {
-    const all = [...rows];
+  /**
+   * The rows of a traffic table, grouped by service, busiest first, each with its share of the
+   * service's requests and its flags ([{ kind: 'slow' | 'failing' | 'left the pool', why }]).
+   * `known` ({ service: [{ id, url, healthy }] }, the last sync's instances) adds instances that
+   * had no traffic yet, so one that never gets a request stands out, and marks those that are no
+   * longer in the pool. An instance counted by a load balancer's header isn't listed again empty.
+   */
+  HD.trafficRows = (rows, known = {}) => {
+    const all = rows.map((r) => ({ ...r }));
     for (const [service, instances] of Object.entries(known)) {
       for (const i of instances) {
-        if (!all.some((r) => r.service === service && r.instance === i.url && !r.servedBy)) {
-          all.push({ service, instance: i.url, instanceId: i.id || '', servedBy: '', requests: 0, status: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 }, errors: 0, p50: null, p95: null, healthy: i.healthy });
-        }
+        if (all.some((r) => r.service === service && r.instance === i.url)) continue;
+        all.push({ service, instance: i.url, instanceId: i.id || '', servedBy: '', requests: 0, status: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 }, errors: 0, p50: null, p95: null, avg: null, healthy: i.healthy });
       }
     }
     const services = [...new Set(all.map((r) => r.service))].sort();
+    return services.flatMap((service) => {
+      const list = all.filter((r) => r.service === service).sort((a, b) => b.requests - a.requests || HD.instanceLabel(a).localeCompare(HD.instanceLabel(b)));
+      const total = list.reduce((n, r) => n + r.requests, 0);
+      const pool = known[service];
+      return list.map((r) => {
+        const flags = HD.trafficFlags(r, list);
+        if (pool && !r.servedBy && !pool.some((i) => i.url === r.instance)) flags.push({ kind: 'left the pool', why: 'Not in the last sync: the registry no longer lists it (a failed health check, a scale-down or a redeploy)' });
+        return { ...r, share: total ? r.requests / total : 0, serviceTotal: total, flags };
+      });
+    });
+  };
+
+  const FLAG_PILL = { slow: 'changed', failing: 'removed' };
+  HD.trafficTable = (rows, known = {}) => {
+    const list = HD.trafficRows(rows, known);
+    const services = [...new Set(list.map((r) => r.service))];
     const ms = (v) => (v == null ? '—' : HD.formatMs(v));
-    const flags = (r, siblings) => HD.trafficFlags(r, siblings).map((f) => h(`span.pill.${f.kind === 'slow' ? 'changed' : 'removed'}`, { title: f.why }, f.kind));
     return h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
       h('thead', h('tr', h('th', 'Instance'), h('th.num', { title: 'Requests' }, 'Req.'), h('th', 'Share'), h('th.num', { title: 'Median response time' }, 'p50'), h('th.num', { title: '95th percentile: 1 in 20 requests is slower' }, 'p95'),
         h('th.num', { title: '2xx and 3xx responses' }, 'OK'), h('th.num', '4xx'), h('th.num', '5xx'), h('th.num', { title: 'Connection errors and timeouts' }, 'Err'))),
       h('tbody', services.flatMap((service) => {
-        const list = all.filter((r) => r.service === service).sort((a, b) => b.requests - a.requests || HD.instanceLabel(a).localeCompare(HD.instanceLabel(b)));
-        const total = list.reduce((n, r) => n + r.requests, 0);
+        const group = list.filter((r) => r.service === service);
+        const total = group[0].serviceTotal;
         return [
-          services.length > 1 || list.length > 1 ? h('tr.traffic-service', h('td', { colspan: 9 }, h('strong', service), h('span.muted.small', ` · ${total} request${total === 1 ? '' : 's'}`))) : null,
-          ...list.map((r) => {
-            const share = total ? r.requests / total : 0;
-            return h('tr', { class: r.healthy === false ? 'muted' : '' },
-              h('td', h('div.traffic-name', HD.instanceLabel(r), r.healthy === false ? h('span.small.text-warn', 'not ready') : null, ...flags(r, list)),
-                h('div.muted.small.mono', r.servedBy ? `answered via ${hostOf(r.instance)}` : r.instanceId ? hostOf(r.instance) : '')),
-              h('td.num', String(r.requests)),
-              h('td', h('div.share', h('div.share-bar', h('span', { style: `width:${Math.round(share * 100)}%` })), h('span.small.muted', `${Math.round(share * 100)}%`))),
-              h('td.num', ms(r.p50)), h('td.num', ms(r.p95)),
-              h('td.num', String(r.status['2xx'] + r.status['3xx'])),
-              h('td.num', { class: r.status['4xx'] ? 'text-warn' : '' }, String(r.status['4xx'])),
-              h('td.num', { class: r.status['5xx'] ? 'text-error' : '' }, String(r.status['5xx'])),
-              h('td.num', { class: r.errors ? 'text-error' : '' }, String(r.errors)));
-          }),
+          services.length > 1 || group.length > 1 ? h('tr.traffic-service', h('td', { colspan: 9 }, h('strong', service), h('span.muted.small', ` · ${total} request${total === 1 ? '' : 's'}`))) : null,
+          ...group.map((r) => h('tr', { class: r.healthy === false ? 'muted' : '' },
+            h('td', h('div.traffic-name', HD.instanceLabel(r), r.healthy === false ? h('span.small.text-warn', 'not ready') : null,
+              ...r.flags.map((f) => h(`span.pill.${FLAG_PILL[f.kind] || 'muted'}`, { title: f.why }, f.kind))),
+              h('div.muted.small.mono', r.servedBy ? `answered via ${hostOf(r.instance)}` : r.instanceId ? hostOf(r.instance) : '')),
+            h('td.num', String(r.requests)),
+            h('td', h('div.share', h('div.share-bar', h('span', { style: `width:${Math.round(r.share * 100)}%` })), h('span.small.muted', `${Math.round(r.share * 100)}%`))),
+            h('td.num', ms(r.p50)), h('td.num', ms(r.p95)),
+            h('td.num', String(r.status['2xx'] + r.status['3xx'])),
+            h('td.num', { class: r.status['4xx'] ? 'text-warn' : '' }, String(r.status['4xx'])),
+            h('td.num', { class: r.status['5xx'] ? 'text-error' : '' }, String(r.status['5xx'])),
+            h('td.num', { class: r.errors ? 'text-error' : '' }, String(r.errors)))),
         ];
       }))));
   };
@@ -471,7 +492,25 @@
       if (!isOpenApi(src)) for (const svc of services) if (svc.instances && svc.instances.some((i) => i.url)) known[svc.name] = svc.instances.filter((i) => i.url);
       const strategy = isOpenApi(src) ? null : { 'round-robin': 'each instance in turn (round robin)', random: 'a random instance' }[src.balance] || 'the first instance';
       const total = m.rows.reduce((n, r) => n + r.requests, 0);
-      const flagged = m.rows.flatMap((r) => HD.trafficFlags(r, m.rows.filter((x) => x.service === r.service)));
+      const rows = HD.trafficRows(m.rows, known);
+      const flagged = rows.flatMap((r) => r.flags);
+      const answering = new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size;
+      // The report every export format is made from: what this page shows.
+      const report = () => ({
+        source: src.name, registry: PROVIDERS[src.provider].label, strategy, header: src.instanceHeader || '', since: m.since, generatedAt: Date.now(),
+        totals: { requests: total, instances: answering, slow: flagged.filter((f) => f.kind === 'slow').length, failing: flagged.filter((f) => f.kind === 'failing').length },
+        rows: rows.map((r) => ({
+          service: r.service, instanceId: r.instanceId, instance: r.instance, servedBy: r.servedBy, requests: r.requests, share: r.share,
+          p50: r.p50, p95: r.p95, avg: r.avg, ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
+        })),
+        recent: m.recent || [],
+      });
+      const exportAs = async (format) => {
+        try {
+          const file = await window.api.exportReport({ format, name: `${src.name} traffic ${HD.localStamp()}`, report: report() });
+          if (file) HD.toast(`Saved ${file.split(/[\\/]/).pop()}`, 'success');
+        } catch (e) { HD.toast(HD.cleanErr(e), 'error', 6000); }
+      };
       HD.clear(traffic);
       traffic.dataset.drawn = '1';
       traffic.appendChild(h('div.traffic-bar',
@@ -483,6 +522,15 @@
         ].filter(Boolean).join(' · ')),
         h('span.spacer'),
         HD.button('Change', () => { tab.ui.sub = 'config'; HD.save(); rerender(); }, { small: true, ghost: true }),
+        HD.button('Export', (e) => HD.menu(e, [
+          { label: 'Excel (.xlsx)', hint: 'by instance + recent', onClick: () => exportAs('xlsx') },
+          { label: 'CSV', hint: 'by instance', onClick: () => exportAs('csv') },
+          { label: 'PDF', onClick: () => exportAs('pdf') },
+          { label: 'Image (.png)', onClick: () => exportAs('png') },
+          { label: 'HTML page', onClick: () => exportAs('html') },
+          { label: 'Markdown', hint: 'for a ticket or chat', onClick: () => exportAs('md') },
+          { label: 'JSON', onClick: () => exportAs('json') },
+        ]), { small: true, icon: 'upload', disabled: !m.rows.length, title: 'Export this report' }),
         HD.button('Reset', async () => { await window.api.resetDiscoveryMetrics(src.id); renderTraffic(); }, { small: true, disabled: !m.rows.length })));
       if (!services.length && !m.rows.length) {
         traffic.appendChild(h('div.empty-state.small', h('div', 'Nothing to show yet: sync this source first.'),
@@ -490,7 +538,7 @@
       } else {
         traffic.appendChild(h('div.runner-summary.traffic-summary',
           h('div.stat', h('div.stat-value', String(total)), h('div.stat-label', 'Requests')),
-          h('div.stat', h('div.stat-value', String(new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size)), h('div.stat-label', 'Instances answering')),
+          h('div.stat', h('div.stat-value', String(answering)), h('div.stat-label', 'Instances answering')),
           h('div.stat', { class: flagged.some((f) => f.kind === 'slow') ? 'warn' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'slow').length)), h('div.stat-label', 'Slow')),
           h('div.stat', { class: flagged.some((f) => f.kind === 'failing') ? 'fail' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'failing').length)), h('div.stat-label', 'Failing'))));
         traffic.appendChild(HD.trafficTable(m.rows, known));

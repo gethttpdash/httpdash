@@ -15,6 +15,7 @@ const { makeLookup } = require('../core/dependency');
 const discovery = require('../core/discovery');
 const openapiSync = require('../core/openapi-sync');
 const balancer = require('../core/balancer');
+const trafficReport = require('../core/traffic-report');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -396,6 +397,49 @@ handle('file:savePng', async ({ name, base64 }) => {
   fs.writeFileSync(r.filePath, Buffer.from(base64, 'base64'));
   return r.filePath;
 });
+// A discovery source's traffic report, in the chosen format. PDF and PNG are made from the report's
+// HTML page in a hidden, sandboxed window (no scripts in the page, no Node, no preload).
+const REPORT_FORMATS = {
+  csv: ['CSV', 'csv'], xlsx: ['Excel workbook', 'xlsx'], json: ['JSON', 'json'], md: ['Markdown', 'md'],
+  html: ['HTML page', 'html'], pdf: ['PDF', 'pdf'], png: ['PNG image', 'png'],
+};
+async function renderReportPage(html, fn) {
+  const page = new BrowserWindow({ show: false, width: 1100, height: 800, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+  page.webContents.on('will-navigate', (e) => e.preventDefault());
+  page.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  try {
+    await page.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    return await fn(page);
+  } finally {
+    page.destroy();
+  }
+}
+handle('report:export', async ({ format, name, report: input }) => {
+  const kind = REPORT_FORMATS[format];
+  if (!kind) throw new Error(`Unknown report format "${format}"`);
+  const report = trafficReport.normalize(input || {});
+  const r = await dialog.showSaveDialog(win, { defaultPath: `${safeName(name || 'traffic-report')}.${kind[1]}`, filters: [{ name: kind[0], extensions: [kind[1]] }] });
+  if (r.canceled || !r.filePath) return null;
+  let data;
+  if (format === 'csv') data = trafficReport.toCsv(report);
+  else if (format === 'xlsx') data = trafficReport.toXlsx(report);
+  else if (format === 'json') data = trafficReport.toJson(report);
+  else if (format === 'md') data = trafficReport.toMarkdown(report);
+  else if (format === 'html') data = trafficReport.toHtml(report);
+  else if (format === 'pdf') data = await renderReportPage(trafficReport.toHtml(report), (page) => page.webContents.printToPDF({ printBackground: true, pageSize: 'A4', landscape: true }));
+  else {
+    data = await renderReportPage(trafficReport.toHtml(report), async (page) => {
+      // The image is as tall as the report.
+      const height = await page.webContents.executeJavaScript('Math.ceil(document.documentElement.scrollHeight)');
+      page.setContentSize(1100, Math.min(Math.max(height, 200), 8000));
+      await new Promise((res) => setTimeout(res, 150));
+      return (await page.webContents.capturePage()).toPNG();
+    });
+  }
+  fs.writeFileSync(r.filePath, data);
+  return r.filePath;
+});
+
 // Export everything: a restorable HttpDash backup, or a folder of Postman collection/environment files.
 handle('export:all', async ({ workspace, format, excludeSecrets }) => {
   const date = new Date().toISOString().slice(0, 10);
