@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-21
+
 ### Added
 ### Changed
 - **Large responses stay fast.** Responses over 2 MB show their first 512 KB with **Show all** and **Save to file** buttons, instead of freezing the window: a 20 MB JSON response now renders in about 40 ms instead of 2 seconds. Highlighting and code folding are turned off when you show all of a large response. The limit is in Settings → General.
@@ -41,5 +43,6 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.1.0
 [1.0.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.0.0
