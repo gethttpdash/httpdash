@@ -44,7 +44,9 @@ test('round robin spreads requests and records the instance each one went to', a
     }
     assert.deepStrictEqual(seen, ['a', 'b', 'c', 'a', 'b', 'c']);
     const m = balancer.metrics('src1');
-    assert.deepStrictEqual(m.rows.map((r) => [r.instanceId, r.requests, r.status['2xx']]), [['orders-1', 2, 2], ['orders-2', 2, 2], ['orders-3', 2, 2]]);
+    // Rows with equal counts are ordered by address, and the test servers' ports are random.
+    const byId = (rows) => [...rows].sort((a, b) => a.instanceId.localeCompare(b.instanceId));
+    assert.deepStrictEqual(byId(m.rows).map((r) => [r.instanceId, r.requests, r.status['2xx']]), [['orders-1', 2, 2], ['orders-2', 2, 2], ['orders-3', 2, 2]]);
     const slow = m.rows.find((r) => r.instanceId === 'orders-3');
     assert.ok(slow.p50 >= 100, `the slow instance's p50 is ${slow.p50}`);
     assert.ok(m.rows.find((r) => r.instanceId === 'orders-1').p50 < 100);
@@ -81,7 +83,7 @@ test('unhealthy instances are skipped; the header names who answered; errors are
       names.push(res.routing[0].servedBy);
     }
     assert.deepStrictEqual(names, ['pod-a', 'pod-b', 'pod-a', 'pod-b']);
-    const rows = balancer.metrics('src1').rows;
+    const rows = [...balancer.metrics('src1').rows].sort((a, b) => a.servedBy.localeCompare(b.servedBy));
     assert.deepStrictEqual(rows.map((r) => [r.servedBy, r.status['2xx'], r.status['5xx']]), [['pod-a', 2, 0], ['pod-b', 0, 2]]);
     // An instance that can't be reached counts as an error.
     const down = await execute({ request: newRequestDef({ url: '{{orders_url}}/x' }), scopes: { ...sc, pools: poolFor(['http://127.0.0.1:1'], { sourceId: 'src2' }), environment: { orders_url: 'http://127.0.0.1:1' } } });
@@ -99,7 +101,7 @@ test('a collection run sums its own traffic by instance', async () => {
     col.items.push(newRequestItem('List', { url: '{{orders_url}}/orders' }), newRequestItem('Other', { url: `${inst.urls[0]}/no-pool` }));
     const summary = await run({ collection: col, scopes: { globals: {}, environment: { orders_url: inst.urls[0] }, pools: poolFor(inst.urls) }, iterations: 6 });
     assert.strictEqual(summary.requests, 12);
-    assert.deepStrictEqual(summary.instances.map((r) => [r.instanceId, r.requests]), [['orders-1', 2], ['orders-2', 2], ['orders-3', 2]]);
+    assert.deepStrictEqual([...summary.instances].sort((a, b) => a.instanceId.localeCompare(b.instanceId)).map((r) => [r.instanceId, r.requests]), [['orders-1', 2], ['orders-2', 2], ['orders-3', 2]]);
     assert.ok(summary.results[0].routing[0].instance);
     assert.strictEqual(summary.results[1].routing, undefined);
   } finally { inst.close(); }
