@@ -294,6 +294,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Status, time and size, with a breakdown of DNS / connect / TLS / first byte
 - Pretty (JSON / XML / HTML formatting), **Table**, Raw, Preview (sandboxed HTML, images) and Visualize (`pm.visualizer.set` with Handlebars-style templates)
 - **Table view** for JSON: arrays of objects become sortable tables, objects become key/value tables, and nested values open as tables in place. Filter rows as you type. Long tables are virtual (only the rows on screen are drawn), so a 100,000-row response opens in about 0.1 s and scrolls smoothly, even when the big array is nested inside another object.
+- **Export** a table as an Excel workbook, CSV (UTF-8, opens correctly in Excel) or a PNG image, following the current filter and sort. Nested objects become dotted columns (`address.city`); Excel cells keep numbers and booleans typed, with a bold, frozen header.
 - Search, line wrap, copy, save to file, save as example
 - Large responses (over 2 MB by default) show their first 512 KB until you click **Show all**, so the window never freezes
 - Headers, cookies, test results with filters, and a timeline showing the request actually sent and any redirects

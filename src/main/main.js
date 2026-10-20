@@ -353,6 +353,28 @@ handle('export:collection', (col) => saveJson(`${safeName(col.name)}.postman_col
 handle('export:environment', (env) => saveJson(`${safeName(env.name)}.postman_environment.json`, postman.exportEnvironment(env)));
 handle('export:globals', (values) => saveJson('globals.postman_globals.json', { ...postman.exportEnvironment({ id: 'globals', name: 'Globals', values }), _postman_variable_scope: 'globals' }));
 handle('export:json', ({ name, data }) => saveJson(name, data));
+// Table view exports: records become a CSV file or an Excel workbook; images arrive as PNG data.
+const tabular = require('../core/tabular');
+handle('table:export', async ({ format, name, records }) => {
+  const base = safeName(name || 'table');
+  const xlsx = format === 'xlsx';
+  const r = await dialog.showSaveDialog(win, {
+    defaultPath: `${base}.${xlsx ? 'xlsx' : 'csv'}`,
+    filters: [xlsx ? { name: 'Excel workbook', extensions: ['xlsx'] } : { name: 'CSV', extensions: ['csv'] }],
+  });
+  if (r.canceled || !r.filePath) return null;
+  const table = tabular.flatten(records || []);
+  // CSV gets a byte-order mark so Excel reads it as UTF-8.
+  fs.writeFileSync(r.filePath, xlsx ? tabular.toXlsx(table, { sheetName: name || 'Data' }) : `\uFEFF${tabular.toCsv(table)}`);
+  return r.filePath;
+});
+handle('table:flatten', ({ records }) => tabular.flatten(records || []));
+handle('file:savePng', async ({ name, base64 }) => {
+  const r = await dialog.showSaveDialog(win, { defaultPath: `${safeName(name || 'table')}.png`, filters: [{ name: 'PNG image', extensions: ['png'] }] });
+  if (r.canceled || !r.filePath) return null;
+  fs.writeFileSync(r.filePath, Buffer.from(base64, 'base64'));
+  return r.filePath;
+});
 // Export everything: a restorable HttpDash backup, or a folder of Postman collection/environment files.
 handle('export:all', async ({ workspace, format, excludeSecrets }) => {
   const date = new Date().toISOString().slice(0, 10);

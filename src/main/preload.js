@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld('api', {
   stopRun: invoke('runner:stop'),
   onRunnerEvent: (fn) => ipcRenderer.on('runner:event', (_e, evt) => fn(evt)),
   onRequestStream: (fn) => ipcRenderer.on('request:stream', (_e, msg) => fn(msg)),
+  exportTable: invoke('table:export'),
+  savePng: invoke('file:savePng'),
+  flattenTable: invoke('table:flatten'),
   ws: {
     connect: invoke('ws:connect'),
     send: invoke('ws:send'),
