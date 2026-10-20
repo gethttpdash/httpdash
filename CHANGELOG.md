@@ -13,6 +13,9 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - OpenAPI import: when every operation uses the same auth, it's set once on the collection and the requests inherit it.
 - **License:** from this version on, HttpDash is licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). It stays free to use, at work too, and the source stays available; what it doesn't allow is offering HttpDash, or a fork, as a competing commercial product or service. Each version also becomes Apache 2.0 two years after its release. HttpDash 1.2.0 and earlier remain under the MIT License.
 
+### Fixed
+- **Service discovery names follow the registry type:** a new source was named "Consul services" whatever type you then picked, and so was the environment its first sync created. Until you type a name of your own, the name now follows the type (for example "Custom JSON services"), along with the environment it created. Sources and environments saved with the old name are corrected when HttpDash starts.
+
 ## [1.2.0] - 2026-10-21
 
 ### Added

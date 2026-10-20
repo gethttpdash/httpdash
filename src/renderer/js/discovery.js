@@ -6,18 +6,34 @@
   const S = HD.S;
 
   const PROVIDERS = {
-    consul: { label: 'Consul', url: 'http://consul.service.consul:8500', tokenLabel: 'ACL token (X-Consul-Token)', help: 'Reads /v1/catalog/services and each service\'s healthy instances.' },
-    eureka: { label: 'Eureka (Spring Cloud)', url: 'http://eureka:8761', tokenLabel: 'Authorization (optional, e.g. "Basic …")', help: 'Reads /eureka/apps and uses each app\'s home page URL or host:port.' },
-    kubernetes: { label: 'Kubernetes', url: 'https://kubernetes.example.com:6443', tokenLabel: 'Bearer token (service account)', help: 'Lists Services in a namespace through the API server.' },
-    json: { label: 'Custom JSON endpoint', url: 'https://registry.example.com/services', tokenLabel: 'Authorization (optional)', help: 'Any endpoint returning a list of services or a { name: url } map.' },
+    consul: { label: 'Consul', short: 'Consul', url: 'http://consul.service.consul:8500', tokenLabel: 'ACL token (X-Consul-Token)', help: 'Reads /v1/catalog/services and each service\'s healthy instances.' },
+    eureka: { label: 'Eureka (Spring Cloud)', short: 'Eureka', url: 'http://eureka:8761', tokenLabel: 'Authorization (optional, e.g. "Basic …")', help: 'Reads /eureka/apps and uses each app\'s home page URL or host:port.' },
+    kubernetes: { label: 'Kubernetes', short: 'Kubernetes', url: 'https://kubernetes.example.com:6443', tokenLabel: 'Bearer token (service account)', help: 'Lists Services in a namespace through the API server.' },
+    json: { label: 'Custom JSON endpoint', short: 'Custom JSON', url: 'https://registry.example.com/services', tokenLabel: 'Authorization (optional)', help: 'Any endpoint returning a list of services or a { name: url } map.' },
   };
   HD.DISCOVERY_PROVIDERS = PROVIDERS;
 
   const sources = () => (S.ws.discoverySources = S.ws.discoverySources || []);
   HD.discoverySources = sources;
 
+  // A source keeps its registry type's name until someone types their own, so the name follows the type: a source
+  // made as Consul and switched to Custom JSON was left "Consul services", and so was the environment it created.
+  const defaultName = (provider) => `${PROVIDERS[provider].short} services`;
+  const isDefaultName = (name) => name === 'Custom services' || Object.keys(PROVIDERS).some((p) => name === defaultName(p));
+  const followType = (src) => {
+    const name = defaultName(src.provider);
+    if (src.name === name || !isDefaultName(src.name)) return false;
+    // Its environment too, while it still has the name the source gave it on its first sync.
+    const env = S.ws.environments.find((e) => e.id === src.environmentId);
+    if (env && env.name === src.name) env.name = name;
+    src.name = name;
+    return true;
+  };
+  // Sources saved before the name followed the type, put right when the workspace loads.
+  HD.tidyDiscoveryNames = () => { if (sources().map(followType).some(Boolean)) HD.save(); };
+
   HD.newDiscoverySource = (provider = 'consul') => ({
-    id: HD.uid(), name: `${PROVIDERS[provider].label.split(' ')[0]} services`, provider, url: '', token: '', headers: [],
+    id: HD.uid(), name: defaultName(provider), provider, url: '', token: '', headers: [],
     variablePattern: '{name}_url', verifySSL: provider !== 'kubernetes', keepMissing: false, syncOnStartup: false, environmentId: null,
     datacenter: '', tag: '', scheme: 'http', onlyHealthy: true, onlyUp: true,
     namespace: 'default', addressMode: 'cluster-dns', labelSelector: '',
@@ -191,6 +207,7 @@
         h('label.field', h('span', 'Registry type'), HD.select(Object.entries(PROVIDERS).map(([id, x]) => [id, x.label]), src.provider, (v) => {
           src.provider = v;
           if (v === 'kubernetes') src.verifySSL = false;
+          if (followType(src)) { HD.renderSidebar(); HD.renderTabBar(); HD.renderEnvSelect(); }
           touch();
           rerender();
         })),

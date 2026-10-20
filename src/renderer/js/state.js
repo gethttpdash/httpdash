@@ -46,6 +46,7 @@
     ws.ui = { sidebarWidth: 300, sidebarTab: 'collections', layout: 'vertical', consoleOpen: false, ...(ws.ui || {}) };
     ws.settings = ws.settings || {};
     ws.settings.proxy = ws.settings.proxy || { enabled: false, host: '', port: 8080 };
+    if (HD.tidyDiscoveryNames) HD.tidyDiscoveryNames();
   };
 
   // ---- Tree helpers -----------------------------------------------------------------------
