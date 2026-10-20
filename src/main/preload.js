@@ -31,6 +31,12 @@ contextBridge.exposeInMainWorld('api', {
   runCollection: invoke('runner:start'),
   stopRun: invoke('runner:stop'),
   onRunnerEvent: (fn) => ipcRenderer.on('runner:event', (_e, evt) => fn(evt)),
+  ws: {
+    connect: invoke('ws:connect'),
+    send: invoke('ws:send'),
+    close: invoke('ws:close'),
+    onEvent: (fn) => ipcRenderer.on('ws:event', (_e, evt) => fn(evt)),
+  },
 
   cookies: {
     list: invoke('cookies:list'),

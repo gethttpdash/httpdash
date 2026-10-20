@@ -10,7 +10,7 @@ function flatten(collection, folderId) {
   const walk = (node, chain) => {
     for (const child of node.items || []) {
       if (child.type === 'folder') walk(child, [...chain, child]);
-      else out.push({ item: child, chain });
+      else if (!child.request || child.request.protocol !== 'websocket') out.push({ item: child, chain }); // the runner sends HTTP requests only
     }
   };
   if (folderId) {

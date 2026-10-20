@@ -227,6 +227,18 @@ To add a registry, open **Environments** in the sidebar and click **Service disc
 
 ![Service discovery preview](docs/screenshots/14-discovery-preview.png)
 
+## WebSocket requests
+
+Create one with **New → WebSocket Request**, or **Add WebSocket request** on a collection or folder. It's saved like any request (shown as **WS**), so it lives in collections and syncs with your team.
+
+- **Connect** to a `ws://` or `wss://` URL. `{{variables}}` work in the URL, headers and messages.
+- **Handshake:** your headers, plus the auth inherited from the collection or folder (Bearer, Basic, API key, OAuth 2.0…) and matching cookies, are sent with the handshake. Subprotocols go in **Settings**. Client certificates, trusted CAs, the proxy and SSL verification apply as for HTTP. Click the "Connected" line in the log to see the exact handshake.
+- **Messages:** write text or JSON and press **Send** (Ctrl/Cmd+Enter). Save messages you use often and reuse them with one click.
+- **Log:** everything sent (↑) and received (↓) with times and sizes. Click a message to see it pretty-printed and copy it; filter as you type. Pings are answered automatically, and the close code and reason are shown when the connection ends.
+- If the server refuses the upgrade, its status and response body are shown, so a 401 or 403 is easy to diagnose.
+
+The collection runner, mock servers and Postman export skip WebSocket requests.
+
 ## Client certificates and custom CAs
 
 For APIs that use mutual TLS, add a client certificate in **Settings → Certificates**:
@@ -319,7 +331,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 
 ## Not included
 
-Compared with Postman, these are not implemented: WebSocket, gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead).
+Compared with Postman, these are not implemented: gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead).
 
 Scripts run in a sandbox: QuickJS, a separate JavaScript engine compiled to WebAssembly, with a fresh engine per script and limits of 30 seconds and 256 MB. They can't reach Node, files, other processes or HttpDash's own data. They can still send requests with `pm.sendRequest` and read the variables in scope, so review scripts from people you don't trust before running them. See [SECURITY.md](SECURITY.md).
 

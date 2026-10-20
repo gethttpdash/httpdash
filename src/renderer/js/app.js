@@ -107,6 +107,7 @@
       if (choice === 'save' && !(await HD.saveTab(tab))) return;
     }
     if (S.sending.get(id)) window.api.cancel(id);
+    HD.closeWebSocketTab(id);
     const idx = S.ws.tabs.indexOf(tab);
     S.ws.tabs.splice(idx, 1);
     S.responses.delete(id);
@@ -236,6 +237,7 @@
       h('div.brand', h('span.brand-mark', 'H'), h('span', 'HttpDash')),
       HD.button('New', (e) => HD.menu(e, [
         { label: 'HTTP Request', hint: 'Ctrl+T', onClick: () => HD.openNewRequest() },
+        { label: 'WebSocket Request', onClick: () => HD.openNewWebSocket() },
         { label: 'Collection', onClick: async () => { const n = await HD.prompt('New collection', 'Name', 'New Collection'); if (n) { const c = HD.newCollection(n); S.ws.collections.push(c); HD.save(); S.ws.ui.sidebarTab = 'collections'; HD.renderSidebar(); HD.openContainer(c.id); } } },
         { label: 'Environment', onClick: async () => { const n = await HD.prompt('New environment', 'Name', 'New Environment'); if (n) { const env = HD.newEnvironment(n); S.ws.environments.push(env); HD.save(); HD.renderEnvSelect(); S.ws.ui.sidebarTab = 'environments'; HD.renderSidebar(); HD.openEnvironment(env.id); } } },
       ]), { icon: 'plus', small: true }),

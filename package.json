@@ -52,7 +52,8 @@
     "electron": "43.7.8",
     "electron-builder": "26.15.3",
     "esbuild": "0.25.10",
-    "ldapjs": "^3.0.7"
+    "ldapjs": "^3.0.7",
+    "ws": "8.22.0"
   },
   "build": {
     "appId": "com.httpdash.app",

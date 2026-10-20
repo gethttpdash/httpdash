@@ -433,9 +433,12 @@ function exportBody(b) {
   return undefined;
 }
 
+// Postman's collection format has no WebSocket requests, so those are left out of exports.
+const isWebSocketItem = (item) => item.type !== 'folder' && item.request && item.request.protocol === 'websocket';
+
 function exportItem(item) {
   if (item.type === 'folder') {
-    return { name: item.name, description: item.description || undefined, item: item.items.map(exportItem), auth: exportAuth(item.auth), event: exportEvents(item) };
+    return { name: item.name, description: item.description || undefined, item: item.items.filter((i) => !isWebSocketItem(i)).map(exportItem), auth: exportAuth(item.auth), event: exportEvents(item) };
   }
   const d = item.request;
   return {
@@ -449,7 +452,7 @@ function exportItem(item) {
 function exportCollection(col) {
   return JSON.parse(JSON.stringify({
     info: { _postman_id: col.id, name: col.name, description: col.description || undefined, schema: SCHEMA_V21 },
-    item: col.items.map(exportItem),
+    item: col.items.filter((i) => !isWebSocketItem(i)).map(exportItem),
     auth: exportAuth(col.auth),
     event: exportEvents(col),
     variable: exportKv(col.variables),

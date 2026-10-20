@@ -28,7 +28,7 @@ function buildRoutes(collection) {
   const walk = (items, folders) => {
     for (const it of items || []) {
       if (it.type === 'folder') walk(it.items, [...folders, it.name]);
-      else if (it.type === 'request') {
+      else if (it.type === 'request' && (!it.request || it.request.protocol !== 'websocket')) {
         const segs = pathSegments(it.request.url);
         routes.push({
           id: it.id,

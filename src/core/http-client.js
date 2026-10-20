@@ -231,4 +231,4 @@ async function send(opts, onHop) {
   }
 }
 
-module.exports = { send, exchange, RequestError, decompress };
+module.exports = { send, exchange, RequestError, decompress, connectTunnel, matchesBypass };

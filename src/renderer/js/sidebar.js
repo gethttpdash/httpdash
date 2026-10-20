@@ -118,8 +118,8 @@
     S.ws.collections.forEach((c) => renderNode(c, 0, c));
   }
 
-  const addRequest = (parent) => {
-    const r = HD.newRequestItem();
+  const addRequest = (parent, def) => {
+    const r = def ? HD.newRequestItem('New WebSocket', def) : HD.newRequestItem();
     parent.items.push(r);
     expanded()[parent.id] = true;
     HD.save();
@@ -173,6 +173,7 @@
     }
     return [
       { label: 'Add request', onClick: () => addRequest(node) },
+      { label: 'Add WebSocket request', onClick: () => addRequest(node, HD.newWebSocketDef()) },
       { label: 'Add folder', onClick: async () => {
         const name = await HD.prompt('New folder', 'Name', 'New Folder');
         if (!name) return;

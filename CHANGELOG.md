@@ -10,6 +10,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Trust certificates installed on this computer** (on by default): CAs in the macOS Keychain, Windows certificate store or Linux system bundle are trusted, as in a browser, so company certificates work without setup.
 - Command-line runner: Newman's certificate flags `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` and `--ssl-extra-ca-certs`.
 - Clear errors when a server requires a client certificate, rejects one, or the passphrase is wrong.
+- **WebSocket requests:** connect to `ws://` and `wss://` servers, send text or JSON messages (with variables and saved messages), and watch a live, filterable log of everything sent and received. The handshake uses your headers, inherited auth, cookies, client certificates, CAs and proxy; refused upgrades show the server's status and body.
 - **Table view for JSON responses:** arrays of objects as sortable tables with a column per key, objects as key/value tables, nested values that expand in place, and a row filter. Long arrays load 200 rows at a time, so large responses stay fast.
 - **YAML OpenAPI and Swagger import** (from files, drag and drop, paste and the CLI), with OpenAPI 3.1 support.
 - OpenAPI imports now keep response examples, so the mock server works right after importing, and turn security schemes into auth (Bearer, Basic, API key, OAuth 2.0 with PKCE).

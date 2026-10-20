@@ -223,7 +223,7 @@ handle('lock:test', async ({ username, password }) => {
 });
 handle('lock:enable', (opts) => audited('lock.enable', { allowedUsers: opts && opts.allowedUsers }, () => appLock.enable(opts)));
 handle('lock:update', (opts) => audited('lock.update', opts || {}, () => appLock.updateLock(opts)));
-handle('lock:lock', () => audited('lock.lock', {}, async () => { await stopAllMocks(); return appLock.lock(); }));
+handle('lock:lock', () => audited('lock.lock', {}, async () => { await stopAllMocks(); closeAllWebSockets('HttpDash was locked'); return appLock.lock(); }));
 handle('lock:unlock', ({ username, password }) => audited('lock.unlock', { username }, () => appLock.unlock(username, password)));
 handle('lock:recover', (code) => audited('lock.recover', {}, () => appLock.recover(code)));
 handle('lock:disable', ({ username, password }) => audited('lock.disable', { username }, () => appLock.disable(username, password)));
@@ -257,6 +257,54 @@ handle('request:send', async ({ id, request, chain, scopes, settings, info, coll
   }
 });
 handle('request:cancel', (id) => { const c = inflight.get(id); if (c) c.abort(); return !!c; });
+
+// ---- WebSocket ----------------------------------------------------------------------------------
+// One connection per tab. The handshake is prepared like an HTTP request (variables, inherited
+// auth, cookies), then messages stream to the window as 'ws:event'.
+const wsConnections = new Map(); // tab id -> connection
+const certificates = require('../core/certificates');
+const websocket = require('../core/websocket');
+const wsEmit = (id, evt) => { if (win && !win.isDestroyed()) win.webContents.send('ws:event', { id, time: Date.now(), ...evt }); };
+const closeAllWebSockets = (reason) => { for (const c of wsConnections.values()) c.close(1001, reason); };
+
+handle('ws:connect', async ({ id, request, chain, scopes, settings }) => {
+  const old = wsConnections.get(id);
+  if (old) { old.removeAllListeners(); old.close(1000, 'Reconnecting'); wsConnections.delete(id); }
+  const s = settings || {};
+  const vars = mergeScopes(scopes || {});
+  // prepare() resolves variables, auth and cookies for the http(s) form of the URL.
+  const wsUrl = resolveVars(String(request.url || ''), vars).trim();
+  if (!/^wss?:\/\//i.test(wsUrl)) throw new Error('WebSocket URLs start with ws:// or wss://');
+  const prepared = prepare({ ...request, method: 'GET', body: { mode: 'none' }, url: wsUrl.replace(/^ws/i, 'http') }, { chain, vars, settings: s, jar, defaultHeaders: false });
+  if (!prepared.headers.some(([k]) => k.toLowerCase() === 'user-agent')) prepared.headers.push(['User-Agent', s.userAgent || 'HttpDash/1.0']);
+  const url = prepared.url.replace(/^http/i, 'ws');
+  const protocols = String((request.ws && request.ws.protocols) || '').split(',').map((p) => p.trim()).filter(Boolean);
+  let conn;
+  try {
+    conn = await websocket.connect({
+      url, headers: prepared.headers, protocols, timeout: s.timeout || 30000, verifySSL: s.verifySSL !== false, proxy: s.proxy,
+      tlsFor: (u) => certificates.tlsFor(u, s),
+    });
+  } catch (e) {
+    audit.append('ws.connect', { target: safeTarget(url), error: e.message });
+    throw Object.assign(new Error(e.message), { status: e.status });
+  }
+  wsConnections.set(id, conn);
+  audit.append('ws.connect', { target: safeTarget(url), status: 101 });
+  conn.on('message', (m) => wsEmit(id, { type: 'message', dir: 'in', binary: m.binary, size: m.size, data: m.binary ? m.data.toString('base64') : m.data }));
+  conn.on('ping', () => wsEmit(id, { type: 'ping' }));
+  conn.on('error', (e) => wsEmit(id, { type: 'error', message: e.message }));
+  conn.on('close', (c) => { if (wsConnections.get(id) === conn) wsConnections.delete(id); wsEmit(id, { type: 'close', ...c }); });
+  return { url, handshake: conn.handshake };
+});
+handle('ws:send', ({ id, text, scopes }) => {
+  const conn = wsConnections.get(id);
+  if (!conn) throw new Error('Not connected');
+  const data = resolveVars(String(text), mergeScopes(scopes || {}));
+  const size = conn.send(data);
+  return { data, size };
+});
+handle('ws:close', ({ id, code, reason }) => { const conn = wsConnections.get(id); if (conn) conn.close(code || 1000, reason || ''); return !!conn; });
 
 handle('codegen:targets', () => codegen.targets());
 handle('codegen:generate', ({ target, request, chain, scopes }) => {

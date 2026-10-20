@@ -86,6 +86,7 @@
   HD.views = HD.views || {};
 
   HD.views.request = (tab, root) => {
+    if (HD.isWebSocket(tab.draft.request)) return HD.views.websocket(tab, root);
     const draft = tab.draft;
     const req = draft.request;
     req.settings = req.settings || {};
