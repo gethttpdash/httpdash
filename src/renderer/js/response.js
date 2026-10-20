@@ -64,6 +64,16 @@
     }
     return text;
   };
+  // The parsed body for the table view, or undefined when it isn't JSON. Cached like the pretty text.
+  const parsedCache = new WeakMap();
+  const parsedJson = (res) => {
+    if (!parsedCache.has(res)) {
+      let v;
+      try { v = JSON.parse(res.bodyText); } catch { v = undefined; }
+      parsedCache.set(res, v);
+    }
+    return parsedCache.get(res);
+  };
   const prettyFor = (res, lang) => {
     const hit = prettyCache.get(res);
     if (hit && hit.lang === lang) return hit.text;
@@ -189,10 +199,13 @@
     const isImage = /^image\//i.test(res.contentType || '');
     const lang = detectLang(res.contentType, res.bodyText);
     const views = [{ id: 'pretty', label: 'Pretty' }, { id: 'raw', label: 'Raw' }, { id: 'preview', label: 'Preview' }];
+    const json = lang === 'json' && res.bodyText ? parsedJson(res) : undefined;
+    if (json !== undefined) views.splice(1, 0, { id: 'table', label: 'Table' });
     if (result.visualizer) views.push({ id: 'visualize', label: 'Visualize' });
     let view = ui.bodyView || 'pretty';
     if (isImage && view !== 'raw') view = 'preview';
     if (view === 'visualize' && !result.visualizer) view = 'pretty';
+    if (view === 'table' && json === undefined) view = 'pretty';
     const langOverride = ui.bodyLang && ui.bodyLang !== 'auto' ? ui.bodyLang : lang;
 
     const toolbar = h('div.body-toolbar',
@@ -205,7 +218,8 @@
     content.appendChild(toolbar);
     const limit = HD.S.ws.settings.largeResponseBytes == null ? DEFAULT_LARGE_BYTES : HD.S.ws.settings.largeResponseBytes;
     const large = res.bodyText != null && limit > 0 && res.bodyText.length > limit;
-    const partial = large && !showAll.has(res) && !(isImage && view === 'preview') && view !== 'visualize';
+    // The table view renders a page of rows at a time, so it stays fast for large responses.
+    const partial = large && !showAll.has(res) && !(isImage && view === 'preview') && view !== 'visualize' && view !== 'table';
     if (partial) {
       content.appendChild(h('div.large-banner',
         h('span', `Large response (${HD.formatBytes(res.bodySize)}). Showing the first ${HD.formatBytes(PREVIEW_CHARS)} to keep HttpDash responsive.`),
@@ -225,6 +239,11 @@
         frame.srcdoc = lang === 'html' ? res.bodyText : `<pre style="white-space:pre-wrap;font:12px monospace">${res.bodyText.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</pre>`;
         area.appendChild(frame);
       } else area.appendChild(h('div.empty-state.small', `Binary response (${res.contentType || 'unknown type'}, ${HD.formatBytes(res.bodySize)}). Use "Save response to file".`));
+      return;
+    }
+    if (view === 'table') {
+      area.classList.add('jt-area');
+      HD.renderJsonTable(area, json);
       return;
     }
     if (view === 'visualize') {

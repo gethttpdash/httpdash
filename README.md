@@ -271,7 +271,8 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 
 **Responses**
 - Status, time and size, with a breakdown of DNS / connect / TLS / first byte
-- Pretty (JSON / XML / HTML formatting), Raw, Preview (sandboxed HTML, images) and Visualize (`pm.visualizer.set` with Handlebars-style templates)
+- Pretty (JSON / XML / HTML formatting), **Table**, Raw, Preview (sandboxed HTML, images) and Visualize (`pm.visualizer.set` with Handlebars-style templates)
+- **Table view** for JSON: arrays of objects become sortable tables, objects become key/value tables, and nested values open as tables in place. Filter rows as you type; long arrays load 200 rows at a time.
 - Search, line wrap, copy, save to file, save as example
 - Large responses (over 2 MB by default) show their first 512 KB until you click **Show all**, so the window never freezes
 - Headers, cookies, test results with filters, and a timeline showing the request actually sent and any redirects
