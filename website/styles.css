@@ -4,7 +4,9 @@
   --bg-alt: #f6f6f8;
   --ink: #16181d;
   --ink-2: #4b5260;
-  --ink-3: #7a8190;
+  --ink-3: #5f6670;
+  --accent-solid: #c2410c; /* behind white text: 5.2:1 */
+  --accent-solid-hover: #a8380a;
   --line: #e4e5ea;
   --accent: #e8590c;
   --accent-ink: #c2470a;
@@ -55,8 +57,8 @@ p { margin: 0; }
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 10px 18px; font-weight: 600; text-decoration: none; border: 1px solid transparent; transition: background .15s, border-color .15s, transform .15s; cursor: pointer; font-size: 15px; }
 .btn:focus-visible, .copy:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--accent-ink); }
+.btn-primary { background: var(--accent-solid); color: #fff; }
+.btn-primary:hover { background: var(--accent-solid-hover); }
 .btn-ghost { border-color: var(--line); color: var(--ink); background: transparent; }
 .btn-ghost:hover { border-color: var(--ink-3); }
 .btn-lg { padding: 14px 24px; font-size: 16px; }
@@ -134,11 +136,11 @@ p { margin: 0; }
 .terminal-bar .copy { margin-left: auto; }
 .terminal pre { margin: 0; padding: 20px 22px; overflow-x: auto; font: 14px/1.65 var(--mono); color: #e9ebf0; }
 .terminal code { background: none; border: 0; padding: 0; font: inherit; }
-.t-dim { color: #7d8392; }
+.t-dim { color: #949aaa; }
 .t-green { color: #4ade80; }
 .t-cyan { color: #67e8f9; }
-.copy { font: 600 12px var(--font); color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 7px; padding: 4px 10px; cursor: pointer; opacity: .8; }
-.copy:hover { opacity: 1; }
+.copy { font: 600 12px var(--font); color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
 
 /* Security */
 .security { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; }
