@@ -94,12 +94,19 @@ function summarize(entries) {
   return rowsOf(rows);
 }
 
-const stats = new Map(); // sourceId -> { since, rows: Map }
+const stats = new Map(); // sourceId -> { since, rows: Map, recent: [] }
+const RECENT = 200; // requests kept per source for the Recent requests list
 
 function record(e) {
   if (!e.sourceId) return;
-  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map() });
-  add(stats.get(e.sourceId).rows, e);
+  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map(), recent: [] });
+  const s = stats.get(e.sourceId);
+  add(s.rows, e);
+  s.recent.push({
+    sentAt: e.at - (e.time || 0), variable: e.variable, service: e.service, instance: e.instance, instanceId: e.instanceId || '',
+    servedBy: e.servedBy, status: e.status, time: e.time, error: e.error,
+  });
+  if (s.recent.length > RECENT) s.recent.shift();
 }
 
 /**
@@ -120,10 +127,20 @@ function settle(picks, pools, { response, error } = {}) {
   return out;
 }
 
-/** The traffic a source's instances have received since `since` (app start or the last reset). */
+/**
+ * The traffic a source's instances have received since `since` (app start or the last reset), and
+ * its latest requests, newest first, each with its gap: the milliseconds between the previous
+ * request's response and this request being sent (0 when they overlapped).
+ */
 function metrics(sourceId) {
   const s = stats.get(sourceId);
-  return { since: s ? s.since : Date.now(), rows: s ? rowsOf(s.rows) : [] };
+  if (!s) return { since: Date.now(), rows: [], recent: [] };
+  const sorted = [...s.recent].sort((a, b) => a.sentAt - b.sentAt);
+  const recent = sorted.map((r, i) => {
+    const prev = sorted[i - 1];
+    return { ...r, gap: prev ? Math.max(0, r.sentAt - (prev.sentAt + (prev.time || 0))) : null };
+  }).reverse();
+  return { since: s.since, rows: rowsOf(s.rows), recent };
 }
 
 function reset(sourceId) {

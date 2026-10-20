@@ -904,6 +904,7 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .traffic-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
 .traffic-summary { margin-bottom: 12px; }
+.traffic-recent { margin-top: 20px; }
 .traffic-table th.num, .traffic-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .traffic-service td { background: var(--bg-2); padding-top: 10px; }
 .traffic-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

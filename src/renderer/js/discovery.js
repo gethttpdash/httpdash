@@ -445,6 +445,21 @@
           diff ? h('td', changed.get(s.variable) ? h(`span.pill.${changed.get(s.variable)}`, changed.get(s.variable)) : null) : null))))));
     };
 
+    // The latest requests, newest first: when each was sent, the gap since the one before, and who answered.
+    const recentList = (recent) => {
+      const clock = (t) => { const d = new Date(t); return `${d.toLocaleTimeString([], { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`; };
+      return h('div.traffic-recent',
+        h('div.section-title', `Recent requests`, h('span.muted.small', ` · last ${recent.length}`)),
+        h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
+          h('thead', h('tr', h('th', 'Sent'), h('th.num', { title: 'Milliseconds between the previous response and this request' }, 'Gap'), h('th', 'Instance'), h('th', 'Status'), h('th.num', 'Time'))),
+          h('tbody', recent.slice(0, 50).map((r) => h('tr',
+            h('td.mono.small', clock(r.sentAt)),
+            h('td.num.muted', r.gap == null ? '—' : `+${HD.formatMs(Math.max(0, Math.round(r.gap)))}`),
+            h('td', h('span', HD.instanceLabel(r)), h('span.muted.small', ` {{${r.variable}}}`)),
+            h('td', r.error ? h('span.text-error.small', r.error) : h(`span.${HD.statusClass(r.status)}`, String(r.status))),
+            h('td.num', r.time == null ? '—' : HD.formatMs(r.time))))))));
+    };
+
     // The Traffic page: what this source's instances have answered, refreshed every second while shown.
     const traffic = h('div.panel-pad.discovery-traffic');
     const renderTraffic = async () => {
@@ -479,6 +494,7 @@
           h('div.stat', { class: flagged.some((f) => f.kind === 'slow') ? 'warn' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'slow').length)), h('div.stat-label', 'Slow')),
           h('div.stat', { class: flagged.some((f) => f.kind === 'failing') ? 'fail' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'failing').length)), h('div.stat-label', 'Failing'))));
         traffic.appendChild(HD.trafficTable(m.rows, known));
+        if (m.recent && m.recent.length) traffic.appendChild(recentList(m.recent));
         if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${services.slice(0, 2).map((x) => `{{${x.variable}}}`).join(' or ')}.`));
         else if (!isOpenApi(src) && src.balance !== 'round-robin' && src.balance !== 'random' && !src.instanceHeader) {
           traffic.appendChild(h('div.muted.small.traffic-hint', 'Every request goes to the first instance. To compare instances, send to each in turn (round robin) under Configuration → Load balancing.'));

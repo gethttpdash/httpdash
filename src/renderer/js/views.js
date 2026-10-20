@@ -167,7 +167,7 @@
       h('label.field', h('span', 'Environment'), HD.select([['', 'No environment'], ...S.ws.environments.map((e) => [e.id, e.name])], cfg.environmentId || '', (v) => { cfg.environmentId = v || null; HD.save(); })),
       h('div.field-row',
         h('label.field', h('span', 'Iterations'), h('input.input', { type: 'number', min: 1, value: cfg.iterations, oninput: (e) => { cfg.iterations = Math.max(1, Number(e.target.value) || 1); HD.save(); } })),
-        h('label.field', h('span', 'Delay (ms)'), h('input.input', { type: 'number', min: 0, value: cfg.delay, oninput: (e) => { cfg.delay = Math.max(0, Number(e.target.value) || 0); HD.save(); } }))),
+        h('label.field', { title: 'Waits this long before every request after the first, across iterations too' }, h('span', 'Gap between requests (ms)'), h('input.input', { type: 'number', min: 0, value: cfg.delay, oninput: (e) => { cfg.delay = Math.max(0, Number(e.target.value) || 0); HD.save(); } }))),
       h('label.field', h('span', 'Data file (CSV or JSON)'),
         h('div.button-row',
           HD.button(cfg.dataFile ? `${cfg.dataFile} (${(cfg.data || []).length} rows)` : 'Select file', async () => {

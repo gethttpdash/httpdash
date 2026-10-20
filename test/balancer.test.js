@@ -111,3 +111,21 @@ test('random and first strategies', () => {
   const got = new Set(Array.from({ length: 50 }, () => balancer.pick('v', { ...pool, strategy: 'random' }).url));
   assert.deepStrictEqual([...got].sort(), ['http://a', 'http://b']);
 });
+
+test('the run waits the gap before every request, across iterations; recent requests show the gaps', async () => {
+  const inst = await startInstances();
+  balancer.reset('src1');
+  try {
+    const col = newCollection('Orders');
+    col.items.push(newRequestItem('List', { url: '{{orders_url}}/orders' }));
+    const started = Date.now();
+    const summary = await run({ collection: col, scopes: { globals: {}, environment: { orders_url: inst.urls[0] }, pools: poolFor(inst.urls) }, iterations: 4, delay: 60 });
+    assert.strictEqual(summary.requests, 4);
+    assert.ok(Date.now() - started >= 180, 'three gaps of 60 ms');
+    const { recent } = balancer.metrics('src1');
+    assert.strictEqual(recent.length, 4);
+    assert.strictEqual(recent[3].gap, null, 'the oldest has no gap');
+    for (const r of recent.slice(0, 3)) assert.ok(r.gap >= 55, `gap ${r.gap}`);
+    assert.deepStrictEqual(recent.map((r) => r.instanceId).reverse(), ['orders-1', 'orders-2', 'orders-3', 'orders-1']);
+  } finally { inst.close(); }
+});

@@ -66,6 +66,7 @@ function parseDataFile(content, filename = '') {
 /**
  * opts: { collection, folderId, scopes: {globals, environment, pools}, iterations, data, delay, settings, jar,
  *         stopOnFailure, onEvent(evt), signal }
+ * `delay` is the gap in milliseconds before every request after the first, across iterations too.
  * Returns a summary; scopes are updated in place so the caller can persist them.
  */
 async function run(opts) {
@@ -95,6 +96,7 @@ async function run(opts) {
       let idx = 0;
       let guard = 0;
       while (idx < list.length) {
+        if (opts.delay && summary.requests) await sleep(opts.delay, opts.signal);
         if (opts.signal && opts.signal.aborted) { summary.stopped = true; break outer; }
         if (++guard > 10000) throw new Error('Runner exceeded 10000 steps in one iteration (setNextRequest loop?)');
         const { item, chain } = list[idx];
@@ -157,7 +159,6 @@ async function run(opts) {
           idx = target;
         } else idx++;
 
-        if (opts.delay && idx < list.length) await sleep(opts.delay, opts.signal);
       }
     }
   } finally {
