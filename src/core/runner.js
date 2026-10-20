@@ -1,6 +1,7 @@
 'use strict';
 
 const balancer = require('./balancer');
+const payloads = require('./payloads');
 const { execute } = require('./executor');
 const { ScriptSession } = require('./sandbox');
 const { makeLookup } = require('./dependency');
@@ -67,6 +68,8 @@ function parseDataFile(content, filename = '') {
  * opts: { collection, folderId, scopes: {globals, environment, pools}, iterations, data, delay, settings, jar,
  *         stopOnFailure, onEvent(evt), signal }
  * `delay` is the gap in milliseconds before every request after the first, across iterations too.
+ * `resetPayloads` starts each request's payloads from the first (an interactive run); monitors
+ * leave it off, so their runs keep walking through the payloads.
  * Returns a summary; scopes are updated in place so the caller can persist them.
  */
 async function run(opts) {
@@ -83,6 +86,7 @@ async function run(opts) {
     collection: opts.scopes.collection || {},
   };
   const pools = opts.scopes.pools || null;
+  if (opts.resetPayloads) for (const { item } of list) payloads.reset(item.id);
   const routing = []; // every instance the run's requests went to
   const summary = { iterations, requests: 0, failedRequests: 0, tests: 0, passed: 0, failed: 0, skipped: 0, totalTime: 0, results: [], stopped: false };
   const started = Date.now();
@@ -142,6 +146,7 @@ async function run(opts) {
           response: res.response ? { headers: res.response.headers, bodyText: truncate(res.response.bodyText) } : null,
           sentRequest: res.sentRequest,
           routing: res.routing,
+          payload: res.payload,
         };
         if (res.routing) routing.push(...res.routing);
         summary.results.push(entry);

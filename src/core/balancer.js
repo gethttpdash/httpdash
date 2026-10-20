@@ -12,11 +12,15 @@
  * An instance is picked only when a request actually uses the variable, and once per request, so
  * the URL and a header that both use it go to the same instance. Round-robin positions live in this
  * module, so single sends, collection runs and monitors share one rotation.
+ *
+ * Each payload (see payloads.js) has its own rotation. With one shared rotation, payloads sent in
+ * turn would move in step with the instances (3 payloads, 3 instances: the third payload always on
+ * the third instance), and a slow payload could not be told from a slow instance.
  */
 
 const positions = new Map(); // `${sourceId}|${variable}` -> next round-robin index
 
-function pick(variable, pool) {
+function pick(variable, pool, payload = '') {
   const all = (pool.instances || []).filter((i) => i && i.url);
   const healthy = all.filter((i) => i.healthy !== false);
   const list = healthy.length ? healthy : all;
@@ -25,7 +29,7 @@ function pick(variable, pool) {
     return { id: own ? own.id || '' : '', url: String(pool.default) };
   }
   if (pool.strategy === 'random') return list[Math.floor(Math.random() * list.length)];
-  const key = `${pool.sourceId}|${variable}`;
+  const key = `${pool.sourceId}|${variable}|${payload}`;
   const n = positions.get(key) || 0;
   positions.set(key, n + 1);
   return list[n % list.length];
@@ -35,7 +39,7 @@ function pick(variable, pool) {
  * Makes each pooled variable in `vars` (the merged scopes) pick its instance when it's first read.
  * `picks` (a Map) collects the choices for this request. Returns `vars`.
  */
-function bind(vars, pools, picks) {
+function bind(vars, pools, picks, { payload = '' } = {}) {
   if (!pools) return vars;
   for (const [variable, pool] of Object.entries(pools)) {
     if (!Object.prototype.hasOwnProperty.call(vars, variable) || String(vars[variable]) !== String(pool.default)) continue;
@@ -44,7 +48,7 @@ function bind(vars, pools, picks) {
       configurable: true,
       get() {
         if (!picks.has(variable)) {
-          const instance = pick(variable, pool);
+          const instance = pick(variable, pool, payload);
           picks.set(variable, { variable, sourceId: pool.sourceId, service: pool.service, instance: instance.url, instanceId: instance.id || '' });
         }
         return picks.get(variable).instance;
@@ -97,17 +101,19 @@ function summarize(entries) {
   return rowsOf(rows);
 }
 
-const stats = new Map(); // sourceId -> { since, rows: Map, recent: [] }
+const stats = new Map(); // sourceId -> { since, rows: Map, byPayload: Map, recent: [] }
 const RECENT = 200; // requests kept per source for the Recent requests list
 
 function record(e) {
   if (!e.sourceId) return;
-  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map(), recent: [] });
+  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map(), byPayload: new Map(), recent: [] });
   const s = stats.get(e.sourceId);
   add(s.rows, e);
+  // The same totals by payload, to tell a slow payload from a slow instance.
+  if (e.payload) add(s.byPayload, { ...e, instance: e.payload, instanceId: '', servedBy: '' });
   s.recent.push({
     sentAt: e.at - (e.time || 0), variable: e.variable, service: e.service, instance: e.instance, instanceId: e.instanceId || '',
-    servedBy: e.servedBy, status: e.status, time: e.time, error: e.error,
+    servedBy: e.servedBy, status: e.status, time: e.time, error: e.error, payload: e.payload || '',
   });
   if (s.recent.length > RECENT) s.recent.shift();
 }
@@ -116,12 +122,12 @@ function record(e) {
  * Finishes a request's picks once it's answered (or failed): adds the status, the time and the
  * instance the response names in the pool's header, records them, and returns them.
  */
-function settle(picks, pools, { response, error } = {}) {
+function settle(picks, pools, { response, error, payload } = {}) {
   const out = [];
   for (const p of picks.values()) {
     const pool = pools[p.variable] || {};
     const entry = {
-      ...p, servedBy: headerValue(response, pool.header), at: Date.now(),
+      ...p, servedBy: headerValue(response, pool.header), at: Date.now(), payload: payload || '',
       status: response ? response.status : null, time: response ? response.time : null, error: error || null,
     };
     record(entry);
@@ -137,13 +143,14 @@ function settle(picks, pools, { response, error } = {}) {
  */
 function metrics(sourceId) {
   const s = stats.get(sourceId);
-  if (!s) return { since: Date.now(), rows: [], recent: [] };
+  if (!s) return { since: Date.now(), rows: [], byPayload: [], recent: [] };
   const sorted = [...s.recent].sort((a, b) => a.sentAt - b.sentAt);
   const recent = sorted.map((r, i) => {
     const prev = sorted[i - 1];
     return { ...r, gap: prev ? Math.max(0, r.sentAt - (prev.sentAt + (prev.time || 0))) : null };
   }).reverse();
-  return { since: s.since, rows: rowsOf(s.rows), recent };
+  const byPayload = rowsOf(s.byPayload).map(({ instance, instanceId, servedBy, ...r }) => ({ ...r, payload: instance }));
+  return { since: s.since, rows: rowsOf(s.rows), byPayload, recent };
 }
 
 function reset(sourceId) {

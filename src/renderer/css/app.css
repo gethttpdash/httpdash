@@ -919,3 +919,21 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .res-instance b { font-weight: 600; }
 .runner-instances { margin: 8px 0 12px; }
 .runner-instances > summary { cursor: pointer; font-weight: 600; font-size: 12px; margin-bottom: 6px; }
+
+/* Request payloads */
+.payloads-head { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.payloads-head .field { min-width: 280px; margin: 0; }
+.payloads-help { margin: 8px 0 12px; max-width: 900px; }
+.payload { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+.payload.open { padding-bottom: 8px; }
+.payload-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+.payload-toggle svg { transition: transform .12s; }
+.payload.open .payload-toggle svg { transform: rotate(90deg); }
+.payload-name { width: 220px; flex: 0 0 auto; }
+.payload-sum { flex: 1; min-width: 0; cursor: pointer; }
+.payload .kv { margin: 0; }
+.payload-body-label { margin: 8px 12px 4px; }
+.payload-body { margin: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.payload-body .CodeMirror { height: 140px; }
+.res-payload b { font-weight: 600; }
+.traffic-sub { margin-top: 20px; }

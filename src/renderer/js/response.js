@@ -106,7 +106,7 @@
     h('div.popover', h('div.popover-title', 'Instances'),
       routing.map((r) => h('div.kvline', h('span', `{{${r.variable}}}`), h('span', [r.instance, r.servedBy ? ` (${r.servedBy})` : ''].join(''))))));
 
-  const statusLine = (res, actions, routing) => {
+  const statusLine = (res, actions, routing, payload) => {
     const t = res.timings || {};
     const timingRows = [
       ['DNS lookup', t.dns], ['TCP connect', t.connect != null ? t.connect - (t.dns || 0) : null],
@@ -125,6 +125,7 @@
       h('span.res-stat.has-popover', h('span.muted', 'Size '), h('b', HD.formatBytes(res.size)), sizeTip),
       res.redirects && res.redirects.length ? h('span.res-stat.muted', `${res.redirects.length} redirect${res.redirects.length > 1 ? 's' : ''}`) : null,
       routing && routing.length ? instanceStat(routing) : null,
+      payload ? h('span.res-stat.res-payload', { title: 'The payload this call sent (Payloads tab)' }, h('span.muted', 'Payload '), h('b', payload.name), h('span.muted', ` ${payload.index + 1}/${payload.count}`)) : null,
       h('span.spacer'),
       actions);
   };
@@ -198,7 +199,7 @@
 
     const content = h('div.res-content');
     const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
-    root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing) : null));
+    root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing, result.payload) : null));
     const banner = HD.dependencyBanner && HD.dependencyBanner(result.dependencyRuns);
     if (banner) root.appendChild(banner);
     if (result.savedVariables && result.savedVariables.length) {

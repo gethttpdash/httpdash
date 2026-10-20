@@ -16,6 +16,7 @@ const discovery = require('../core/discovery');
 const openapiSync = require('../core/openapi-sync');
 const balancer = require('../core/balancer');
 const trafficReport = require('../core/traffic-report');
+const payloads = require('../core/payloads');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -493,6 +494,7 @@ handle('dialog:openFile', async ({ multi, filters } = {}) => {
   const r = await dialog.showOpenDialog(win, { properties: multi ? ['openFile', 'multiSelections'] : ['openFile'], filters });
   return r.canceled ? [] : r.filePaths;
 });
+handle('payloads:fromRows', (rows) => payloads.fromRows(rows));
 handle('runner:readData', (file) => {
   const rows = runner.parseDataFile(fs.readFileSync(file, 'utf8'), file);
   return { file: path.basename(file), rows };
@@ -505,6 +507,7 @@ handle('runner:start', async (opts) => {
   try {
     const summary = await runner.run({
       ...opts,
+      resetPayloads: true,
       jar: opts.useCookies === false ? [] : jar,
       signal: controller.signal,
       onEvent: (evt) => win && !win.isDestroyed() && win.webContents.send('runner:event', evt),

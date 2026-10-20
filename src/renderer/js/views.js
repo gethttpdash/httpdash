@@ -238,6 +238,7 @@
           h('div.runner-row-head', { onclick: () => row.classList.toggle('open') },
             h(`span.method-tag.${HD.methodClass(r.method)}`, r.method),
             h('span.runner-req-name', r.name),
+            r.payload ? h('span.pill.kept', { title: 'Payload' }, r.payload.name) : null,
             h('span.muted.small.ellipsis', r.url),
             h('span.spacer'),
             r.error ? h('span.text-error.small', r.error) : h(`span.${HD.statusClass(r.status)}`, `${r.status} ${r.statusText}`),

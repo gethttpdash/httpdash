@@ -9,7 +9,8 @@
  *   source, registry, strategy, header, since, generatedAt,
  *   totals: { requests, instances, slow, failing },
  *   rows: [{ service, instanceId, instance, servedBy, requests, share, p50, p95, avg, ok, s4xx, s5xx, errors, flags: ['slow' | 'failing' | 'left the pool'] }],
- *   recent: [{ sentAt, gap, service, variable, instance, instanceId, servedBy, status, time, error }]
+ *   byPayload: [{ service, payload, requests, share, p50, p95, avg, ok, s4xx, s5xx, errors, flags }],
+ *   recent: [{ sentAt, gap, service, variable, instance, instanceId, servedBy, payload, status, time, error }]
  * }
  * Instance names and header values come from servers, so every format escapes them.
  */
@@ -28,14 +29,19 @@ function normalize(r) {
   }));
   const recent = (Array.isArray(r.recent) ? r.recent : []).slice(0, 1000).map((x) => ({
     sentAt: num(x.sentAt), gap: num(x.gap), service: str(x.service), variable: str(x.variable), instance: str(x.instance),
-    instanceId: str(x.instanceId), servedBy: str(x.servedBy), status: num(x.status), time: num(x.time), error: str(x.error),
+    instanceId: str(x.instanceId), servedBy: str(x.servedBy), payload: str(x.payload, 200), status: num(x.status), time: num(x.time), error: str(x.error),
+  }));
+  const byPayload = (Array.isArray(r.byPayload) ? r.byPayload : []).slice(0, 5000).map((x) => ({
+    service: str(x.service), payload: str(x.payload, 200), requests: num(x.requests) || 0, share: num(x.share) || 0, p50: num(x.p50), p95: num(x.p95), avg: num(x.avg),
+    ok: num(x.ok) || 0, s4xx: num(x.s4xx) || 0, s5xx: num(x.s5xx) || 0, errors: num(x.errors) || 0,
+    flags: (Array.isArray(x.flags) ? x.flags : []).map((f) => str(f, 40)),
   }));
   const t = r.totals || {};
   return {
     source: str(r.source, 200), registry: str(r.registry, 100), strategy: str(r.strategy, 100), header: str(r.header, 100),
     since: num(r.since), generatedAt: num(r.generatedAt) || Date.now(),
     totals: { requests: num(t.requests) || 0, instances: num(t.instances) || 0, slow: num(t.slow) || 0, failing: num(t.failing) || 0 },
-    rows, recent,
+    rows, byPayload, recent,
   };
 }
 
@@ -61,10 +67,14 @@ function tables(report) {
     rows: report.rows.map((x) => [x.service, x.instanceId || x.servedBy || x.instance, x.instance, x.servedBy, x.requests, Math.round(x.share * 1000) / 1000, x.p50, x.p95, x.avg, x.ok, x.s4xx, x.s5xx, x.errors, x.flags.join(', ')]),
   };
   const recent = {
-    columns: ['Sent', 'Gap ms', 'Service', 'Variable', 'Instance', 'Address', 'Answered as (header)', 'Status', 'Time ms', 'Error'],
-    rows: report.recent.map((x) => [iso(x.sentAt), x.gap, x.service, x.variable, x.instanceId || x.instance, x.instance, x.servedBy, x.status, x.time, x.error]),
+    columns: ['Sent', 'Gap ms', 'Service', 'Variable', 'Instance', 'Address', 'Answered as (header)', 'Payload', 'Status', 'Time ms', 'Error'],
+    rows: report.recent.map((x) => [iso(x.sentAt), x.gap, x.service, x.variable, x.instanceId || x.instance, x.instance, x.servedBy, x.payload, x.status, x.time, x.error]),
   };
-  return { instances, recent };
+  const payloads = {
+    columns: ['Service', 'Payload', 'Requests', 'Share', 'p50 ms', 'p95 ms', 'Average ms', 'OK (2xx/3xx)', '4xx', '5xx', 'Connection errors', 'Flags'],
+    rows: report.byPayload.map((x) => [x.service, x.payload, x.requests, Math.round(x.share * 1000) / 1000, x.p50, x.p95, x.avg, x.ok, x.s4xx, x.s5xx, x.errors, x.flags.join(', ')]),
+  };
+  return { instances, recent, payloads };
 }
 
 // A spreadsheet treats a cell starting with = + - @ as a formula; a server-chosen header value must stay text.
@@ -75,7 +85,11 @@ const toCsv = (report) => `﻿${tabular.toCsv(safeTable(tables(report).instances
 
 function toXlsx(report) {
   const t = tables(report);
-  return tabular.toXlsxBook([{ name: 'By instance', table: safeTable(t.instances) }, { name: 'Recent requests', table: safeTable(t.recent) }]);
+  return tabular.toXlsxBook([
+    { name: 'By instance', table: safeTable(t.instances) },
+    ...(report.byPayload.length ? [{ name: 'By payload', table: safeTable(t.payloads) }] : []),
+    { name: 'Recent requests', table: safeTable(t.recent) },
+  ]);
 }
 
 const toJson = (report) => JSON.stringify(report, null, 2);
@@ -101,10 +115,15 @@ function toMarkdown(report) {
     '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
     ...report.rows.map((x) => `| ${md(x.service)} | ${md(name(x))}${x.instanceId || x.servedBy ? ` (${md(x.instance)})` : ''} | ${x.requests} | ${pct(x.share)} | ${ms(x.p50)} | ${ms(x.p95)} | ${x.ok} | ${x.s4xx} | ${x.s5xx} | ${x.errors} | ${md(x.flags.join(', '))} |`),
   ];
+  if (report.byPayload.length) {
+    lines.push('', '## By payload', '', '| Service | Payload | Requests | Share | p50 | p95 | OK | 4xx | 5xx | Errors | Flags |',
+      '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+      ...report.byPayload.map((x) => `| ${md(x.service)} | ${md(x.payload)} | ${x.requests} | ${pct(x.share)} | ${ms(x.p50)} | ${ms(x.p95)} | ${x.ok} | ${x.s4xx} | ${x.s5xx} | ${x.errors} | ${md(x.flags.join(', '))} |`));
+  }
   if (report.recent.length) {
     lines.push('', `## Recent requests (latest ${Math.min(50, report.recent.length)})`, '',
-      `| Sent (${offset(report.generatedAt)}) | Gap | Instance | Status | Time |`, '| --- | ---: | --- | --- | ---: |',
-      ...report.recent.slice(0, 50).map((x) => `| ${x.sentAt == null ? '' : localClock(x.sentAt)} | ${x.gap == null ? '—' : `+${Math.round(x.gap)} ms`} | ${md(name(x))} | ${x.error ? md(x.error) : x.status} | ${ms(x.time)} |`));
+      `| Sent (${offset(report.generatedAt)}) | Gap | Instance | Payload | Status | Time |`, '| --- | ---: | --- | --- | --- | ---: |',
+      ...report.recent.slice(0, 50).map((x) => `| ${x.sentAt == null ? '' : localClock(x.sentAt)} | ${x.gap == null ? '—' : `+${Math.round(x.gap)} ms`} | ${md(name(x))} | ${md(x.payload) || '—'} | ${x.error ? md(x.error) : x.status} | ${ms(x.time)} |`));
   }
   return `${lines.join('\n')}\n`;
 }
@@ -127,8 +146,11 @@ function toHtml(report) {
       <td class="n">${ms(x.p50)}</td><td class="n">${ms(x.p95)}</td><td class="n">${x.ok}</td>
       <td class="n${x.s4xx ? ' warn' : ''}">${x.s4xx}</td><td class="n${x.s5xx ? ' err' : ''}">${x.s5xx}</td><td class="n${x.errors ? ' err' : ''}">${x.errors}</td></tr>`).join('')}`;
   }).join('');
+  const payloadRows = report.byPayload.map((x) => `<tr><td>${esc(x.service)}</td><td><b>${esc(x.payload)}</b> ${x.flags.map(flag).join(' ')}</td><td class="n">${x.requests}</td>
+    <td class="n">${ms(x.p50)}</td><td class="n">${ms(x.p95)}</td><td class="n">${x.ok}</td><td class="n${x.s4xx ? ' warn' : ''}">${x.s4xx}</td><td class="n${x.s5xx ? ' err' : ''}">${x.s5xx}</td><td class="n${x.errors ? ' err' : ''}">${x.errors}</td></tr>`).join('');
+  const withPayload = report.recent.some((x) => x.payload);
   const recent = report.recent.slice(0, 25).map((x) => `<tr><td class="mono">${x.sentAt == null ? '' : localClock(x.sentAt)}</td><td class="n">${x.gap == null ? '—' : `+${Math.round(x.gap)} ms`}</td>
-    <td>${esc(name(x))}</td><td class="${x.error || x.status >= 500 ? 'err' : x.status >= 400 ? 'warn' : 'ok'}">${x.error ? esc(x.error) : x.status}</td><td class="n">${ms(x.time)}</td></tr>`).join('');
+    <td>${esc(name(x))}</td>${withPayload ? `<td>${esc(x.payload) || '—'}</td>` : ''}<td class="${x.error || x.status >= 500 ? 'err' : x.status >= 400 ? 'warn' : 'ok'}">${x.error ? esc(x.error) : x.status}</td><td class="n">${ms(x.time)}</td></tr>`).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Traffic by instance: ${esc(report.source)}</title>
 <style>
   * { box-sizing: border-box; }
@@ -163,7 +185,8 @@ function toHtml(report) {
 </div>
 <table><thead><tr><th>Instance</th><th class="n">Requests</th><th>Share</th><th class="n">p50</th><th class="n">p95</th><th class="n">OK</th><th class="n">4xx</th><th class="n">5xx</th><th class="n">Errors</th></tr></thead>
 <tbody>${body || '<tr><td colspan="9">No requests yet.</td></tr>'}</tbody></table>
-${recent ? `<h2>Recent requests</h2><table><thead><tr><th>Sent (${offset(report.generatedAt)})</th><th class="n">Gap</th><th>Instance</th><th>Status</th><th class="n">Time</th></tr></thead><tbody>${recent}</tbody></table>` : ''}
+${payloadRows ? `<h2>By payload</h2><table><thead><tr><th>Service</th><th>Payload</th><th class="n">Requests</th><th class="n">p50</th><th class="n">p95</th><th class="n">OK</th><th class="n">4xx</th><th class="n">5xx</th><th class="n">Errors</th></tr></thead><tbody>${payloadRows}</tbody></table>` : ''}
+${recent ? `<h2>Recent requests</h2><table><thead><tr><th>Sent (${offset(report.generatedAt)})</th><th class="n">Gap</th><th>Instance</th>${withPayload ? '<th>Payload</th>' : ''}<th>Status</th><th class="n">Time</th></tr></thead><tbody>${recent}</tbody></table>` : ''}
 <footer>HttpDash · times are measured from the machine that sent the requests</footer>
 </body></html>`;
 }

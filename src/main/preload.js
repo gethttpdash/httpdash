@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('api', {
   openFile: invoke('dialog:openFile'),
 
   readDataFile: invoke('runner:readData'),
+  payloadsFromRows: invoke('payloads:fromRows'),
   runCollection: invoke('runner:start'),
   stopRun: invoke('runner:stop'),
   onRunnerEvent: (fn) => ipcRenderer.on('runner:event', (_e, evt) => fn(evt)),

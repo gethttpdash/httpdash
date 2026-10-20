@@ -129,12 +129,12 @@
   };
 
   const FLAG_PILL = { slow: 'changed', failing: 'removed' };
-  HD.trafficTable = (rows, known = {}) => {
+  HD.trafficTable = (rows, known = {}, { label = 'Instance' } = {}) => {
     const list = HD.trafficRows(rows, known);
     const services = [...new Set(list.map((r) => r.service))];
     const ms = (v) => (v == null ? '—' : HD.formatMs(v));
     return h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
-      h('thead', h('tr', h('th', 'Instance'), h('th.num', { title: 'Requests' }, 'Req.'), h('th', 'Share'), h('th.num', { title: 'Median response time' }, 'p50'), h('th.num', { title: '95th percentile: 1 in 20 requests is slower' }, 'p95'),
+      h('thead', h('tr', h('th', label), h('th.num', { title: 'Requests' }, 'Req.'), h('th', 'Share'), h('th.num', { title: 'Median response time' }, 'p50'), h('th.num', { title: '95th percentile: 1 in 20 requests is slower' }, 'p95'),
         h('th.num', { title: '2xx and 3xx responses' }, 'OK'), h('th.num', '4xx'), h('th.num', '5xx'), h('th.num', { title: 'Connection errors and timeouts' }, 'Err'))),
       h('tbody', services.flatMap((service) => {
         const group = list.filter((r) => r.service === service);
@@ -469,14 +469,16 @@
     // The latest requests, newest first: when each was sent, the gap since the one before, and who answered.
     const recentList = (recent) => {
       const clock = (t) => { const d = new Date(t); return `${d.toLocaleTimeString([], { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`; };
+      const withPayload = recent.some((r) => r.payload);
       return h('div.traffic-recent',
         h('div.section-title', `Recent requests`, h('span.muted.small', ` · last ${recent.length}`)),
         h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
-          h('thead', h('tr', h('th', 'Sent'), h('th.num', { title: 'Milliseconds between the previous response and this request' }, 'Gap'), h('th', 'Instance'), h('th', 'Status'), h('th.num', 'Time'))),
+          h('thead', h('tr', h('th', 'Sent'), h('th.num', { title: 'Milliseconds between the previous response and this request' }, 'Gap'), h('th', 'Instance'), withPayload ? h('th', 'Payload') : null, h('th', 'Status'), h('th.num', 'Time'))),
           h('tbody', recent.slice(0, 50).map((r) => h('tr',
             h('td.mono.small', clock(r.sentAt)),
             h('td.num.muted', r.gap == null ? '—' : `+${HD.formatMs(Math.max(0, Math.round(r.gap)))}`),
             h('td', h('span', HD.instanceLabel(r)), h('span.muted.small', ` {{${r.variable}}}`)),
+            withPayload ? h('td', r.payload || h('span.muted', '—')) : null,
             h('td', r.error ? h('span.text-error.small', r.error) : h(`span.${HD.statusClass(r.status)}`, String(r.status))),
             h('td.num', r.time == null ? '—' : HD.formatMs(r.time))))))));
     };
@@ -495,6 +497,8 @@
       const rows = HD.trafficRows(m.rows, known);
       const flagged = rows.flatMap((r) => r.flags);
       const answering = new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size;
+      // Payload rows look like instance rows to the table: the payload's name is the "instance".
+      const payloadRows = (m.byPayload || []).map((r) => ({ ...r, instance: '', instanceId: r.payload, servedBy: '' }));
       // The report every export format is made from: what this page shows.
       const report = () => ({
         source: src.name, registry: PROVIDERS[src.provider].label, strategy, header: src.instanceHeader || '', since: m.since, generatedAt: Date.now(),
@@ -502,6 +506,10 @@
         rows: rows.map((r) => ({
           service: r.service, instanceId: r.instanceId, instance: r.instance, servedBy: r.servedBy, requests: r.requests, share: r.share,
           p50: r.p50, p95: r.p95, avg: r.avg, ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
+        })),
+        byPayload: HD.trafficRows(payloadRows).map((r) => ({
+          service: r.service, payload: r.instanceId, requests: r.requests, share: r.share, p50: r.p50, p95: r.p95, avg: r.avg,
+          ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
         })),
         recent: m.recent || [],
       });
@@ -542,6 +550,10 @@
           h('div.stat', { class: flagged.some((f) => f.kind === 'slow') ? 'warn' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'slow').length)), h('div.stat-label', 'Slow')),
           h('div.stat', { class: flagged.some((f) => f.kind === 'failing') ? 'fail' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'failing').length)), h('div.stat-label', 'Failing'))));
         traffic.appendChild(HD.trafficTable(m.rows, known));
+        if (payloadRows.length) {
+          traffic.appendChild(h('div.section-title.traffic-sub', 'By payload', h('span.muted.small', ' · slow here means slower than the endpoint\'s other payloads')));
+          traffic.appendChild(HD.trafficTable(payloadRows, {}, { label: 'Payload' }));
+        }
         if (m.recent && m.recent.length) traffic.appendChild(recentList(m.recent));
         if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${services.slice(0, 2).map((x) => `{{${x.variable}}}`).join(' or ')}.`));
         else if (!isOpenApi(src) && src.balance !== 'round-robin' && src.balance !== 'random' && !src.instanceHeader) {

@@ -12,6 +12,7 @@ const certificates = require('./certificates');
 const sse = require('./sse');
 const dependency = require('./dependency');
 const balancer = require('./balancer');
+const payloads = require('./payloads');
 
 const MIME = {
   json: 'application/json', xml: 'application/xml', html: 'text/html', text: 'text/plain', javascript: 'application/javascript',
@@ -278,9 +279,11 @@ function buildResponse(raw, maxPreview) {
  *   scriptSession (optional: a ScriptSession shared by several requests, e.g. a collection run),
  *   onStream(event) (optional: called for each Server-Sent Event as it arrives)
  * }
- * `scopes.pools` spreads discovered services over their instances (see balancer.js).
+ * `scopes.pools` spreads discovered services over their instances (see balancer.js), and
+ * `request.payloads` varies the data each call sends (see payloads.js; `info.payloadIndex` forces one).
  * Returns { response, error, tests, preRequestError, testError, nextRequest, sentRequest, scopes, visualizer,
- *   routing: [{ variable, service, instance, servedBy, ... }] (the instances this request went to) }
+ *   routing: [{ variable, service, instance, servedBy, ... }] (the instances this request went to),
+ *   payload: { index, name, count } (the payload this call used) }
  */
 async function execute(opts) {
   if (opts.scriptSession) return executeRequest(opts);
@@ -309,6 +312,10 @@ async function executeRequest(opts) {
   const result = { tests: [], scopes, nextRequest: undefined, visualizer: null };
   const pools = opts.scopes.pools || null;
   const picks = new Map(); // the instance each pooled variable went to, for this request
+  const info = opts.info || {};
+  const chosen = payloads.choose(request, { key: info.requestId || `${request.method} ${request.url}`, index: info.payloadIndex });
+  if (chosen) result.payload = payloads.apply(request, scopes, chosen);
+  const payloadName = result.payload ? result.payload.name : '';
   const streamed = []; // Server-Sent Events, timed from when the request was sent
 
   const scriptSendRequest = async (req) => {
@@ -341,7 +348,7 @@ async function executeRequest(opts) {
       chain: itemChain,
       scopes,
       depth,
-      info: { ...(opts.info || {}), requestName: item.name, requestId: item.id },
+      info: { ...(opts.info || {}), requestName: item.name, requestId: item.id, payloadIndex: undefined },
     }),
   });
   if (depCfg) {
@@ -375,7 +382,7 @@ async function executeRequest(opts) {
   let raw;
   for (let attempt = 0; ; attempt++) {
     try {
-      prepared = prepare(request, { chain, vars: balancer.bind(mergeScopes(scopes), pools, picks), settings, jar });
+      prepared = prepare(request, { chain, vars: balancer.bind(mergeScopes(scopes), pools, picks, { payload: payloadName }), settings, jar });
     } catch (e) {
       result.error = e.message;
       return result;
@@ -389,7 +396,7 @@ async function executeRequest(opts) {
     raw = await sendPrepared(prepared);
     if (!raw) {
       // A request the user cancelled says nothing about the instance.
-      if (picks.size) result.routing = opts.signal && opts.signal.aborted ? [...picks.values()] : balancer.settle(picks, pools, { error: result.error });
+      if (picks.size) result.routing = opts.signal && opts.signal.aborted ? [...picks.values()] : balancer.settle(picks, pools, { error: result.error, payload: payloadName });
       return result;
     }
     const canRetry = attempt === 0 && raw.status === 401 && depCfg && depCfg.retryOn401 && !result.dependencyRuns.length;
@@ -446,7 +453,7 @@ async function executeRequest(opts) {
   if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
   if (raw.cancelled) response.cancelled = true;
   result.response = response;
-  if (picks.size) result.routing = raw.cancelled ? [...picks.values()] : balancer.settle(picks, pools, { response });
+  if (picks.size) result.routing = raw.cancelled ? [...picks.values()] : balancer.settle(picks, pools, { response, payload: payloadName });
   log('net', `${prepared.method} ${prepared.url} -> ${response.status} ${response.statusText} (${response.time} ms)`);
 
   // When the login request that others depend on is sent directly (or by the runner), store its

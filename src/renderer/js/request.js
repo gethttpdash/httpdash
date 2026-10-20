@@ -162,6 +162,7 @@
       { id: 'auth', label: 'Authorization', dot: req.auth && !['inherit', 'none'].includes(req.auth.type) },
       { id: 'headers', label: 'Headers', badge: req.headers.filter((p) => p.enabled !== false && p.key).length || null },
       { id: 'body', label: 'Body', dot: req.body && req.body.mode !== 'none' },
+      { id: 'payloads', label: 'Payloads', badge: req.payloads && req.payloads.mode && req.payloads.mode !== 'off' ? (req.payloads.items || []).filter((x) => x.enabled !== false).length || null : null },
       { id: 'pre', label: 'Pre-request Script', dot: !!(req.preRequestScript || '').trim() },
       { id: 'tests', label: 'Tests', dot: !!(req.testScript || '').trim() },
       { id: 'settings', label: 'Settings' },
@@ -185,6 +186,7 @@
       }
       else if (t === 'headers') renderHeaders();
       else if (t === 'body') renderBody();
+      else if (t === 'payloads') renderPayloads();
       else if (t === 'pre') reqPanel.appendChild(HD.scriptEditor(req, 'preRequestScript', SNIPPETS.pre, panelChanged, 'Pre-request scripts run before the request is sent. Collection and folder scripts run first.'));
       else if (t === 'tests') reqPanel.appendChild(HD.scriptEditor(req, 'testScript', SNIPPETS.test, panelChanged, 'Test scripts run after the response is received. Use pm.test() and pm.expect().'));
       else if (t === 'settings') renderSettings();
@@ -193,6 +195,71 @@
           h('label.field', h('span', 'Description'),
             h('textarea.input.docs-input', { value: req.description || '', placeholder: 'Describe what this request does, its parameters and expected responses…', oninput: (e) => { req.description = e.target.value; markDirty(); } }))));
       }
+    };
+
+    // Payloads: named variations of this request's data, sent in turn or at random (see payloads.js).
+    const renderPayloads = () => {
+      const p = (req.payloads = req.payloads || { mode: 'off', items: [] });
+      p.items = p.items || [];
+      const redraw = () => { renderReqTabs(); HD.clear(reqPanel); renderPayloads(); };
+      const changed = () => { markDirty(); renderReqTabs(); };
+      const add = (item) => { p.items.push({ id: HD.uid(), enabled: true, variables: [], body: '', ...item }); if (p.mode === 'off' || !p.mode) p.mode = 'sequence'; markDirty(); redraw(); };
+      const importRows = async () => {
+        const [f] = await window.api.openFile({ filters: [{ name: 'Data', extensions: ['csv', 'json'] }] });
+        if (!f) return;
+        try {
+          const d = await window.api.readDataFile(f);
+          const rows = await window.api.payloadsFromRows(d.rows);
+          for (const r of rows) p.items.push({ id: HD.uid(), ...r });
+          if (!p.mode || p.mode === 'off') p.mode = 'sequence';
+          markDirty();
+          redraw();
+          HD.toast(`Added ${rows.length} payload${rows.length === 1 ? '' : 's'} from ${d.file}`, 'success');
+        } catch (e) { HD.toast(`Could not read ${f}: ${HD.cleanErr(e)}`, 'error', 6000); }
+      };
+      const wrap = h('div.panel-pad.payloads');
+      wrap.appendChild(h('div.payloads-head',
+        h('label.field', h('span', 'Each call sends'),
+          HD.select([['off', 'The request as it is (payloads off)'], ['sequence', 'The next payload, in turn'], ['random', 'A random payload']], p.mode || 'off', (v) => { p.mode = v; changed(); })),
+        h('span.spacer'),
+        HD.button('Add payload', () => add({ name: `Payload ${p.items.length + 1}`, body: req.body && req.body.mode === 'raw' ? req.body.raw || '' : '' }), { icon: 'plus', small: true }),
+        HD.button('Import CSV / JSON', importRows, { icon: 'file', small: true, ghost: true, title: 'One payload per row: a "name" column names it, a "body" column is its body, every other column is a variable' })));
+      wrap.appendChild(h('div.muted.small.payloads-help',
+        'A payload\'s variables apply to that call only, and win over every other scope: use them anywhere in the request, e.g. ',
+        h('code', '{{orderId}}'), ' in the URL or body. A payload with a body replaces the request\'s body; without one, the request\'s body is sent with the payload\'s variables. Payloads are used in Send, the Runner and Monitors.'));
+      if (!p.items.length) {
+        wrap.appendChild(h('div.empty-state.small', h('div', 'No payloads yet.'), h('div.muted', 'Add the variations this endpoint should be called with: different orders, customers, sizes, edge cases…')));
+      }
+      // Which payloads are expanded is the tab's view state, not part of the request.
+      const open = (ui.openPayloads = ui.openPayloads || {});
+      p.items.forEach((item, i) => {
+        item.variables = item.variables || [];
+        const isOpen = open[item.id] !== undefined ? open[item.id] : p.items.length <= 3;
+        const toggle = () => { open[item.id] = !isOpen; HD.save(); redraw(); };
+        const card = h('div.payload', { class: isOpen ? 'open' : '' },
+          h('div.payload-head',
+            HD.button('', toggle, { small: true, ghost: true, icon: 'chevron', title: isOpen ? 'Collapse' : 'Expand', class: 'payload-toggle' }),
+            h('input', { type: 'checkbox', checked: item.enabled !== false, title: 'Use this payload', onchange: (e) => { item.enabled = e.target.checked; changed(); } }),
+            h('input.input.payload-name', { value: item.name || '', placeholder: `Payload ${i + 1}`, oninput: (e) => { item.name = e.target.value; markDirty(); } }),
+            h('span.muted.small.ellipsis.payload-sum', { onclick: toggle }, [
+              item.variables.filter((v) => v.key && v.enabled !== false).map((v) => `${v.key}=${v.value}`).join(', '),
+              String(item.body || '').trim() ? 'own body' : '',
+            ].filter(Boolean).join(' · ')),
+            HD.button('Send with this', () => send(i), { small: true, icon: 'play' }),
+            HD.button('', () => { const copy = { ...HD.clone(item), id: HD.uid(), name: `${item.name || 'Payload'} copy` }; open[copy.id] = true; p.items.splice(i + 1, 0, copy); markDirty(); redraw(); }, { small: true, ghost: true, icon: 'copy', title: 'Duplicate' }),
+            HD.button('', () => { p.items.splice(i, 1); delete open[item.id]; markDirty(); redraw(); }, { small: true, ghost: true, icon: 'trash', title: 'Delete' })));
+        if (isOpen) {
+          const bodyHost = h('div.payload-body');
+          card.append(
+            HD.kvTable({ title: 'Variables', rows: item.variables, onChange: changed }),
+            h('div.payload-body-label.small.muted', 'Body (empty: send the request\'s body)'),
+            bodyHost);
+          // Only open payloads get an editor, so hundreds of imported rows stay light.
+          requestAnimationFrame(() => HD.editor(bodyHost, { value: item.body || '', mode: (req.body && req.body.rawLanguage) || 'json', variables: true, placeholder: req.body && req.body.mode === 'raw' ? req.body.raw : '', onChange: (v) => { item.body = v; markDirty(); } }));
+        }
+        wrap.appendChild(card);
+      });
+      reqPanel.appendChild(wrap);
     };
 
     const renderParams = () => {
@@ -448,7 +515,8 @@
 
     // ---- Send ---------------------------------------------------------------------------------
 
-    const send = async () => {
+    // `payloadIndex` sends with that payload ("Send with this"), whatever the payloads mode.
+    const send = async (payloadIndex) => {
       if (S.sending.get(tab.id)) { window.api.cancel(tab.id); return; }
       if (!req.url.trim()) { HD.toast('Enter a request URL', 'warn'); return; }
       const { collection, chain } = context();
@@ -470,7 +538,7 @@
           collection: collection ? HD.clone(collection) : null,
           scopes,
           settings,
-          info: { requestName: draft.name, requestId: tab.refId || tab.id },
+          info: { requestName: draft.name, requestId: tab.refId || tab.id, payloadIndex: Number.isInteger(payloadIndex) ? payloadIndex : undefined },
         });
       } catch (e) {
         result = { error: e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), tests: [] };
