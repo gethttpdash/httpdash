@@ -38,7 +38,8 @@
     "cli": "node bin/httpdash.js",
     "dist:linux": "electron-builder --linux --publish never",
     "vendor": "node scripts/vendor-chai.js",
-    "bench": "node bench/run.js"
+    "bench": "node bench/run.js",
+    "audit:contrast": "electron scripts/contrast/main.js"
   },
   "dependencies": {
     "@jitl/quickjs-wasmfile-release-sync": "0.32.0",

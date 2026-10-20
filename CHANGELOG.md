@@ -8,6 +8,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Import from a link:** paste the URL of an OpenAPI/Swagger spec or a Postman collection in the Import dialog, with an optional Bearer token for protected specs. It's fetched with your proxy, certificates and SSL settings.
 
 ### Changed
+- **Readable everywhere:** all text now meets WCAG AA contrast (4.5:1) in both themes. Toasts (success, warning, error) were hard to read, and so were the primary buttons in dark mode, muted labels and timestamps, status badges and method tags, placeholders in dark mode, and some code colors. `npm run audit:contrast` checks every screen in both themes.
 - OpenAPI import: when every operation uses the same auth, it's set once on the collection and the requests inherit it.
 - **License:** from this version on, HttpDash is licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). It stays free to use, at work too, and the source stays available; what it doesn't allow is offering HttpDash, or a fork, as a competing commercial product or service. Each version also becomes Apache 2.0 two years after its release. HttpDash 1.2.0 and earlier remain under the MIT License.
 

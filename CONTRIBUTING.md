@@ -44,7 +44,7 @@ Scripts run inside a QuickJS sandbox. The `pm` API lives in `src/core/sandbox-gu
 1. Create a branch from `main`.
 2. Make your change, matching the style of the code around it: plain CommonJS, small functions, comments only where the *why* isn't obvious.
 3. Add or update tests in `test/` for anything in `src/core/`. Run `npm test`; it must pass.
-4. For UI changes, try them in both light and dark themes and in a narrow window.
+4. For UI changes, try them in both light and dark themes and in a narrow window, and run `npm run audit:contrast`: it opens the app, goes through its screens in both themes, and fails if any text is below WCAG AA contrast (4.5:1). Colors are tokens at the top of `src/renderer/css/app.css`; use the `-solid` tokens (`--ok-solid`, `--accent-solid`…) for fills behind white text.
 5. Update `README.md` if you changed how something works, and add a line under **Unreleased** in `CHANGELOG.md`.
 6. Open a pull request and fill in the template. CI runs the tests and builds macOS, Windows and Linux packages.
 
