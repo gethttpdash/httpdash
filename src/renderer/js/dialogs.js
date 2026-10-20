@@ -200,7 +200,7 @@
     const body = h('div.settings');
     const render = () => {
       HD.clear(body);
-      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
+      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'certificates', label: 'Certificates' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
       const panel = h('div.settings-panel');
       if (section === 'general') {
         panel.append(
@@ -223,6 +223,8 @@
           text('username', 'Username (optional)', null, p),
           text('password', 'Password (optional)', null, p, 'password'),
           text('bypass', 'Bypass for hosts', 'Comma-separated, supports *.example.com', p));
+      } else if (section === 'certificates') {
+        renderCertificates(panel, s, render);
       } else if (section === 'appearance') {
         panel.append(
           h('div.setting-row', h('div', h('div.setting-label', 'Theme')), HD.select([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], s.theme || 'system', (v) => { s.theme = v; HD.save(); HD.applyTheme(); })),
@@ -243,6 +245,55 @@
     render();
     HD.modal({ title: 'Settings', body, width: 680, onClose: () => HD.renderActiveTab() });
   };
+
+  // Settings → Certificates: an extra CA, and client certificates for mutual TLS.
+  function renderCertificates(panel, s, rerender) {
+    const base = (f) => (f ? String(f).split(/[\\/]/).pop() : '');
+    const choose = async (filters) => { const [f] = await window.api.openFile({ filters }); return f || null; };
+    const PEM = [{ name: 'Certificates', extensions: ['pem', 'crt', 'cer', 'key'] }, { name: 'All files', extensions: ['*'] }];
+    const PFX = [{ name: 'PKCS #12', extensions: ['pfx', 'p12'] }, { name: 'All files', extensions: ['*'] }];
+
+    const ca = (s.caCertificate = s.caCertificate || { enabled: false, path: '' });
+    panel.append(
+      h('div.setting-row',
+        h('div', h('div.setting-label', 'CA certificate'), h('div.setting-help', ca.path ? h('span.mono', ca.path) : 'Trust an extra certificate authority, such as your company\'s, in addition to the built-in ones. PEM file.')),
+        h('div.cert-actions',
+          HD.button(ca.path ? 'Change…' : 'Choose…', async () => { const f = await choose(PEM); if (f) { ca.path = f; ca.enabled = true; HD.save(); rerender(); } }, { small: true }),
+          ca.path ? h('label.switch', { title: 'Use this CA certificate' }, h('input', { type: 'checkbox', checked: ca.enabled !== false, onchange: (e) => { ca.enabled = e.target.checked; HD.save(); } }), h('span.slider')) : null)));
+
+    const list = (s.certificates = s.certificates || []);
+    panel.append(h('div.setting-row.cert-head',
+      h('div', h('div.setting-label', 'Client certificates'), h('div.setting-help', 'Sent to the hosts you choose, for APIs that use mutual TLS. The first matching certificate is used; leave the port empty to match any port.'))));
+    panel.append(list.length ? h('div.cert-list', list.map((c, i) => h('div.cert-item',
+      h('div.cert-main',
+        h('div.cert-host', c.host + (c.port ? `:${c.port}` : '')),
+        h('div.cert-files.muted.small', [c.pfx ? `PFX: ${base(c.pfx)}` : null, c.crt ? `CRT: ${base(c.crt)}` : null, c.key ? `KEY: ${base(c.key)}` : null, c.passphrase ? 'passphrase set' : null].filter(Boolean).join(' · '))),
+      h('label.switch', { title: 'Use this certificate' }, h('input', { type: 'checkbox', checked: c.enabled !== false, onchange: (e) => { c.enabled = e.target.checked; HD.save(); } }), h('span.slider')),
+      HD.button('', () => { list.splice(i, 1); HD.save(); rerender(); }, { icon: 'trash', ghost: true, small: true, title: 'Remove certificate' }))))
+      : h('div.muted.small.cert-empty', 'No client certificates yet.'));
+
+    // The add form; nothing is saved until "Add certificate" is clicked.
+    const draft = { host: '', port: '', crt: '', key: '', pfx: '', passphrase: '' };
+    const fileField = (key, label, filters) => {
+      const name = h('span.cert-file.muted.small', 'None');
+      const btn = HD.button('Choose…', async () => { const f = await choose(filters); if (f) { draft[key] = f; name.textContent = base(f); name.title = f; } }, { small: true });
+      return h('div.field', h('span', label), h('div.cert-file-row', btn, name));
+    };
+    const input = (key, label, opts = {}) => h('label.field', h('span', label), h('input.input', { type: opts.type || 'text', placeholder: opts.placeholder || '', spellcheck: 'false', oninput: (e) => { draft[key] = e.target.value; } }));
+    const form = h('div.cert-form',
+      h('div.field-row', input('host', 'Host', { placeholder: 'api.example.com or *.example.com' }), input('port', 'Port (optional)', { placeholder: '443' })),
+      h('div.field-row', fileField('crt', 'CRT file', PEM), fileField('key', 'KEY file', PEM)),
+      h('div.field-row', fileField('pfx', 'or PFX file', PFX), input('passphrase', 'Passphrase (optional)', { type: 'password' })),
+      HD.button('Add certificate', () => {
+        const host = draft.host.trim();
+        if (!host) { HD.toast('Enter the host the certificate is for', 'warn'); return; }
+        if (!draft.pfx && !(draft.crt && draft.key)) { HD.toast('Choose a CRT and KEY file, or a PFX file', 'warn'); return; }
+        list.push({ host, port: draft.port.trim(), crt: draft.crt, key: draft.key, pfx: draft.pfx, passphrase: draft.passphrase, enabled: true });
+        HD.save();
+        rerender();
+      }, { primary: true, small: true }));
+    panel.append(h('details.cert-add', list.length ? {} : { open: true }, h('summary', 'Add a client certificate'), form));
+  }
 
   // ---- Cookies ------------------------------------------------------------------------------
 

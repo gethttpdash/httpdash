@@ -8,6 +8,7 @@ const httpClient = require('./http-client');
 const cookies = require('./cookies');
 const { resolve, mergeScopes } = require('./variables');
 const { runScript, ScriptSession } = require('./sandbox');
+const certificates = require('./certificates');
 const dependency = require('./dependency');
 
 const MIME = {
@@ -263,6 +264,7 @@ function buildResponse(raw, maxPreview) {
     url: raw.url,
     redirects: raw.redirects || [],
     remoteAddress: raw.remoteAddress,
+    clientCertificate: raw.clientCertificate || null,
   };
 }
 
@@ -461,6 +463,7 @@ function clientOptions(prepared, settings, jar) {
     maxRedirects: settings.maxRedirects || 10,
     proxy: settings.proxy,
     maxSize: settings.maxResponseBytes || 0,
+    tlsFor: (u) => certificates.tlsFor(u, settings),
     cookieHeaderFor: settings.sendCookies !== false && jar ? (u) => cookies.cookieHeader(jar, u) : null,
   };
 }
@@ -495,9 +498,15 @@ function describeNetworkError(e) {
     CERT_HAS_EXPIRED: 'SSL certificate has expired (disable SSL verification in Settings to ignore)',
     DEPTH_ZERO_SELF_SIGNED_CERT: 'Self-signed SSL certificate (disable SSL verification in Settings to ignore)',
     SELF_SIGNED_CERT_IN_CHAIN: 'Self-signed certificate in chain (disable SSL verification in Settings to ignore)',
-    UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Unable to verify SSL certificate (disable SSL verification in Settings to ignore)',
+    UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Unable to verify SSL certificate (add your CA in Settings → Certificates, or disable SSL verification)',
+    ERR_SSL_TLSV13_ALERT_CERTIFICATE_REQUIRED: 'The server requires a client certificate (add one in Settings → Certificates)',
   };
   const base = e && e.message ? e.message : String(e);
+  // TLS failures from OpenSSL come with long internal details; say what they mean instead.
+  if (/bad decrypt|mac verify fail|PKCS12/i.test(base)) return 'Could not open the client certificate: the passphrase is wrong or the file is damaged (Settings → Certificates)';
+  if (/alert certificate required/i.test(base)) return 'The server requires a client certificate. Add one for this host in Settings → Certificates.';
+  if (/alert (bad certificate|unknown ca|certificate unknown|access denied)/i.test(base)) return 'The server rejected the client certificate. Check that it is the right one for this host and not expired (Settings → Certificates).';
+  if (/handshake failure/i.test(base)) return `The TLS handshake failed; the server may require a client certificate (Settings → Certificates). Details: ${base}`;
   return e && e.code && map[e.code] ? `${map[e.code]}: ${base}` : base;
 }
 

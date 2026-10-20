@@ -97,6 +97,7 @@ httpdash run backup.json -c "CCER SGF1 QA" -e "CCER_SGF1_QA" --env-var password=
   - `-n` for iterations and `-d data.csv` for data-driven runs.
   - `--folder`, `--bail`, `--delay-request`, `--timeout-request`.
   - `-k` to skip SSL verification.
+  - Client certificates with Newman's flags: `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` (Newman's JSON format) and `--ssl-extra-ca-certs`.
   - Reporters: `cli`, `json` and `junit` (JUnit XML is read by Jenkins, GitLab, Azure DevOps and GitHub test reporters).
 - **What carries over from the app:** auth dependencies and scripts work exactly as in the app.
 - **Exit codes:** `0` all passed, `1` a test or request failed, `2` bad arguments or input.
@@ -226,6 +227,19 @@ To add a registry, open **Environments** in the sidebar and click **Service disc
 
 ![Service discovery preview](docs/screenshots/14-discovery-preview.png)
 
+## Client certificates and custom CAs
+
+For APIs that use mutual TLS, add a client certificate in **Settings → Certificates**:
+
+- **Host:** a name such as `api.example.com`, or a wildcard such as `*.example.com`. Optionally add a port; leave it empty to match any port.
+- **Files:** a CRT and KEY file (PEM), or a PFX/P12 file. Add the passphrase if the key or PFX has one.
+- The first enabled certificate that matches the request's host is used, on every hop of a redirect and through a proxy. The response **Timeline** shows which one was sent.
+- Certificate files are read when needed, so renewed certificates are picked up without restarting.
+
+**CA certificate** adds your company's certificate authority (a PEM bundle) to the trusted ones, so internal HTTPS servers work without turning off SSL verification.
+
+Passphrases are left out of exports when you tick **Leave out secrets**. If a server asks for a certificate you haven't added, or the passphrase is wrong, the error says so in plain words.
+
 ## Spoofing Referer, Origin, User-Agent and other headers
 
 Requests are sent from Node's HTTP stack, not a browser, so none of the browser's "forbidden header" rules apply. Whatever you put in the **Headers** tab is sent exactly as written, including:
@@ -299,7 +313,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 
 ## Not included
 
-Compared with Postman, these are not implemented: WebSocket, gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; client certificates; API documentation publishing and hosted cloud sync (team sharing works through git instead); YAML OpenAPI import.
+Compared with Postman, these are not implemented: WebSocket, gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead); YAML OpenAPI import.
 
 Scripts run in a sandbox: QuickJS, a separate JavaScript engine compiled to WebAssembly, with a fresh engine per script and limits of 30 seconds and 256 MB. They can't reach Node, files, other processes or HttpDash's own data. They can still send requests with `pm.sendRequest` and read the variables in scope, so review scripts from people you don't trust before running them. See [SECURITY.md](SECURITY.md).
 

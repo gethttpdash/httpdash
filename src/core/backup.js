@@ -30,7 +30,7 @@ function stripAuth(auth) {
 /**
  * Removes credentials from a workspace copy (mutates it):
  * secret variables, variables that hold auth-dependency tokens, literal auth credentials,
- * discovery registry tokens, the proxy password and cookies.
+ * discovery registry tokens, the proxy password, client certificate passphrases and cookies.
  */
 function stripSecrets(ws) {
   const tokenVars = new Set();
@@ -55,6 +55,7 @@ function stripSecrets(ws) {
     for (const hd of s.headers || []) if (/authorization|token|key|secret/i.test(hd.key || '')) hd.value = '';
   }
   if (ws.settings && ws.settings.proxy) ws.settings.proxy.password = '';
+  for (const c of (ws.settings && ws.settings.certificates) || []) c.passphrase = '';
   delete ws.cookies;
   return ws;
 }

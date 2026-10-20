@@ -302,6 +302,7 @@
         t.firstByte != null ? `First byte        ${HD.formatMs(t.firstByte)}` : null,
         `Total             ${HD.formatMs(t.total)}`,
         res.remoteAddress ? `Remote address    ${res.remoteAddress}` : null,
+        res.clientCertificate ? `Client cert       ${res.clientCertificate}` : null,
       ].filter(Boolean).join('\n')));
     }
     content.appendChild(h('div.timeline', parts));

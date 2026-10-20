@@ -57,7 +57,8 @@ function connectTunnel(proxy, target, timeout) {
 
 /**
  * Performs a single HTTP exchange (no redirect handling).
- * opts: { method, url, headers: [[k, v]], body: Buffer|null, timeout, verifySSL, proxy }
+ * opts: { method, url, headers: [[k, v]], body: Buffer|null, timeout, verifySSL, proxy,
+ *         tlsFor(url) -> { cert, key, pfx, passphrase, ca, label } | null (client and CA certificates) }
  */
 async function exchange(opts) {
   const url = new URL(opts.url);
@@ -85,6 +86,12 @@ async function exchange(opts) {
     agent: false,
     servername: url.hostname,
   };
+  const tlsOpts = isHttps && opts.tlsFor ? opts.tlsFor(url.href) : null;
+  const tlsExtra = {};
+  if (tlsOpts) {
+    for (const k of ['cert', 'key', 'pfx', 'passphrase', 'ca']) if (tlsOpts[k] !== undefined) tlsExtra[k] = tlsOpts[k];
+    Object.assign(reqOpts, tlsExtra);
+  }
 
   const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {
@@ -96,6 +103,7 @@ async function exchange(opts) {
         socket,
         servername: url.hostname,
         rejectUnauthorized: reqOpts.rejectUnauthorized,
+        ...tlsExtra,
       });
     } else {
       reqOpts.hostname = proxy.host;
@@ -153,6 +161,7 @@ async function exchange(opts) {
             total: timings.end,
           },
           remoteAddress: res.socket && res.socket.remoteAddress,
+          clientCertificate: tlsOpts && tlsOpts.label ? tlsOpts.label : null,
         });
       });
       res.on('error', fail);

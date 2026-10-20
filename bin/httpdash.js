@@ -15,6 +15,7 @@ const runner = require('../src/core/runner');
 const postman = require('../src/core/postman');
 const backup = require('../src/core/backup');
 const { listToObject } = require('../src/core/variables');
+const certificates = require('../src/core/certificates');
 
 const HELP = `HttpDash command-line runner
 
@@ -35,6 +36,11 @@ Options:
       --delay-request <ms>      Wait between requests
       --timeout-request <ms>    Request timeout
   -k, --insecure                Do not verify SSL certificates
+      --ssl-client-cert <file>        Client certificate (PEM, or PFX) sent to every host
+      --ssl-client-key <file>         Key for --ssl-client-cert (PEM)
+      --ssl-client-passphrase <text>  Passphrase for the key or PFX
+      --ssl-client-cert-list <file>   JSON list of certificates per host (Newman's format)
+      --ssl-extra-ca-certs <file>     Extra trusted CA certificates (PEM)
       --bail                    Stop at the first failure
   -r, --reporters <list>        cli,json,junit (default: cli)
       --reporter-json-export <file>   Where to write the JSON report (default: httpdash-report.json)
@@ -70,6 +76,11 @@ function parseArgs(argv) {
       case '--delay-request': opts.delay = Number(val()); break;
       case '--timeout-request': opts.timeout = Number(val()); break;
       case '-k': case '--insecure': opts.insecure = true; break;
+      case '--ssl-client-cert': opts.clientCert = val(); break;
+      case '--ssl-client-key': opts.clientKey = val(); break;
+      case '--ssl-client-passphrase': opts.clientPassphrase = val(); break;
+      case '--ssl-client-cert-list': opts.clientCertList = val(); break;
+      case '--ssl-extra-ca-certs': opts.extraCa = val(); break;
       case '--bail': opts.bail = true; break;
       case '-r': case '--reporters': opts.reporters = val().split(',').map((s) => s.trim()).filter(Boolean); break;
       case '--reporter-json-export': opts.jsonOut = val(); break;
@@ -91,6 +102,20 @@ function usage(msg) {
   const e = new Error(msg);
   e.exitCode = 2;
   return e;
+}
+
+// Client certificates from the command line: a per-host list, then one certificate for every host.
+function clientCertificates(opts) {
+  const list = opts.clientCertList ? certificates.fromNewmanList(readJson(opts.clientCertList), path.dirname(path.resolve(opts.clientCertList))) : [];
+  if (opts.clientCert) {
+    const file = path.resolve(opts.clientCert);
+    const isPfx = /\.(pfx|p12)$/i.test(file);
+    list.push({
+      host: '*', crt: isPfx ? '' : file, pfx: isPfx ? file : '', key: opts.clientKey ? path.resolve(opts.clientKey) : '',
+      passphrase: opts.clientPassphrase || '', enabled: true,
+    });
+  }
+  return list;
 }
 
 const readJson = (file) => {
@@ -217,6 +242,8 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
     const settings = {
       timeout: opts.timeout || 0, verifySSL: !opts.insecure, followRedirects: true, sendCookies: true, sendNoCache: true,
       userAgent: 'HttpDash-CLI/1.0', maxResponseBytes: 50 * 1024 * 1024,
+      certificates: clientCertificates(opts),
+      caCertificate: opts.extraCa ? { enabled: true, path: path.resolve(opts.extraCa) } : null,
     };
     const cli = opts.reporters.includes('cli');
     if (cli) {
