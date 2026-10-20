@@ -58,7 +58,7 @@
   "build": {
     "appId": "com.httpdash.app",
     "productName": "HttpDash",
-    "copyright": "Copyright © 2026 restimguay",
+    "copyright": "Copyright © 2026 Resti Guay",
     "directories": {
       "output": "dist",
       "buildResources": "build"
