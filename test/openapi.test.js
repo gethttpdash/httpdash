@@ -187,3 +187,20 @@ test('bad input is refused with a clear message', () => {
   // JSON still works exactly as before.
   assert.strictEqual(postman.importText(JSON.stringify({ openapi: '3.0.0', info: { title: 'J' }, paths: {} })).data.name, 'J');
 });
+
+test('auth shared by every operation moves to the collection', () => {
+  const { data: col } = postman.importText(JSON.stringify({
+    openapi: '3.1.0', info: { title: 'Shared' }, servers: [{ url: 'https://api.test' }],
+    components: { securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } } },
+    paths: { '/a': { get: { security: [{ bearer: [] }] } }, '/b': { post: { security: [{ bearer: [] }] } } },
+  }));
+  assert.deepStrictEqual(col.auth, { type: 'bearer', bearer: { token: '{{token}}' } });
+  assert.deepStrictEqual(col.items.map((i) => i.request.auth.type), ['inherit', 'inherit']);
+  // Mixed auth stays on each request.
+  const { data: mixed } = postman.importText(JSON.stringify({
+    openapi: '3.1.0', info: { title: 'Mixed' }, components: { securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } } },
+    paths: { '/a': { get: { security: [{ bearer: [] }] } }, '/health': { get: { security: [] } } },
+  }));
+  assert.strictEqual(mixed.auth.type, 'none');
+  assert.deepStrictEqual(mixed.items.map((i) => i.request.auth.type), ['bearer', 'none']);
+});

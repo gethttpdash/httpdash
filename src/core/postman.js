@@ -325,6 +325,18 @@ function importOpenApi(doc) {
       } else col.items.push(item);
     }
   }
+  // When there's no spec-wide security but every operation uses the same auth, set it once on the
+  // collection and let the requests inherit it.
+  if (col.auth.type === 'none') {
+    const reqs = [];
+    const walk = (items) => items.forEach((i) => (i.type === 'folder' ? walk(i.items) : reqs.push(i.request)));
+    walk(col.items);
+    const first = reqs[0] && JSON.stringify(reqs[0].auth);
+    if (reqs.length && reqs[0].auth.type !== 'inherit' && reqs[0].auth.type !== 'none' && reqs.every((r) => JSON.stringify(r.auth) === first)) {
+      col.auth = reqs[0].auth;
+      for (const r of reqs) r.auth = { type: 'inherit' };
+    }
+  }
   for (const key of neededVars) col.variables.push({ key, value: '', enabled: true });
   return col;
 }

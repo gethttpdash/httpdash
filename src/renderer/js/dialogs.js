@@ -69,7 +69,22 @@
   };
 
   HD.showImport = () => {
-    const ta = h('textarea.input.import-text', { placeholder: 'Paste a cURL command, an HttpDash backup, a Postman collection / environment JSON, or an OpenAPI 3 / Swagger 2 JSON document…', spellcheck: 'false' });
+    const ta = h('textarea.input.import-text', { placeholder: 'Paste a cURL command, an HttpDash backup, a Postman collection / environment, or an OpenAPI / Swagger document (JSON or YAML)…', spellcheck: 'false' });
+    const onEnter = (e) => { if (e.key === 'Enter') { e.preventDefault(); fromLink(); } };
+    const link = h('input.input.import-link', { type: 'url', placeholder: 'https://api.example.com/openapi.json', spellcheck: 'false', onkeydown: onEnter });
+    // Only used to fetch the document; it isn't saved.
+    const linkToken = h('input.input.import-token', { type: 'password', placeholder: 'Bearer token (optional)', spellcheck: 'false', autocomplete: 'off', onkeydown: onEnter });
+    const fromLink = async () => {
+      const url = link.value.trim();
+      if (!url) return false;
+      try {
+        const r = await window.api.importUrl({ url, token: linkToken.value.trim(), settings: S.ws.settings });
+        if (HD.applyImport([r]) > 0) { m.close(); return true; }
+      } catch (e) {
+        HD.toast(`Import failed: ${cleanErr(e)}`, 'error', 6000);
+      }
+      return false;
+    };
     const m = HD.modal({
       title: 'Import',
       width: 640,
@@ -80,7 +95,9 @@
             const items = await window.api.importFiles();
             if (HD.applyImport(items)) m.close();
           }, { primary: true, icon: 'upload' }),
-          h('div.muted.small', 'HttpDash backups, Postman collections (v2.0 / v2.1), environments and globals, OpenAPI 3 / Swagger 2 JSON. Select several files at once to import a whole Postman export folder.')),
+          h('div.muted.small', 'HttpDash backups, Postman collections (v2.0 / v2.1), environments and globals, OpenAPI 3 / Swagger 2 (JSON or YAML). Select several files at once to import a whole Postman export folder.')),
+        h('div.or', 'or import from a link'),
+        h('div.import-link-row', link, linkToken, HD.button('Fetch', () => fromLink(), { small: true })),
         h('div.or', 'or paste raw text'),
         ta),
       buttons: [
@@ -88,6 +105,7 @@
         {
           label: 'Import', primary: true,
           onClick: async () => {
+            if (link.value.trim() && !ta.value.trim()) return fromLink();
             const text = ta.value.trim();
             if (!text) return false;
             try {

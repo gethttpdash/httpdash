@@ -325,6 +325,25 @@ handle('codegen:generate', ({ target, request, chain, scopes }) => {
 
 handle('import:curl', (text) => parseCurl(text));
 handle('import:text', (text) => postman.importText(text));
+// Imports from a link (an OpenAPI spec, a Postman collection...), fetched with the user's proxy,
+// certificates and SSL settings.
+handle('import:url', async ({ url, token, settings }) => {
+  const s = settings || {};
+  if (!/^https?:\/\//i.test(String(url || '').trim())) throw new Error('Enter an http:// or https:// link');
+  const res = await httpClient.send({
+    method: 'GET', url: String(url).trim(), followRedirects: true, timeout: s.timeout || 30000, verifySSL: s.verifySSL !== false, proxy: s.proxy,
+    headers: [['Accept', 'application/json, application/yaml, text/yaml, */*'], ['User-Agent', s.userAgent || 'HttpDash/1.0'],
+      ...(token ? [['Authorization', `Bearer ${String(token).trim().replace(/^Bearer\s+/i, '')}`]] : [])],
+    maxSize: 50 * 1024 * 1024, tlsFor: (u) => certificates.tlsFor(u, s),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(`The link answered ${res.status} ${res.statusText}: it needs ${token ? 'a different' : 'a'} token. Enter it in the Bearer token field.`);
+  }
+  if (res.status >= 400) throw new Error(`The link answered ${res.status} ${res.statusText}`);
+  const r = postman.importText(res.body.toString('utf8'));
+  audit.append('import.url', { target: safeTarget(url), kind: r.kind });
+  return { ...r, file: url };
+});
 handle('import:files', async () => {
   const r = await dialog.showOpenDialog(win, {
     title: 'Import', properties: ['openFile', 'multiSelections'],

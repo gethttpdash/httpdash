@@ -847,3 +847,6 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .sse-detail { position: relative; background: var(--bg-2); border-bottom: 1px solid var(--border); }
 .sse-detail pre { margin: 0; padding: 8px 12px 10px 146px; white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
 .sse-detail-actions { position: absolute; right: 8px; top: 4px; }
+.import-link-row { display: flex; gap: 8px; align-items: center; }
+.import-link-row .import-link { flex: 1; }
+.import-link-row .import-token { width: 200px; }

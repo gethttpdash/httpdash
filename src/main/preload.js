@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
 
   importCurl: invoke('import:curl'),
   importText: invoke('import:text'),
+  importUrl: invoke('import:url'),
   importFiles: invoke('import:files'),
   exportCollection: invoke('export:collection'),
   exportEnvironment: invoke('export:environment'),
