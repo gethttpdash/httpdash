@@ -75,14 +75,35 @@
   /**
    * Flags an instance that answers much slower than its siblings, or fails often: [{ kind, why }].
    * Times are compared with the median of the service's other instances, each with enough requests.
+   * With `relative` (payloads), failing too means failing clearly more than the siblings: every
+   * payload visits every instance, so a failing instance spreads its errors over all payloads, and
+   * none of them should be blamed for it.
    */
-  HD.trafficFlags = (r, siblings) => {
+  HD.trafficFlags = (r, siblings, { relative = false } = {}) => {
     const MIN = 5;
     const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
     const out = [];
     const bad = r.status['5xx'] + r.errors;
-    if (r.requests >= MIN && bad / r.requests >= 0.2) out.push({ kind: 'failing', why: `${bad} of ${r.requests} requests ended in a 5xx or a connection error` });
+    const rate = r.requests ? bad / r.requests : 0;
     const others = siblings.filter((x) => x !== r && x.requests >= MIN && x.p50 != null);
+    // Relative: the failure rate must be clearly above the siblings' together, not a few unlucky
+    // requests (a two-proportion z-test; 3 of 8 against 2 of 16 is chance, 8 of 8 against 0 of 16 isn't).
+    let clearlyWorse = !relative;
+    let othersRate = null;
+    if (relative) {
+      const rest = siblings.filter((x) => x !== r);
+      const n2 = rest.reduce((n, x) => n + x.requests, 0);
+      const bad2 = rest.reduce((n, x) => n + x.status['5xx'] + x.errors, 0);
+      if (n2 >= MIN && r.requests) {
+        othersRate = bad2 / n2;
+        const pooled = (bad + bad2) / (r.requests + n2);
+        const se = Math.sqrt(pooled * (1 - pooled) * (1 / r.requests + 1 / n2));
+        clearlyWorse = se > 0 && (rate - othersRate) / se >= 2.5;
+      }
+    }
+    if (r.requests >= MIN && rate >= 0.2 && clearlyWorse) {
+      out.push({ kind: 'failing', why: `${bad} of ${r.requests} requests ended in a 5xx or a connection error${othersRate != null ? `, against ${Math.round(othersRate * 100)}% for the other payloads` : ''}` });
+    }
     if (r.requests >= MIN && r.p50 != null && others.length) {
       for (const p of ['p50', 'p95']) {
         const m = median(others.map((x) => x[p]));
@@ -107,7 +128,7 @@
    * had no traffic yet, so one that never gets a request stands out, and marks those that are no
    * longer in the pool. An instance counted by a load balancer's header isn't listed again empty.
    */
-  HD.trafficRows = (rows, known = {}) => {
+  HD.trafficRows = (rows, known = {}, { relative = false } = {}) => {
     const all = rows.map((r) => ({ ...r }));
     for (const [service, instances] of Object.entries(known)) {
       for (const i of instances) {
@@ -121,7 +142,7 @@
       const total = list.reduce((n, r) => n + r.requests, 0);
       const pool = known[service];
       return list.map((r) => {
-        const flags = HD.trafficFlags(r, list);
+        const flags = HD.trafficFlags(r, list, { relative });
         if (pool && !r.servedBy && !pool.some((i) => i.url === r.instance)) flags.push({ kind: 'left the pool', why: 'Not in the last sync: the registry no longer lists it (a failed health check, a scale-down or a redeploy)' });
         return { ...r, share: total ? r.requests / total : 0, serviceTotal: total, flags };
       });
@@ -129,8 +150,8 @@
   };
 
   const FLAG_PILL = { slow: 'changed', failing: 'removed' };
-  HD.trafficTable = (rows, known = {}, { label = 'Instance' } = {}) => {
-    const list = HD.trafficRows(rows, known);
+  HD.trafficTable = (rows, known = {}, { label = 'Instance', relative = false } = {}) => {
+    const list = HD.trafficRows(rows, known, { relative });
     const services = [...new Set(list.map((r) => r.service))];
     const ms = (v) => (v == null ? '—' : HD.formatMs(v));
     return h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
@@ -495,7 +516,7 @@
       const strategy = isOpenApi(src) ? null : { 'round-robin': 'each instance in turn (round robin)', random: 'a random instance' }[src.balance] || 'the first instance';
       const total = m.rows.reduce((n, r) => n + r.requests, 0);
       const rows = HD.trafficRows(m.rows, known);
-      const flagged = rows.flatMap((r) => r.flags);
+      const flagged = rows.flatMap((r) => r.flags); // instances only: a payload's flags have their own table
       const answering = new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size;
       // Payload rows look like instance rows to the table: the payload's name is the "instance".
       const payloadRows = (m.byPayload || []).map((r) => ({ ...r, instance: '', instanceId: r.payload, servedBy: '' }));
@@ -507,7 +528,7 @@
           service: r.service, instanceId: r.instanceId, instance: r.instance, servedBy: r.servedBy, requests: r.requests, share: r.share,
           p50: r.p50, p95: r.p95, avg: r.avg, ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
         })),
-        byPayload: HD.trafficRows(payloadRows).map((r) => ({
+        byPayload: HD.trafficRows(payloadRows, {}, { relative: true }).map((r) => ({
           service: r.service, payload: r.instanceId, requests: r.requests, share: r.share, p50: r.p50, p95: r.p95, avg: r.avg,
           ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
         })),
@@ -551,8 +572,8 @@
           h('div.stat', { class: flagged.some((f) => f.kind === 'failing') ? 'fail' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'failing').length)), h('div.stat-label', 'Failing'))));
         traffic.appendChild(HD.trafficTable(m.rows, known));
         if (payloadRows.length) {
-          traffic.appendChild(h('div.section-title.traffic-sub', 'By payload', h('span.muted.small', ' · slow here means slower than the endpoint\'s other payloads')));
-          traffic.appendChild(HD.trafficTable(payloadRows, {}, { label: 'Payload' }));
+          traffic.appendChild(h('div.section-title.traffic-sub', 'By payload', h('span.muted.small', ' · flags compare each payload with the endpoint\'s other payloads')));
+          traffic.appendChild(HD.trafficTable(payloadRows, {}, { label: 'Payload', relative: true }));
         }
         if (m.recent && m.recent.length) traffic.appendChild(recentList(m.recent));
         if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${services.slice(0, 2).map((x) => `{{${x.variable}}}`).join(' or ')}.`));
