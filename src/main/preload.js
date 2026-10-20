@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('api', {
   appInfo: invoke('app:info'),
 
   send: invoke('request:send'),
+  compareInstances: invoke('request:compare'),
+  compareAnswers: invoke('compare:answers'),
   cancel: invoke('request:cancel'),
 
   codegenTargets: invoke('codegen:targets'),

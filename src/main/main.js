@@ -17,6 +17,7 @@ const openapiSync = require('../core/openapi-sync');
 const balancer = require('../core/balancer');
 const trafficReport = require('../core/traffic-report');
 const payloads = require('../core/payloads');
+const compareAnswers = require('../core/compare');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -271,6 +272,49 @@ handle('request:send', async ({ id, request, chain, scopes, settings, info, coll
     saveJar();
   }
 });
+// Compare instances: the same request, once to each healthy instance of a discovered service, and
+// the answers compared (see compare.js). Every call sends the same payload. Variable changes made
+// by scripts are thrown away, except a token an auth dependency saved: the first instance goes
+// alone, so a login runs once, and the others use what it saved.
+const COMPARE_MAX_INSTANCES = 50;
+const COMPARE_BODY_LIMIT = 1024 * 1024;
+handle('request:compare', async ({ request, chain, scopes, settings, info, collection, variable }) => {
+  const pools = scopes.pools || {};
+  const pool = pools[variable];
+  if (!pool) throw new Error(`{{${variable}}} is not a variable from service discovery, or it was changed by hand`);
+  const instances = (pool.instances || []).filter((i) => i.url && i.healthy !== false).slice(0, COMPARE_MAX_INSTANCES);
+  if (instances.length < 2) throw new Error(`${pool.service} has ${instances.length} healthy instance${instances.length === 1 ? '' : 's'}: nothing to compare`);
+  const chosen = payloads.choose(request, { key: (info && info.requestId) || `${request.method} ${request.url}`, index: info && info.payloadIndex });
+  const lookup = makeLookup(collection);
+  const runOne = (inst, baseScopes) => execute({
+    request, chain, settings, jar, lookup,
+    scopes: { ...JSON.parse(JSON.stringify({ ...baseScopes, pools: undefined })), pools: { ...pools, [variable]: { ...pool, force: inst.url } } },
+    info: { ...(info || {}), payloadIndex: chosen ? chosen.index : undefined },
+    log: () => {},
+  });
+  const first = await runOne(instances[0], scopes);
+  const savedScopes = first.dependencyRuns && first.dependencyRuns.some((d) => d.stored && Object.keys(d.stored).length) ? first.scopes : null;
+  const rest = [];
+  for (let i = 1; i < instances.length; i += 8) {
+    rest.push(...await Promise.all(instances.slice(i, i + 8).map((inst) => runOne(inst, savedScopes ? { ...scopes, ...savedScopes } : scopes))));
+  }
+  const raw = [first, ...rest];
+  const results = raw.map((r, i) => ({ instance: instances[i].url, instanceId: instances[i].id || '', response: r.response || null, error: r.error || null, tests: r.tests || [] }));
+  const comparison = compareAnswers.compare(results, (request.compare || {}));
+  audit.append('request.compare', { name: info && info.requestName, service: pool.service, instances: instances.length, odd: comparison.differences.filter((d) => d.kind === 'odd').length });
+  // What goes back to the window: every instance's full result, with very large bodies cut.
+  return {
+    variable, service: pool.service, comparison, savedScopes,
+    results: raw.map((r, i) => {
+      const response = r.response && r.response.bodyText && r.response.bodyText.length > COMPARE_BODY_LIMIT
+        ? { ...r.response, bodyText: r.response.bodyText.slice(0, COMPARE_BODY_LIMIT), truncated: true } : r.response;
+      return { ...r, scopes: undefined, response, instance: instances[i].url, instanceId: instances[i].id || '' };
+    }),
+  };
+});
+// Compares answers again, e.g. after a path was ignored.
+handle('compare:answers', ({ results, ignore }) => compareAnswers.compare(results, ignore || {}));
+
 handle('request:cancel', (id) => { const c = inflight.get(id); if (c) c.abort(); return !!c; });
 
 // ---- WebSocket ----------------------------------------------------------------------------------

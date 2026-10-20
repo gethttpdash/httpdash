@@ -154,7 +154,25 @@
 
     const urlHost = h('div.url-input');
     const sendBtn = h('button.btn.btn-primary.send-btn', { type: 'button', onclick: () => send() }, 'Send');
-    const urlBar = h('div.url-bar', methodSel, urlHost, sendBtn);
+    // Compare instances: shown when the URL uses a discovered service with two or more healthy instances.
+    const compareBtn = h('button.btn.compare-btn', { type: 'button', hidden: true, onclick: () => compare() }, HD.icon('layers'), h('span', 'Compare'));
+    const comparable = () => {
+      const pools = HD.discoveryPools && HD.discoveryPools(HD.activeEnvironment());
+      if (!pools) return null;
+      for (const [variable, pool] of Object.entries(pools)) {
+        if (!new RegExp(`\\{\\{\\s*${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`).test(req.url || '')) continue;
+        const healthy = (pool.instances || []).filter((i) => i.url && i.healthy !== false).length;
+        if (healthy >= 2) return { variable, pool, healthy };
+      }
+      return null;
+    };
+    const updateCompare = () => {
+      const target = comparable();
+      compareBtn.hidden = !target;
+      if (target) compareBtn.title = `Send to all ${target.healthy} instances of ${target.pool.service} and compare their answers`;
+    };
+    const urlBar = h('div.url-bar', methodSel, urlHost, sendBtn, compareBtn);
+    updateCompare();
 
     // Request sub-tabs.
     const reqTabs = () => [
@@ -410,6 +428,20 @@
       }
       HD.renderResponse(resPane, result, ui, {
         onClear: () => { S.responses.delete(tab.id); renderRes(); },
+        // Compare: ignoring a header or path is saved on the request, and the answers compared again.
+        compareIgnore: result.compare ? async (change) => {
+          const ig = (req.compare = req.compare || { ignorePaths: [], ignoreHeaders: [] });
+          const list = change.header ? (ig.ignoreHeaders = ig.ignoreHeaders || []) : (ig.ignorePaths = ig.ignorePaths || []);
+          const value = change.header || change.path;
+          if (change.remove) list.splice(list.indexOf(value), 1);
+          else if (!list.includes(value)) list.push(value);
+          markDirty();
+          result.compare.comparison = await window.api.compareAnswers({
+            results: result.compare.results.map((r) => ({ instance: r.instance, instanceId: r.instanceId, response: r.response, error: r.error, tests: r.tests })), ignore: ig,
+          });
+          renderRes();
+        } : null,
+        compareIgnored: req.compare || {},
         onSaveExample: tab.refId && result.response ? async () => {
           const found = HD.find(tab.refId);
           if (!found) return;
@@ -489,6 +521,7 @@
       onChange: (v) => {
         req.url = v;
         HD.syncParamsFromUrl(req);
+        updateCompare();
         markDirty();
         renderReqTabs();
         if ((ui.reqTab || 'params') === 'params' && !reqPanel.contains(document.activeElement)) renderReqPanel();
@@ -515,16 +548,58 @@
 
     // ---- Send ---------------------------------------------------------------------------------
 
+    // The app's settings with this request's own overrides.
+    const requestSettings = () => {
+      const g = S.ws.settings;
+      const o = req.settings || {};
+      const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
+      return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
+    };
+    const chainFor = (chain) => chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency }));
+
+    // Sends the request to every healthy instance of the service in its URL and compares the answers.
+    const compare = async () => {
+      const target = comparable();
+      if (!target || S.sending.get(tab.id)) return;
+      const method = String(req.method || 'GET').toUpperCase();
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !(await HD.confirm('Send to every instance',
+        `This ${method} will be sent ${target.healthy} times, once to each instance of ${target.pool.service}, so whatever it changes is changed ${target.healthy} times.`,
+        { okLabel: `Send ${target.healthy} times` }))) return;
+      const { collection, chain } = context();
+      const scopes = HD.scopesFor(collection);
+      S.sending.set(tab.id, true);
+      HD.renderTabBar();
+      if (HD.currentTab() === tab) (S.resRenderers.get(tab.id) || renderRes)();
+      let result;
+      try {
+        const out = await window.api.compareInstances({
+          id: tab.id, request: HD.clone(req), chain: chainFor(chain), collection: collection ? HD.clone(collection) : null,
+          scopes, settings: requestSettings(), info: { requestName: draft.name, requestId: tab.refId || tab.id }, variable: target.variable,
+        });
+        if (out.savedScopes) HD.applyScopes(scopes, out.savedScopes, collection);
+        const base = out.results[out.comparison.baseline];
+        result = { ...base, compare: { variable: out.variable, service: out.service, comparison: out.comparison, results: out.results, shown: out.comparison.baseline } };
+        ui.resTab = 'compare';
+      } catch (e) {
+        result = { error: HD.cleanErr(e), tests: [] };
+      }
+      S.sending.delete(tab.id);
+      S.responses.set(tab.id, result);
+      HD.addHistory({
+        name: `${draft.name} (compare)`, method: req.method, url: req.url, status: result.response ? result.response.status : null, time: Date.now(),
+        duration: result.response ? result.response.time : null, request: HD.clone(req), collectionId: collection ? collection.id : null, error: result.error || null,
+      });
+      HD.renderTabBar();
+      if (HD.currentTab() === tab) (S.resRenderers.get(tab.id) || renderRes)();
+    };
+
     // `payloadIndex` sends with that payload ("Send with this"), whatever the payloads mode.
     const send = async (payloadIndex) => {
       if (S.sending.get(tab.id)) { window.api.cancel(tab.id); return; }
       if (!req.url.trim()) { HD.toast('Enter a request URL', 'warn'); return; }
       const { collection, chain } = context();
       const scopes = HD.scopesFor(collection);
-      const g = S.ws.settings;
-      const o = req.settings || {};
-      const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
-      const settings = { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
+      const settings = requestSettings();
       S.sending.set(tab.id, true);
       S.streams.set(tab.id, []);
       HD.renderTabBar();
@@ -534,7 +609,7 @@
         result = await window.api.send({
           id: tab.id,
           request: HD.clone(req),
-          chain: chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency })),
+          chain: chainFor(chain),
           collection: collection ? HD.clone(collection) : null,
           scopes,
           settings,

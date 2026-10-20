@@ -6,7 +6,8 @@
  * The renderer sends the active environment's pools with a request's scopes:
  *   pools: { orders_url: { sourceId, service, strategy: 'first' | 'round-robin' | 'random', header,
  *                          default, instances: [{ id, url, healthy }] } }
- * `default` is the value discovery wrote into the environment. When a script, a data row or the
+ * `default` is the value discovery wrote into the environment. `force` (an instance URL) sends to that
+ * instance whatever the strategy (Compare instances). When a script, a data row or the
  * user has set the variable to something else, that value is used and no instance is picked.
  *
  * An instance is picked only when a request actually uses the variable, and once per request, so
@@ -22,6 +23,7 @@ const positions = new Map(); // `${sourceId}|${variable}` -> next round-robin in
 
 function pick(variable, pool, payload = '') {
   const all = (pool.instances || []).filter((i) => i && i.url);
+  if (pool.force) return all.find((i) => i.url === pool.force) || { id: '', url: String(pool.force) };
   const healthy = all.filter((i) => i.healthy !== false);
   const list = healthy.length ? healthy : all;
   if (!list.length || pool.strategy === 'first' || !pool.strategy) {

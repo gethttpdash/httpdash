@@ -186,8 +186,14 @@
       { id: 'tests', label: 'Test Results', badge: tests.length ? `${passed}/${tests.length}` : null, dot: failed > 0 },
       { id: 'timeline', label: 'Timeline' },
     ];
+    const cmp = result.compare && result.compare.comparison;
+    if (cmp) {
+      const odd = cmp.instances.filter((i) => i.odd).length;
+      tabs.unshift({ id: 'compare', label: 'Compare', badge: odd ? `${odd}/${cmp.instances.length}` : String(cmp.instances.length), dot: odd > 0 });
+    }
     let active = ui.resTab || 'body';
-    if (!res && active !== 'tests' && active !== 'timeline') active = 'body';
+    if (active === 'compare' && !cmp) active = 'body';
+    if (!res && active !== 'tests' && active !== 'timeline' && active !== 'compare') active = 'body';
 
     const actions = h('div.res-actions',
       res ? HD.button('', (e) => HD.menu(e, [
@@ -199,7 +205,7 @@
       ]), { icon: 'dots', ghost: true, small: true, title: 'More actions' }) : null);
 
     const content = h('div.res-content');
-    const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
+    const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body' || t.id === 'compare'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
     root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing, result.payload) : null));
     const banner = HD.dependencyBanner && HD.dependencyBanner(result.dependencyRuns);
     if (banner) root.appendChild(banner);
@@ -209,7 +215,17 @@
     }
     root.appendChild(content);
 
-    if (active === 'body') {
+    if (active === 'compare') {
+      renderCompare(content, result, opts, () => HD.renderResponse(root, result, ui, opts), (i) => {
+        // Shows one instance's answer in the other tabs.
+        const r = result.compare.results[i];
+        for (const k of ['response', 'tests', 'sentRequest', 'routing', 'error', 'payload', 'dependencyRuns']) result[k] = r[k];
+        result.compare.shown = i;
+        ui.resTab = 'body';
+        HD.save();
+        HD.renderResponse(root, result, ui, opts);
+      });
+    } else if (active === 'body') {
       if (result.error) {
         content.appendChild(h('div.res-error',
           h('div.res-error-title', 'Could not send request'),
@@ -339,6 +355,86 @@
     content.appendChild(h('div.test-list', shown.map((t) => h('div.test-item',
       h(`span.test-badge.${t.skipped ? 'skip' : t.passed ? 'pass' : 'fail'}`, t.skipped ? 'SKIPPED' : t.passed ? 'PASS' : 'FAIL'),
       h('div', h('div.test-name', t.name), t.error ? h('div.test-error', t.error) : null)))));
+  }
+
+  // ---- Compare instances -------------------------------------------------------------------
+
+  const hostOf = (url) => { try { return new URL(url).host; } catch { return url; } };
+  const keyLabel = (key) => (key === 'status' ? 'Status' : key === 'error' ? 'Error' : key === 'body' ? 'Body (text)'
+    : key.startsWith('header:') ? `Header ${key.slice(7)}` : key.slice(5));
+  // What an Ignore button ignores: a header by name, a body path with any array index ([*]).
+  const ignoreFor = (key) => (key.startsWith('header:') ? { header: key.slice(7) } : key.startsWith('body:') ? { path: key.slice(5).replace(/\[\d+\]/g, '[*]') } : null);
+  const clip = (v) => (v.length > 140 ? `${v.slice(0, 140)}…` : v);
+
+  function renderCompare(content, result, opts, rerender, showInstance) {
+    const c = result.compare;
+    const cmp = c.comparison;
+    const n = cmp.instances.length;
+    const name = (i) => i.instanceId || hostOf(i.instance);
+    const odd = cmp.differences.filter((d) => d.kind === 'odd');
+    const split = cmp.differences.filter((d) => d.kind === 'split');
+    const varies = cmp.differences.filter((d) => d.kind === 'varies');
+    const oddOnes = cmp.instances.filter((i) => i.odd);
+    const wrap = h('div.panel-pad.compare');
+
+    let verdict;
+    if (!odd.length && !split.length) {
+      verdict = h('div.compare-verdict.same', HD.icon('check'), h('span', `All ${n} instances of ${c.service} answered the same`,
+        varies.length ? h('span.muted', `, apart from ${varies.length} value${varies.length === 1 ? '' : 's'} that differ on every instance`) : null));
+    } else if (oddOnes.length) {
+      verdict = h('div.compare-verdict.differs', HD.icon('x'), h('span', h('b', oddOnes.map(name).join(', ')),
+        ` answered differently from the other ${n - oddOnes.length}`, h('span.muted', ` · ${odd.length} difference${odd.length === 1 ? '' : 's'}`)));
+    } else {
+      verdict = h('div.compare-verdict.differs', HD.icon('x'), h('span', 'The instances don\'t agree, and no answer stands out', h('span.muted', ` · ${split.length} difference${split.length === 1 ? '' : 's'}`)));
+    }
+    wrap.appendChild(h('div.compare-head', verdict, h('span.muted.small', `{{${c.variable}}} · sent to ${n} instances at once`)));
+
+    // The instances, with a slow one flagged against the median.
+    const times = cmp.instances.map((i) => i.time).filter((t) => t != null).sort((a, b) => a - b);
+    const median = times.length ? times[Math.floor(times.length / 2)] : null;
+    wrap.appendChild(h('div.table-wrap.no-pad', h('table.data-table.compare-instances',
+      h('thead', h('tr', h('th', 'Instance'), h('th', 'Status'), h('th.num', 'Time'), h('th', 'Tests'), h('th', 'Answer'), h('th', ''))),
+      h('tbody', cmp.instances.map((i, idx) => h('tr', { class: c.shown === idx ? 'shown' : '' },
+        h('td', h('div', name(i)), i.instanceId ? h('div.muted.small.mono', hostOf(i.instance)) : null),
+        h('td', i.error ? h('span.text-error.small', i.error) : h(`span.${HD.statusClass(i.status)}`, String(i.status))),
+        h('td.num', i.time == null ? '—' : HD.formatMs(i.time),
+          median != null && i.time >= 2 * median && i.time - median >= 50 ? h('span.pill.changed', { title: `median ${HD.formatMs(median)}` }, 'slow') : null),
+        h('td', i.tests.passed + i.tests.failed ? h('span', { class: i.tests.failed ? 'text-error' : 'text-ok' }, `${i.tests.passed}/${i.tests.passed + i.tests.failed}`) : h('span.muted', '—')),
+        h('td', i.odd ? h('span.pill.removed', `differs in ${i.odd}`) : split.length ? h('span.muted', '—') : h('span.pill.added', 'same')),
+        h('td', c.shown === idx ? h('span.muted.small', 'shown') : HD.button('Show', () => showInstance(idx), { small: true, ghost: true, title: 'Show this instance\'s answer in Body, Headers and Timeline' }))))))));
+
+    const ignoreBtn = (key) => {
+      const ig = ignoreFor(key);
+      return ig && opts.compareIgnore ? HD.button('Ignore', () => opts.compareIgnore(ig), { small: true, ghost: true, title: ig.header ? `Ignore the ${ig.header} header when comparing this request` : `Ignore ${ig.path} when comparing this request` }) : null;
+    };
+    const valueCell = (v) => h('code.compare-value', { title: v }, clip(v));
+    if (odd.length || split.length) {
+      wrap.appendChild(h('div.section-title', 'Differences'));
+      wrap.appendChild(h('div.table-wrap.no-pad', h('table.data-table.compare-diffs',
+        h('thead', h('tr', h('th', 'Field'), h('th', 'Most instances'), h('th', 'Differs on'), h('th', ''))),
+        h('tbody', [...odd, ...split].map((d) => h('tr',
+          h('td.mono', keyLabel(d.key)),
+          h('td', d.kind === 'odd' ? valueCell(d.majority) : h('span.muted', 'no majority')),
+          h('td', (d.kind === 'odd' ? d.values.filter((v) => d.odd.includes(v.instance)) : d.values).map((v) => h('div.compare-odd', h('span.compare-who', v.instanceId || hostOf(v.instance)), valueCell(v.value)))),
+          h('td', ignoreBtn(d.key))))))));
+    }
+    if (varies.length) {
+      wrap.appendChild(h('details.compare-varies', { open: !odd.length && !split.length && varies.length <= 5 },
+        h('summary', `Different on every instance (${varies.length})`, h('span.muted.small', ' · usually ids, timestamps or the instance\'s own name')),
+        h('div.table-wrap.no-pad', h('table.data-table.compare-diffs',
+          h('tbody', varies.map((d) => h('tr',
+            h('td.mono', keyLabel(d.key)),
+            h('td', d.values.map((v) => h('div.compare-odd', h('span.compare-who', v.instanceId || hostOf(v.instance)), valueCell(v.value)))),
+            h('td', ignoreBtn(d.key)))))))));
+    }
+    const ig = opts.compareIgnored || {};
+    const chips = [...(ig.ignoreHeaders || []).map((x) => ({ header: x })), ...(ig.ignorePaths || []).map((x) => ({ path: x }))];
+    if (chips.length) {
+      wrap.appendChild(h('div.compare-ignored', h('span.muted.small', 'Ignored for this request:'),
+        chips.map((x) => h('span.chip', x.header ? `header ${x.header}` : x.path,
+          opts.compareIgnore ? h('button.chip-x', { type: 'button', title: 'Compare it again', onclick: () => opts.compareIgnore({ ...x, remove: true }) }, '×') : null))));
+    }
+    content.appendChild(wrap);
   }
 
   function renderTimeline(content, result) {
