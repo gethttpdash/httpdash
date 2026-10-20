@@ -879,3 +879,21 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 :root[data-theme="dark"] .cm-s-default .cm-variable-3, :root[data-theme="dark"] .cm-s-default .cm-type { color: #8be9fd; }
 :root[data-theme="dark"] .cm-s-default .cm-quote, :root[data-theme="dark"] .cm-s-default .cm-positive { color: #a5e3a0; }
 :root[data-theme="dark"] .cm-s-default .cm-negative, :root[data-theme="dark"] .cm-s-default .cm-error { color: #f98282; }
+
+/* OpenAPI discovery: versions and the change report */
+.pill.removed { background: var(--err-soft); color: var(--err); }
+.pill.changed { background: var(--warn-soft); color: var(--warn); }
+.pill.kept { background: var(--accent-soft); color: var(--accent-text); }
+.oas-version { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.oas-uptodate { display: flex; align-items: center; gap: 6px; color: var(--ok); font-size: 12px; margin-bottom: 8px; }
+.oas-group { margin: 8px 0; }
+.oas-group > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; list-style-position: outside; }
+.oas-change { padding: 6px 0 6px 4px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.oas-op { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.oas-name { margin-left: auto; text-align: right; }
+.oas-details { margin: 4px 0 0 56px; padding: 0 0 0 14px; color: var(--text-2); }
+.oas-yours { margin: 4px 0 0 56px; color: var(--accent-text); }
+.oas-apply { margin-top: 12px; align-items: center; }
+.oas-collection { margin: 6px 0; }
+.oas-history { margin-top: 20px; }
+.oas-available { margin: 0 0 10px; }

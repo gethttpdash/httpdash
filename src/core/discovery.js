@@ -3,10 +3,12 @@
 /**
  * Service discovery: reads a registry (Consul, Eureka, Kubernetes or a custom JSON endpoint)
  * and turns each service into an environment variable such as orders_url = http://10.0.1.5:8080.
+ * An OpenAPI document is a source too: its server becomes the variable, and its operations a
+ * collection kept in step with it (see openapi-sync.js).
  *
  * Source config:
  * {
- *   provider: 'consul' | 'eureka' | 'kubernetes' | 'json',
+ *   provider: 'consul' | 'eureka' | 'kubernetes' | 'json' | 'openapi',
  *   url,                 // registry base URL (Consul agent, Eureka server, Kubernetes API server, or the JSON endpoint)
  *   token,               // optional: X-Consul-Token / Kubernetes bearer token / Authorization for JSON
  *   headers: [{key, value, enabled}],
@@ -20,17 +22,22 @@
  *   namespace: 'default', addressMode: 'cluster-dns' | 'cluster-ip' | 'external', labelSelector,
  *   // json
  *   listPath, nameField: 'name', urlField: 'url'  (urlField may be a template such as "http://{host}:{port}")
+ *   // openapi (url is the document's)
+ *   serviceName,         // names the variable; default: the document's title
+ *   baseUrl,             // instead of the document's server
+ *   syncRequests: true,  // keep a collection with a request per operation
  * }
  */
 const httpClient = require('./http-client');
 const { getPath } = require('./dependency');
+const { parseDocument } = require('./postman');
 
 class DiscoveryError extends Error {}
 
 const joinUrl = (base, path) => `${String(base).replace(/\/+$/, '')}${path}`;
 
-async function fetchJson(url, cfg, settings, extraHeaders = []) {
-  const headers = [['Accept', 'application/json'], ['User-Agent', (settings && settings.userAgent) || 'HttpDash/1.0'], ...extraHeaders];
+async function fetchJson(url, cfg, settings, extraHeaders = [], { parse = JSON.parse, accept = 'application/json', what = 'JSON' } = {}) {
+  const headers = [['Accept', accept], ['User-Agent', (settings && settings.userAgent) || 'HttpDash/1.0'], ...extraHeaders];
   for (const h of cfg.headers || []) if (h.key && h.enabled !== false) headers.push([h.key, h.value || '']);
   let res;
   try {
@@ -47,9 +54,9 @@ async function fetchJson(url, cfg, settings, extraHeaders = []) {
   const text = res.body.toString('utf8');
   if (res.status >= 400) throw new DiscoveryError(`${url} returned ${res.status} ${res.statusText}${text ? `: ${text.slice(0, 200)}` : ''}`);
   try {
-    return JSON.parse(text);
+    return parse(text);
   } catch {
-    throw new DiscoveryError(`${url} did not return JSON`);
+    throw new DiscoveryError(`${url} did not return ${what}`);
   }
 }
 
@@ -145,9 +152,23 @@ async function discoverKubernetes(cfg, settings) {
   return { services, warnings };
 }
 
+const authorization = (token) => (token ? [['Authorization', /^(basic|bearer) /i.test(token) ? token : `Bearer ${token}`]] : []);
+const isOpenApi = (doc) => !!(doc && typeof doc === 'object' && (doc.openapi || doc.swagger) && doc.paths);
+
 async function discoverJson(cfg, settings) {
-  const auth = cfg.token ? [['Authorization', /^(basic|bearer) /i.test(cfg.token) ? cfg.token : `Bearer ${cfg.token}`]] : [];
-  const json = await fetchJson(cfg.url, cfg, settings, auth);
+  const json = await fetchJson(cfg.url, cfg, settings, authorization(cfg.token));
+  // An API description is not a list of services; reading it as one makes nonsense variables
+  // (an OpenAPI document's "openapi": "3.1.0" became openapi_url = 3.1.0). Say what to do instead.
+  if (!cfg.listPath && json && typeof json === 'object') {
+    if (isOpenApi(json)) {
+      throw new DiscoveryError('This URL is an OpenAPI document, not a list of services. Choose the registry type "OpenAPI document" '
+        + 'to get its base URL as a variable and a request for every operation, kept up to date.');
+    }
+    if (json.info && Array.isArray(json.item)) {
+      throw new DiscoveryError('This URL is a Postman collection, not a list of services. '
+        + 'To get its requests, use Import → "or import from a link" with this URL and token.');
+    }
+  }
   let list = cfg.listPath ? getPath(json, cfg.listPath) : json;
   if (list === undefined) throw new DiscoveryError(`Nothing found at "${cfg.listPath}" in the response`);
   const nameField = cfg.nameField || 'name';
@@ -179,14 +200,43 @@ async function discoverJson(cfg, settings) {
   return { services, warnings };
 }
 
-const PROVIDERS = { consul: discoverConsul, eureka: discoverEureka, kubernetes: discoverKubernetes, json: discoverJson };
+// Where the API is: the first server (with its variables' defaults), resolved against the
+// document's own URL when it's relative ("/api/v1"), as the OpenAPI spec says. Swagger 2 has host
+// and basePath instead, defaulting to the document's host and scheme.
+function serverUrl(doc, docUrl) {
+  let server;
+  if (doc.swagger) {
+    const at = new URL(docUrl);
+    const scheme = (doc.schemes && doc.schemes[0]) || at.protocol.replace(':', '');
+    server = `${scheme}://${doc.host || at.host}${doc.basePath || ''}`;
+  } else {
+    const s = (doc.servers && doc.servers[0]) || { url: '/' };
+    server = String(s.url || '/');
+    for (const [k, v] of Object.entries(s.variables || {})) server = server.split(`{${k}}`).join(v && v.default != null ? v.default : '');
+    try { server = new URL(server, docUrl).href; } catch { /* a template we can't resolve: leave it as written */ }
+  }
+  return server.replace(/\/+$/, '');
+}
+
+async function discoverOpenApi(cfg, settings) {
+  const doc = await fetchJson(cfg.url, cfg, settings, authorization(cfg.token),
+    { parse: parseDocument, accept: 'application/json, application/yaml;q=0.9, */*;q=0.8', what: 'JSON or YAML' });
+  if (!isOpenApi(doc)) throw new DiscoveryError('This URL is not an OpenAPI (Swagger) document: it has no "openapi" or "swagger" version with "paths".');
+  const url = String(cfg.baseUrl || '').trim().replace(/\/+$/, '') || serverUrl(doc, cfg.url);
+  const name = String(cfg.serviceName || '').trim() || (doc.info && doc.info.title) || 'api';
+  const warnings = [];
+  if (!cfg.baseUrl && !doc.swagger && !(doc.servers && doc.servers.length)) warnings.push('The document lists no servers, so its own address is used as the base URL.');
+  return { services: [{ name, url, instances: [{ url, healthy: true }] }], warnings, document: doc };
+}
+
+const PROVIDERS = { consul: discoverConsul, eureka: discoverEureka, kubernetes: discoverKubernetes, json: discoverJson, openapi: discoverOpenApi };
 
 async function discover(cfg, settings) {
   if (!cfg || !PROVIDERS[cfg.provider]) throw new DiscoveryError(`Unknown discovery provider "${cfg && cfg.provider}"`);
   if (!cfg.url) throw new DiscoveryError('Enter the registry URL');
-  const { services, warnings } = await PROVIDERS[cfg.provider](cfg, settings);
-  services.sort((a, b) => a.name.localeCompare(b.name));
-  return { services, warnings };
+  const found = await PROVIDERS[cfg.provider](cfg, settings);
+  found.services.sort((a, b) => a.name.localeCompare(b.name));
+  return found;
 }
 
 // ---- Environment sync --------------------------------------------------------------------
@@ -200,12 +250,14 @@ function variableName(pattern, serviceName) {
  * Updates environment values in place from discovered services.
  * Rows created by discovery are tagged { discovered: sourceId }. Re-syncing updates changed URLs,
  * adds new services, removes services that disappeared, and leaves every other row alone.
+ * `extra` are further values the source provides, by their own names ([{ key, value }]).
  * Returns { added, updated, removed, unchanged } (variable names).
  */
-function syncValues(values, services, { sourceId, variablePattern, keepMissing = false } = {}) {
+function syncValues(values, services, { sourceId, variablePattern, keepMissing = false, extra = [] } = {}) {
   const diff = { added: [], updated: [], removed: [], unchanged: [] };
   const wanted = new Map();
   for (const s of services) wanted.set(variableName(variablePattern, s.name), s.url);
+  for (const x of extra) wanted.set(x.key, x.value);
   for (const [key, url] of wanted) {
     const row = values.find((v) => v.key === key);
     if (!row) {

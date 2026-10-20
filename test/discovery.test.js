@@ -33,6 +33,12 @@ test.before(async () => {
     }
     if (p === '/registry.json') return json({ data: { services: [{ id: 'search', host: '10.1.1.1', port: 7700 }, { id: 'broken' }] } });
     if (p === '/map.json') return json({ inventory: 'http://inv:8080/', reports: { url: 'http://rep:9000' } });
+    if (p === '/openapi.json') return json({ openapi: '3.1.0', info: { title: 'MES services' }, servers: [{ url: 'http://x/svc/v1' }], paths: { '/lots_for_erp': { get: {} } } });
+    if (p === '/svc/v1/openapi.json') {
+      if (req.headers.authorization !== 'Bearer spec-token') return json({ detail: 'Not authenticated' }, 401);
+      return json({ openapi: '3.1.0', info: { title: 'Lots API', version: '2.0' }, servers: [{ url: '/svc/{version}', variables: { version: { default: 'v1' } } }], paths: { '/lots': { get: {} } } });
+    }
+    if (p === '/spec.yaml') { res.writeHead(200, { 'Content-Type': 'application/yaml' }); return res.end('swagger: "2.0"\ninfo:\n  title: Legacy\nbasePath: /legacy\npaths:\n  /items:\n    get: {}\n'); }
     return json({ error: 'not found' }, 404);
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -92,4 +98,26 @@ test('syncing updates in place: adds, updates, removes discovered rows and keeps
   assert.deepStrictEqual(values.map((v) => [v.key, v.value]), [['token', 'abc'], ['orders_url', 'http://a2'], ['billing_url', 'http://c']]);
   diff = syncValues(values, [], { sourceId: 's1', keepMissing: true });
   assert.strictEqual(diff.removed.length, 0);
+});
+
+test('Custom JSON: an OpenAPI document is refused with a pointer to the OpenAPI type', async () => {
+  await assert.rejects(discover({ provider: 'json', url: `${base}/openapi.json` }), (e) => {
+    assert.match(e.message, /an OpenAPI document, not a list of services/);
+    assert.match(e.message, /"OpenAPI document"/);
+    return true;
+  });
+});
+
+test('OpenAPI: the server, resolved against the document URL, becomes the base URL', async () => {
+  const r = await discover({ provider: 'openapi', url: `${base}/svc/v1/openapi.json`, token: 'spec-token' });
+  assert.deepStrictEqual(r.services.map((s) => [s.name, s.url]), [['Lots API', `${base}/svc/v1`]]);
+  assert.strictEqual(r.document.info.version, '2.0');
+  assert.strictEqual(variableName('{name}_url', r.services[0].name), 'lots_api_url');
+  await assert.rejects(discover({ provider: 'openapi', url: `${base}/svc/v1/openapi.json` }), /401/);
+  // A name and base URL of one's own win; YAML and Swagger 2 work (host defaults to the document's).
+  const named = await discover({ provider: 'openapi', url: `${base}/svc/v1/openapi.json`, token: 'spec-token', serviceName: 'lots', baseUrl: 'https://lots.example.com/' });
+  assert.deepStrictEqual(named.services.map((s) => [s.name, s.url]), [['lots', 'https://lots.example.com']]);
+  const legacy = await discover({ provider: 'openapi', url: `${base}/spec.yaml` });
+  assert.strictEqual(legacy.services[0].url, `${base}/legacy`);
+  await assert.rejects(discover({ provider: 'openapi', url: `${base}/map.json` }), /not an OpenAPI/);
 });

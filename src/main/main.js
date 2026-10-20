@@ -13,6 +13,7 @@ const postman = require('../core/postman');
 const runner = require('../core/runner');
 const { makeLookup } = require('../core/dependency');
 const discovery = require('../core/discovery');
+const openapiSync = require('../core/openapi-sync');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -739,16 +740,34 @@ handle('oauth2:cancel', () => { if (cancelSignIn) cancelSignIn(); });
 // Signs out of every provider used in the sign-in window.
 handle('oauth2:clearSessions', () => session.fromPartition(OAUTH_PARTITION).clearStorageData());
 
-// Service discovery: query a registry and sync its services into environment values.
-handle('discovery:sync', async ({ config, values, sourceId, settings, vars, previewOnly }) => {
+// Service discovery: query a registry and sync its services into environment values. An OpenAPI
+// document also syncs a collection. Both work on copies, so a preview reports what would change
+// without changing anything; `expectHash` makes applying refuse a document that changed since then.
+handle('discovery:sync', async ({ config, values, collection, sourceId, settings, vars, previewOnly, expectHash }) => {
   const r = (v) => (typeof v === 'string' ? resolveVars(v, vars || {}) : v);
-  const cfg = { ...config, url: r(config.url), token: r(config.token), headers: (config.headers || []).map((h) => ({ ...h, value: r(h.value) })) };
-  const { services, warnings } = await discovery.discover(cfg, settings);
-  const out = { services: services.map((s) => ({ ...s, variable: discovery.variableName(cfg.variablePattern, s.name) })), warnings };
-  if (previewOnly) return out;
+  const cfg = { ...config, url: r(config.url), token: r(config.token), baseUrl: r(config.baseUrl), headers: (config.headers || []).map((h) => ({ ...h, value: r(h.value) })) };
+  const found = await discovery.discover(cfg, settings);
+  const out = { services: found.services.map((s) => ({ ...s, variable: discovery.variableName(cfg.variablePattern, s.name) })), warnings: found.warnings };
+  let generated = null;
+  let extra = [];
+  if (found.document) {
+    generated = openapiSync.buildCollection(found.document, { variable: out.services[0].variable });
+    out.spec = generated.openapi.spec;
+    out.operations = openapiSync.operations(generated);
+    // The token as written in the source (it may be a {{variable}}), so the secret isn't copied around resolved.
+    extra = openapiSync.secretVariables(generated, config.token);
+    if (!previewOnly && expectHash && expectHash !== out.spec.hash) {
+      throw new Error('The document changed again since you checked it. Check for changes again to review the new version.');
+    }
+  }
   const next = JSON.parse(JSON.stringify(values || []));
-  out.diff = discovery.syncValues(next, services, { sourceId, variablePattern: cfg.variablePattern, keepMissing: !!cfg.keepMissing });
-  out.values = next;
+  out.diff = discovery.syncValues(next, found.services, { sourceId, variablePattern: cfg.variablePattern, keepMissing: !!cfg.keepMissing, extra });
+  if (generated && cfg.syncRequests !== false) {
+    const merged = openapiSync.mergeCollection(collection ? JSON.parse(JSON.stringify(collection)) : null, generated, { sourceId });
+    out.requests = merged.diff;
+    if (!previewOnly) out.collection = merged.collection;
+  }
+  if (!previewOnly) out.values = next;
   return out;
 });
 

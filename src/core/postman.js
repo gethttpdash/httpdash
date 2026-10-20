@@ -126,7 +126,11 @@ function importPostmanEnvironment(json) {
 const JSON_TYPE = /(^|\/|\+)json\b/i;
 const METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
 
-function importOpenApi(doc) {
+/**
+ * With { operations: true } each request is tagged with its operation ({ openapi: { op: 'GET /pets/{id}' } })
+ * and each tag folder with its tag, so a later sync can find them again (see openapi-sync.js).
+ */
+function importOpenApi(doc, { operations = false } = {}) {
   const col = newCollection((doc.info && doc.info.title) || 'OpenAPI Import');
   col.description = (doc.info && doc.info.description) || '';
 
@@ -315,10 +319,12 @@ function importOpenApi(doc) {
       }
 
       const item = { id: uid(), type: 'request', name: op.summary || op.operationId || `${method.toUpperCase()} ${p}`, request: def, examples };
+      if (operations) item.openapi = { op: `${method.toUpperCase()} ${p}` };
       const tag = (op.tags && op.tags[0]) || null;
       if (tag) {
         if (!folders.has(tag)) {
           const f = newFolder(tag);
+          if (operations) f.openapiTag = tag;
           folders.set(tag, f);
           col.items.push(f);
         }
