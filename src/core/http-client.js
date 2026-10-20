@@ -7,6 +7,38 @@ const { URL } = require('url');
 
 const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
 
+// ---- Connection reuse ------------------------------------------------------------------------
+//
+// Connections are kept open and reused (keep-alive), as browsers do: a request to a host that was
+// just called skips DNS, TCP and, above all, the TLS handshake, which on real HTTPS APIs costs more
+// than everything else a request does. Node's pool tells connections apart by host, port, server
+// name and certificate checking, but not by TLS context, so each client certificate / CA setup
+// (a cached secure context) gets its own pool, and a connection is never reused with another
+// certificate. Idle connections don't keep the process alive and are closed after a few seconds,
+// or sooner when the server says so (Keep-Alive: timeout=...).
+const AGENT_OPTIONS = { keepAlive: true, keepAliveMsecs: 1000, maxSockets: 64, maxFreeSockets: 32, timeout: 4000 };
+const httpAgent = new http.Agent(AGENT_OPTIONS);
+const httpsAgent = new https.Agent(AGENT_OPTIONS);
+const tlsAgents = new WeakMap(); // secure context -> https.Agent
+
+function agentFor(isHttps, secureContext) {
+  if (!isHttps) return httpAgent;
+  if (!secureContext) return httpsAgent;
+  let agent = tlsAgents.get(secureContext);
+  if (!agent) { agent = new https.Agent(AGENT_OPTIONS); tlsAgents.set(secureContext, agent); }
+  return agent;
+}
+
+// A server may close an idle connection just as it is reused; nothing reached it, so browsers retry
+// such a request once on a new connection.
+const STALE_SOCKET = new Set(['ECONNRESET', 'EPIPE', 'ECONNABORTED']);
+
+/** Closes every idle kept-alive connection (e.g. before quitting, or when settings change). */
+function closeIdleConnections() {
+  httpAgent.destroy();
+  httpsAgent.destroy();
+}
+
 class RequestError extends Error {
   constructor(message, code) {
     super(message);
@@ -58,9 +90,19 @@ function connectTunnel(proxy, target, timeout) {
 /**
  * Performs a single HTTP exchange (no redirect handling).
  * opts: { method, url, headers: [[k, v]], body: Buffer|null, timeout, verifySSL, proxy,
- *         tlsFor(url) -> { secureContext, label } | null (client and CA certificates) }
+ *         tlsFor(url) -> { secureContext, label } | null (client and CA certificates),
+ *         reuseConnections (default true) }
  */
 async function exchange(opts) {
+  try {
+    return await exchangeOnce(opts);
+  } catch (e) {
+    if (e.staleSocket && !(opts.signal && opts.signal.aborted)) return exchangeOnce({ ...opts, reuseConnections: false });
+    throw e;
+  }
+}
+
+async function exchangeOnce(opts) {
   const url = new URL(opts.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new RequestError(`Unsupported protocol ${url.protocol}`, 'EPROTO');
@@ -83,13 +125,13 @@ async function exchange(opts) {
     path: url.pathname + url.search,
     headers,
     rejectUnauthorized: opts.verifySSL !== false,
-    agent: false,
     servername: url.hostname,
   };
   // Client certificates and extra CAs come as a ready-made (cached) TLS context.
   const tlsOpts = isHttps && opts.tlsFor ? opts.tlsFor(url.href) : null;
   const tlsExtra = tlsOpts && tlsOpts.secureContext ? { secureContext: tlsOpts.secureContext } : {};
   Object.assign(reqOpts, tlsExtra);
+  reqOpts.agent = opts.reuseConnections === false ? false : agentFor(isHttps, tlsExtra.secureContext);
 
   const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {
@@ -113,20 +155,27 @@ async function exchange(opts) {
     }
   }
 
+  // Only pooled connections can be reused (a proxy tunnel's TLS socket is new, though already connected).
+  const pooled = !!reqOpts.agent;
   return new Promise((resolve, reject) => {
     const t0 = process.hrtime.bigint();
     const ms = () => Number(process.hrtime.bigint() - t0) / 1e6;
     const timings = { start: Date.now() };
     let settled = false;
+    let reused = false;
+    let answered = false;
     const fail = (err) => {
       if (settled) return;
       settled = true;
+      // Failed on a reused connection before any answer: the server had closed it (see exchange).
+      if (reused && !answered && err && STALE_SOCKET.has(err.code)) err.staleSocket = true;
       reject(err);
     };
 
     // Set once a streamed response has started, so stopping it can still return what arrived.
     let finishPartial = null;
     const req = lib.request(reqOpts, (res) => {
+      answered = true;
       timings.firstByte = ms();
       const chunks = [];
       let rawSize = 0;
@@ -166,6 +215,7 @@ async function exchange(opts) {
             firstByte: timings.firstByte,
             download: timings.end - timings.firstByte,
             total: timings.end,
+            ...(reused ? { reused: true } : {}),
           },
           remoteAddress: res.socket && res.socket.remoteAddress,
           clientCertificate: tlsOpts && tlsOpts.label ? tlsOpts.label : null,
@@ -178,6 +228,9 @@ async function exchange(opts) {
     });
 
     req.on('socket', (socket) => {
+      // A kept-alive connection is already open: no DNS, TCP or TLS step, and no listeners to add
+      // to a socket that outlives this request.
+      if (pooled && !socket.connecting && !socket.pending) { reused = true; return; }
       socket.once('lookup', () => { timings.dns = ms(); });
       socket.once('connect', () => { timings.connect = ms(); });
       socket.once('secureConnect', () => { timings.tls = ms(); });
@@ -247,4 +300,4 @@ async function send(opts, onHop) {
   }
 }
 
-module.exports = { send, exchange, RequestError, decompress, connectTunnel, matchesBypass };
+module.exports = { send, exchange, RequestError, decompress, connectTunnel, matchesBypass, closeIdleConnections };

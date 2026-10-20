@@ -4,6 +4,11 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- **Faster, especially on HTTPS:** connections are kept open and reused (keep-alive), so requests to a host you just called skip DNS, TCP and the TLS handshake, usually the slowest part of a request to a real API. Each client-certificate setup keeps its own connections, and a connection the server closed while idle is retried once on a new one, as browsers do. The timeline says when a connection was reused; **Settings → Reuse connections** turns it off.
+- **Scripts start faster:** the sandbox prepares the next script's context while a request waits for its response, and builds the `pm` API from shared classes instead of dozens of new functions per script. With connection reuse, the benchmark's 500 requests with scripts and tests run in 0.32 s instead of 0.43 s.
+- The app and the CLI load the YAML parser only when a YAML file is imported (72 fewer files at start).
+
 ## [1.3.0] - 2026-10-21
 
 ### Added

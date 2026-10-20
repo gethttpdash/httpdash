@@ -9,6 +9,8 @@
  * Scripts run in a session: one QuickJS runtime for one request (with its collection and folder
  * scripts and auth dependencies) or one collection run. The session loads the shared parts once,
  * and every script gets a fresh context with its own globals, limited in time, memory and stack.
+ * Making a context is the most expensive step of a script, so the next one is made as soon as the
+ * event loop is idle (typically while the request waits for its response), off the critical path.
  */
 const fs = require('fs');
 const crypto = require('crypto');
@@ -66,6 +68,18 @@ class ScriptSession {
     this.memoryLimit = opts.memoryLimitBytes || MEMORY_LIMIT_BYTES;
     this.current = null; // the script that is running: { ctx, pending }
     this.ready = null;
+    this.spare = null; // an unused context, ready for the next script
+    this.spareTimer = null;
+    this.names = null; // the names of a script's globals: the same for every script
+  }
+
+  // Makes the next script's context once the event loop is idle.
+  prepareSpare() {
+    if (this.spare || this.spareTimer || !this.runtime) return;
+    this.spareTimer = setImmediate(() => {
+      this.spareTimer = null;
+      if (this.runtime && !this.spare && !this.current) this.spare = this.runtime.newContext();
+    });
   }
 
   // Creates the runtime and the library context, with the shared parts of the sandbox.
@@ -202,11 +216,16 @@ class ScriptSession {
       input.dispose();
       handles.push(script);
       const globals = lib.getProp(script, 'globals');
-      const namesHandle = lib.getProp(script, 'names');
       const finishFn = lib.getProp(script, 'finish');
-      handles.push(globals, namesHandle, finishFn);
-      scriptCtx = runtime.newContext();
-      for (const name of lib.dump(namesHandle)) {
+      handles.push(globals, finishFn);
+      if (!this.names) {
+        const namesHandle = lib.getProp(script, 'names');
+        this.names = lib.dump(namesHandle);
+        namesHandle.dispose();
+      }
+      scriptCtx = this.spare || runtime.newContext();
+      this.spare = null;
+      for (const name of this.names) {
         const value = lib.getProp(globals, name);
         scriptCtx.setProp(scriptCtx.global, name, value);
         value.dispose();
@@ -260,6 +279,7 @@ class ScriptSession {
       if (scriptCtx) { try { scriptCtx.dispose(); } catch { broken = true; } }
       this.current = null;
       if (broken) this.reset();
+      else this.prepareSpare();
     }
 
     if (scriptError) {
@@ -271,11 +291,14 @@ class ScriptSession {
 
   // Throws the runtime away; the next script starts a new one.
   reset() {
-    const { runtime, lib } = this;
+    const { runtime, lib, spare } = this;
     this.ready = null;
     this.runtime = null;
     this.lib = null;
+    this.spare = null;
+    if (this.spareTimer) { clearImmediate(this.spareTimer); this.spareTimer = null; }
     try {
+      if (spare && spare.alive) spare.dispose();
       for (const h of [this.createScript, this.complete, this.api]) if (h && h.alive) h.dispose();
       if (lib) lib.dispose();
       if (runtime) runtime.dispose();

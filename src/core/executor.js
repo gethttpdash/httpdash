@@ -495,6 +495,7 @@ function clientOptions(prepared, settings, jar) {
     followRedirects: settings.followRedirects !== false,
     maxRedirects: settings.maxRedirects || 10,
     proxy: settings.proxy,
+    reuseConnections: settings.reuseConnections !== false,
     maxSize: settings.maxResponseBytes || 0,
     tlsFor: (u) => certificates.tlsFor(u, settings),
     cookieHeaderFor: settings.sendCookies !== false && jar ? (u) => cookies.cookieHeader(jar, u) : null,

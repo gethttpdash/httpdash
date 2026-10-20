@@ -4,7 +4,6 @@
 const { uid, newRequestDef, newCollection, newFolder, newEnvironment } = require('./model');
 const { paramsFromUrl } = require('./curl');
 const { STATUS_CODES } = require('http');
-const YAML = require('yaml');
 const oauth2 = require('./oauth2');
 
 const SCHEMA_V21 = 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json';
@@ -359,7 +358,8 @@ function parseDocument(text) {
   } catch (jsonError) {
     if (/^\s*[{[]/.test(t)) throw new Error(`Invalid JSON: ${jsonError.message}`);
     let doc;
-    try { doc = YAML.parse(t, { maxAliasCount: 100 }); } catch (e) { throw new Error(`Could not read the file as JSON or YAML: ${e.message}`); }
+    // Loaded on first use: the yaml package is 72 files, and most imports are JSON.
+    try { doc = require('yaml').parse(t, { maxAliasCount: 100 }); } catch (e) { throw new Error(`Could not read the file as JSON or YAML: ${e.message}`); }
     if (!doc || typeof doc !== 'object') throw new Error('Unrecognised file format: expected a JSON or YAML document.');
     return doc;
   }

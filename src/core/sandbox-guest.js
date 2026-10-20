@@ -583,30 +583,87 @@ function createSandbox(host) {
 
   // ---- One script --------------------------------------------------------------------------
 
+  // The pieces of a script's API that hold per-script state are classes with their methods on the
+  // prototype: a script then costs one small object for each, instead of a closure per method,
+  // which in an interpreter is most of what it takes to set a script up.
+
+  const mergeScopes = (scopes) => Object.assign({}, scopes.globals, scopes.collection, scopes.environment, scopes.data, scopes.local);
+
+  // pm.environment, pm.globals, pm.collectionVariables, pm.iterationData and the local scope.
+  class Scope {
+    constructor(store, name, scopes) { this.name = name; this._store = store; this._scopes = scopes; }
+    get(k) { return this._store[k]; }
+    set(k, v) { this._store[k] = v; }
+    unset(k) { delete this._store[k]; }
+    has(k) { return Object.prototype.hasOwnProperty.call(this._store, k); }
+    clear() { for (const k of Object.keys(this._store)) delete this._store[k]; }
+    toObject() { return { ...this._store }; }
+    replaceIn(text) { return host.resolve(String(text), stringify(mergeScopes(this._scopes))); }
+  }
+  // pm.variables: reads every scope, highest precedence first; writes the local scope.
+  class Variables extends Scope {
+    get(k) { return mergeScopes(this._scopes)[k]; }
+    has(k) { return k in mergeScopes(this._scopes); }
+    toObject() { return mergeScopes(this._scopes); }
+  }
+
+  class Cookies {
+    constructor(list) { this._list = list; }
+    get(name) { const c = this._list.find((x) => x.name === name); return c ? c.value : undefined; }
+    has(name) { return this._list.some((x) => x.name === name); }
+    toObject() { return Object.fromEntries(this._list.map((c) => [c.name, c.value])); }
+    all() { return this._list.slice(); }
+  }
+  class Execution {
+    constructor(result) { this._result = result; }
+    setNextRequest(name) { this._result.nextRequest = name; }
+    skipRequest() { this._result.skipRequest = true; }
+  }
+  class Visualizer {
+    constructor(result) { this._result = result; }
+    set(template, data) { this._result.visualizer = { template: String(template), data: data || {} }; }
+    clear() { this._result.visualizer = null; }
+  }
+
+  class Pm {
+    constructor(state) { Object.assign(this, state); }
+    get expect() { return getChai().expect; }
+    setNextRequest(name) { this._result.nextRequest = name; }
+  }
+
+  // The legacy postman.* API, for old scripts.
+  class LegacyPostman {
+    constructor(pm) { this._pm = pm; }
+    setEnvironmentVariable(k, v) { this._pm.environment.set(k, v); }
+    getEnvironmentVariable(k) { return this._pm.environment.get(k); }
+    clearEnvironmentVariable(k) { this._pm.environment.unset(k); }
+    setGlobalVariable(k, v) { this._pm.globals.set(k, v); }
+    getGlobalVariable(k) { return this._pm.globals.get(k); }
+    clearGlobalVariable(k) { this._pm.globals.unset(k); }
+    setNextRequest(name) { this._pm.setNextRequest(name); }
+    getResponseHeader(k) { return this._pm.response ? this._pm.response.headers.get(k) : undefined; }
+  }
+
+  // Globals that don't depend on the script are made once.
+  const log = (level) => (...args) => host.log(level, format(...args));
+  const sharedConsole = { log: log('log'), info: log('info'), warn: log('warn'), error: log('error'), debug: log('debug') };
+  const util = { format, inspect: (v) => inspect(v, 1) };
+  const sharedRequire = (name) => {
+    if (name === 'chai') return getChai();
+    if (name === 'crypto-js') return CryptoJS;
+    if (name === 'util') return util;
+    if (name === 'url') return { URL, URLSearchParams };
+    if (name === 'buffer') return { Buffer };
+    throw new Error(`Module '${name}' is not available in the sandbox`);
+  };
+
   // Builds the globals for one script. inputJson: { event, scopes, request, response, cookies, info }.
   function createScript(inputJson) {
     const input = JSON.parse(inputJson);
     ops.clear(); // calls left over from an earlier script that timed out
 
     const scopes = input.scopes;
-    const mergeScopes = () => Object.assign({}, scopes.globals, scopes.collection, scopes.environment, scopes.data, scopes.local);
-    const replaceIn = (s) => host.resolve(String(s), stringify(mergeScopes()));
-
-    function makeScope(store, name) {
-      return {
-        name,
-        get: (k) => store[k],
-        set: (k, v) => { store[k] = v; },
-        unset: (k) => { delete store[k]; },
-        has: (k) => Object.prototype.hasOwnProperty.call(store, k),
-        clear: () => { for (const k of Object.keys(store)) delete store[k]; },
-        toObject: () => ({ ...store }),
-        replaceIn,
-      };
-    }
-
     const result = { tests: [], error: null, nextRequest: undefined, visualizer: null, skipRequest: false };
-    const log = (level) => (...args) => host.log(level, format(...args));
     const safeCallback = (fn) => {
       try { fn(); } catch (e) {
         result.error = result.error || (e && e.message) || String(e);
@@ -614,17 +671,8 @@ function createSandbox(host) {
       }
     };
 
-    const environment = makeScope(scopes.environment, 'environment');
-    const globals = makeScope(scopes.globals, 'globals');
-    const collectionVariables = makeScope(scopes.collection, 'collection');
-    const iterationData = makeScope(scopes.data, 'data');
-    const local = makeScope(scopes.local, 'local');
-    const variables = {
-      ...local,
-      get: (k) => mergeScopes()[k],
-      has: (k) => k in mergeScopes(),
-      toObject: () => mergeScopes(),
-    };
+    const environment = new Scope(scopes.environment, 'environment', scopes);
+    const globals = new Scope(scopes.globals, 'globals', scopes);
 
     const request = input.request;
     const response = input.response ? new PmResponse(input.response) : null;
@@ -670,43 +718,27 @@ function createSandbox(host) {
       complete(id, false, 'cancelled');
     };
 
-    const pm = {
+    const pm = new Pm({
       info: { eventName: input.event, iteration: info.iteration || 0, iterationCount: info.iterationCount || 1, requestName: info.requestName, requestId: info.requestId },
       environment,
       globals,
-      collectionVariables,
-      iterationData,
-      variables,
+      collectionVariables: new Scope(scopes.collection, 'collection', scopes),
+      iterationData: new Scope(scopes.data, 'data', scopes),
+      variables: new Variables(scopes.local, 'local', scopes),
       request: makeRequestApi(request),
       response,
-      cookies: {
-        get: (name) => { const c = cookies.find((x) => x.name === name); return c ? c.value : undefined; },
-        has: (name) => cookies.some((x) => x.name === name),
-        toObject: () => Object.fromEntries(cookies.map((c) => [c.name, c.value])),
-        all: () => cookies.slice(),
-      },
+      cookies: new Cookies(cookies),
       test,
-      get expect() { return getChai().expect; },
       sendRequest,
-      setNextRequest: (name) => { result.nextRequest = name; },
-      execution: { setNextRequest: (name) => { result.nextRequest = name; }, skipRequest: () => { result.skipRequest = true; } },
-      visualizer: { set: (template, data) => { result.visualizer = { template: String(template), data: data || {} }; }, clear: () => { result.visualizer = null; } },
-    };
+      execution: new Execution(result),
+      visualizer: new Visualizer(result),
+      _result: result,
+    });
 
-    const util = { format, inspect: (v) => inspect(v, 1) };
     const legacyTests = {};
     const scriptGlobals = {
       pm,
-      postman: {
-        setEnvironmentVariable: environment.set,
-        getEnvironmentVariable: environment.get,
-        clearEnvironmentVariable: environment.unset,
-        setGlobalVariable: globals.set,
-        getGlobalVariable: globals.get,
-        clearGlobalVariable: globals.unset,
-        setNextRequest: pm.setNextRequest,
-        getResponseHeader: (k) => (response ? response.headers.get(k) : undefined),
-      },
+      postman: new LegacyPostman(pm),
       tests: legacyTests,
       environment: scopes.environment,
       globals: scopes.globals,
@@ -717,16 +749,9 @@ function createSandbox(host) {
       responseCode: response ? { code: response.code, name: response.status } : undefined,
       responseTime: response ? response.responseTime : undefined,
       responseHeaders: response ? response.headers.toObject() : undefined,
-      console: { log: log('log'), info: log('info'), warn: log('warn'), error: log('error'), debug: log('debug') },
+      console: sharedConsole,
       CryptoJS,
-      require: (name) => {
-        if (name === 'chai') return getChai();
-        if (name === 'crypto-js') return CryptoJS;
-        if (name === 'util') return util;
-        if (name === 'url') return { URL, URLSearchParams };
-        if (name === 'buffer') return { Buffer };
-        throw new Error(`Module '${name}' is not available in the sandbox`);
-      },
+      require: sharedRequire,
       setTimeout,
       clearTimeout,
       atob,

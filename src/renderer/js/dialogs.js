@@ -226,6 +226,7 @@
           toggle('followRedirects', 'Automatically follow redirects', 'Follow 3xx responses.'),
           num('maxRedirects', 'Maximum number of redirects'),
           toggle('verifySSL', 'SSL certificate verification', 'Turn off to allow self-signed or expired certificates.'),
+          toggle('reuseConnections', 'Reuse connections (keep-alive)', 'Requests to a host you just called skip DNS, TCP and the TLS handshake. Turn off to open a new connection for every request.'),
           toggle('sendCookies', 'Use cookie jar', 'Send stored cookies and store cookies from responses.'),
           toggle('sendNoCache', 'Send no-cache header', 'Adds "Cache-Control: no-cache" to requests.'),
           text('userAgent', 'User-Agent', 'Default User-Agent header.'),

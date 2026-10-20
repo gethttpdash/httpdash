@@ -114,7 +114,8 @@
       ['Time to first byte', t.firstByte != null ? t.firstByte - (t.tls || t.connect || 0) : null],
       ['Download', t.download], ['Total', t.total],
     ].filter(([, v]) => v != null);
-    const timeTip = h('div.popover', h('div.popover-title', 'Response time'), timingRows.map(([l, v]) => h('div.kvline', h('span', l), h('span', HD.formatMs(v)))));
+    const timeTip = h('div.popover', h('div.popover-title', 'Response time'), timingRows.map(([l, v]) => h('div.kvline', h('span', l), h('span', HD.formatMs(v)))),
+      t.reused ? h('div.kvline', h('span', 'Connection'), h('span', 'reused')) : null);
     const sizeTip = h('div.popover', h('div.popover-title', 'Response size'),
       h('div.kvline', h('span', 'Headers'), h('span', HD.formatBytes(res.headersSize))),
       h('div.kvline', h('span', 'Body'), h('span', HD.formatBytes(res.bodySize))),
@@ -369,6 +370,7 @@
         t.dns != null ? `DNS lookup        ${HD.formatMs(t.dns)}` : null,
         t.connect != null ? `TCP connected     ${HD.formatMs(t.connect)}` : null,
         t.tls != null ? `TLS handshake     ${HD.formatMs(t.tls)}` : null,
+        t.reused ? 'Connection        reused (no DNS, TCP or TLS setup)' : null,
         t.firstByte != null ? `First byte        ${HD.formatMs(t.firstByte)}` : null,
         `Total             ${HD.formatMs(t.total)}`,
         res.remoteAddress ? `Remote address    ${res.remoteAddress}` : null,
