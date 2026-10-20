@@ -71,6 +71,29 @@
   HD.instanceLabel = (r) => r.servedBy || r.instanceId || hostOf(r.instance);
 
   /**
+   * Flags an instance that answers much slower than its siblings, or fails often: [{ kind, why }].
+   * Times are compared with the median of the service's other instances, each with enough requests.
+   */
+  HD.trafficFlags = (r, siblings) => {
+    const MIN = 5;
+    const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
+    const out = [];
+    const bad = r.status['5xx'] + r.errors;
+    if (r.requests >= MIN && bad / r.requests >= 0.2) out.push({ kind: 'failing', why: `${bad} of ${r.requests} requests ended in a 5xx or a connection error` });
+    const others = siblings.filter((x) => x !== r && x.requests >= MIN && x.p50 != null);
+    if (r.requests >= MIN && r.p50 != null && others.length) {
+      for (const p of ['p50', 'p95']) {
+        const m = median(others.map((x) => x[p]));
+        if (m != null && r[p] >= 2 * m && r[p] - m >= 50) {
+          out.push({ kind: 'slow', why: `${p} ${HD.formatMs(r[p])} vs ${HD.formatMs(Math.round(m))} for the others` });
+          break;
+        }
+      }
+    }
+    return out;
+  };
+
+  /**
    * Requests per instance: count, share of the service's requests, status classes, errors, p50/p95.
    * `known` ({ service: [{ id, url, healthy }] }) lists instances that had no traffic yet as well,
    * so an instance that never gets a request stands out.
@@ -86,26 +109,7 @@
     }
     const services = [...new Set(all.map((r) => r.service))].sort();
     const ms = (v) => (v == null ? '—' : HD.formatMs(v));
-    // Flags an instance that answers much slower than its siblings, or fails often. Times are
-    // compared with the median of the service's other instances, each with enough requests.
-    const MIN = 5;
-    const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
-    const flags = (r, siblings) => {
-      const out = [];
-      const bad = r.status['5xx'] + r.errors;
-      if (r.requests >= MIN && bad / r.requests >= 0.2) out.push(h('span.pill.removed', { title: `${bad} of ${r.requests} requests ended in a 5xx or a connection error` }, 'failing'));
-      const others = siblings.filter((x) => x !== r && x.requests >= MIN && x.p50 != null);
-      if (r.requests >= MIN && r.p50 != null && others.length) {
-        for (const p of ['p50', 'p95']) {
-          const m = median(others.map((x) => x[p]));
-          if (m != null && r[p] >= 2 * m && r[p] - m >= 50) {
-            out.push(h('span.pill.changed', { title: `${p} ${HD.formatMs(r[p])} vs ${HD.formatMs(Math.round(m))} for the others` }, 'slow'));
-            break;
-          }
-        }
-      }
-      return out;
-    };
+    const flags = (r, siblings) => HD.trafficFlags(r, siblings).map((f) => h(`span.pill.${f.kind === 'slow' ? 'changed' : 'removed'}`, { title: f.why }, f.kind));
     return h('div.table-wrap.no-pad', h('table.data-table.traffic-table',
       h('thead', h('tr', h('th', 'Instance'), h('th.num', { title: 'Requests' }, 'Req.'), h('th', 'Share'), h('th.num', { title: 'Median response time' }, 'p50'), h('th.num', { title: '95th percentile: 1 in 20 requests is slower' }, 'p95'),
         h('th.num', { title: '2xx and 3xx responses' }, 'OK'), h('th.num', '4xx'), h('th.num', '5xx'), h('th.num', { title: 'Connection errors and timeouts' }, 'Err'))),
@@ -131,11 +135,15 @@
       }))));
   };
 
-  HD.openDiscovery = (id) => {
+  // `sub` picks the tab's page: 'config' (the default) or 'traffic'.
+  HD.openDiscovery = (id, sub) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'discovery' && t.refId === id);
-    if (existing) return HD.activateTab(existing.id);
+    if (existing) {
+      if (sub) existing.ui = { ...(existing.ui || {}), sub };
+      return HD.activateTab(existing.id);
+    }
     const cur = HD.currentTab();
-    const tab = { id: HD.uid(), kind: 'discovery', refId: id };
+    const tab = { id: HD.uid(), kind: 'discovery', refId: id, ...(sub ? { ui: { sub } } : {}) };
     S.ws.tabs.splice(cur ? S.ws.tabs.indexOf(cur) + 1 : S.ws.tabs.length, 0, tab);
     return HD.activateTab(tab.id);
   };
@@ -223,7 +231,7 @@
       const d = res.diff;
       const summary = res.spec
         ? `${versionLabel(res.spec)}: ${rq ? requestSummary(rq) : plural(d.added.length + d.updated.length, 'variable') + ' changed'}`
-        : `${res.services.length} services: ${d.added.length} added, ${d.updated.length} updated, ${d.removed.length} removed`;
+        : `${plural(res.services.length, 'service')}: ${d.added.length} added, ${d.updated.length} updated, ${d.removed.length} removed`;
       HD.log('info', `Service discovery "${src.name}" → environment "${env.name}": ${summary}`);
       if (!silent || changeCount(res)) HD.toast(`${res.spec ? src.name : env.name}: ${summary}`, 'success');
       return res;
@@ -290,7 +298,8 @@
 
   const sourceMenu = (src) => [
     { label: 'Sync now', onClick: () => HD.syncDiscovery(src) },
-    { label: 'Edit', onClick: () => HD.openDiscovery(src.id) },
+    { label: 'Edit', onClick: () => HD.openDiscovery(src.id, 'config') },
+    { label: 'Traffic by instance', onClick: () => HD.openDiscovery(src.id, 'traffic') },
     { label: 'Duplicate', onClick: () => { const c = { ...HD.clone(src), id: HD.uid(), name: `${src.name} Copy`, environmentId: null, collectionId: null, lastSync: null, history: [], available: undefined }; sources().push(c); HD.save(); HD.renderSidebar(); } },
     { separator: true },
     { label: 'Delete source', danger: true, onClick: async () => {
@@ -328,6 +337,7 @@
     }
     HD.variableInfo = () => HD.variableInfoFor(null);
     tab.ui = tab.ui || {};
+    const sub = tab.ui.sub === 'traffic' ? 'traffic' : 'config';
     const touch = () => HD.save();
     const rerender = () => { HD.clear(root); HD.views.discovery(tab, root); };
     const p = PROVIDERS[src.provider];
@@ -360,7 +370,6 @@
 
     const envOptions = [['', 'Create a new environment'], ...S.ws.environments.map((e) => [e.id, e.name])];
     const results = h('div.discovery-results');
-    const traffic = h('div.discovery-traffic');
     const config = h('div.discovery-config',
       h('div.dep-grid',
         h('label.field', h('span', 'Registry type'), HD.select(Object.entries(PROVIDERS).map(([id, x]) => [id, x.label]), src.provider, (v) => {
@@ -436,24 +445,44 @@
           diff ? h('td', changed.get(s.variable) ? h(`span.pill.${changed.get(s.variable)}`, changed.get(s.variable)) : null) : null))))));
     };
 
-    // Traffic by instance, refreshed every second while this tab is shown.
+    // The Traffic page: what this source's instances have answered, refreshed every second while shown.
+    const traffic = h('div.panel-pad.discovery-traffic');
     const renderTraffic = async () => {
-      if (!traffic.isConnected && traffic.dataset.drawn) return; // the tab was closed or drawn anew
+      if (!traffic.isConnected && traffic.dataset.drawn) return; // the tab was closed, switched or drawn anew
       let m;
       try { m = await window.api.discoveryMetrics(src.id); } catch { return; }
+      const services = (src.lastSync && src.lastSync.services) || [];
       const known = {};
-      for (const svc of (src.lastSync && src.lastSync.services) || []) if (svc.instances && svc.instances.some((i) => i.url)) known[svc.name] = svc.instances.filter((i) => i.url);
-      const strategy = { 'round-robin': 'round robin', random: 'random' }[src.balance] || 'first instance';
+      if (!isOpenApi(src)) for (const svc of services) if (svc.instances && svc.instances.some((i) => i.url)) known[svc.name] = svc.instances.filter((i) => i.url);
+      const strategy = isOpenApi(src) ? null : { 'round-robin': 'each instance in turn (round robin)', random: 'a random instance' }[src.balance] || 'the first instance';
+      const total = m.rows.reduce((n, r) => n + r.requests, 0);
+      const flagged = m.rows.flatMap((r) => HD.trafficFlags(r, m.rows.filter((x) => x.service === r.service)));
       HD.clear(traffic);
       traffic.dataset.drawn = '1';
-      traffic.appendChild(h('div.section-title.traffic-title', 'Traffic by instance', h('span.spacer'),
-        h('span.muted.small', `${isOpenApi(src) ? '' : `${strategy} · `}since ${new Date(m.since).toLocaleTimeString()}`),
-        m.rows.length ? HD.button('Reset', async () => { await window.api.resetDiscoveryMetrics(src.id); renderTraffic(); }, { small: true, ghost: true }) : null));
-      if (!m.rows.length && !Object.keys(known).length) {
-        traffic.appendChild(h('div.muted.small', 'Sync first. Requests that use this source\'s variables are then counted here, per instance.'));
+      traffic.appendChild(h('div.traffic-bar',
+        h('span.live-dot', { title: 'Updates every second' }), h('span.small', 'Live'),
+        h('span.muted.small', [
+          strategy ? `Sending to ${strategy}` : null,
+          src.instanceHeader ? `counting by the ${src.instanceHeader} header` : null,
+          `since ${new Date(m.since).toLocaleTimeString()}`,
+        ].filter(Boolean).join(' · ')),
+        h('span.spacer'),
+        HD.button('Change', () => { tab.ui.sub = 'config'; HD.save(); rerender(); }, { small: true, ghost: true }),
+        HD.button('Reset', async () => { await window.api.resetDiscoveryMetrics(src.id); renderTraffic(); }, { small: true, disabled: !m.rows.length })));
+      if (!services.length && !m.rows.length) {
+        traffic.appendChild(h('div.empty-state.small', h('div', 'Nothing to show yet: sync this source first.'),
+          h('div.muted', 'Then every request that uses its variables, in Send, the Runner or Monitors, is counted here per instance.')));
       } else {
-        traffic.appendChild(HD.trafficTable(m.rows, isOpenApi(src) ? {} : known));
-        if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${(src.lastSync.services || []).slice(0, 2).map((s) => `{{${s.variable}}}`).join(' or ')}.`));
+        traffic.appendChild(h('div.runner-summary.traffic-summary',
+          h('div.stat', h('div.stat-value', String(total)), h('div.stat-label', 'Requests')),
+          h('div.stat', h('div.stat-value', String(new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size)), h('div.stat-label', 'Instances answering')),
+          h('div.stat', { class: flagged.some((f) => f.kind === 'slow') ? 'warn' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'slow').length)), h('div.stat-label', 'Slow')),
+          h('div.stat', { class: flagged.some((f) => f.kind === 'failing') ? 'fail' : '' }, h('div.stat-value', String(flagged.filter((f) => f.kind === 'failing').length)), h('div.stat-label', 'Failing'))));
+        traffic.appendChild(HD.trafficTable(m.rows, known));
+        if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${services.slice(0, 2).map((x) => `{{${x.variable}}}`).join(' or ')}.`));
+        else if (!isOpenApi(src) && src.balance !== 'round-robin' && src.balance !== 'random' && !src.instanceHeader) {
+          traffic.appendChild(h('div.muted.small.traffic-hint', 'Every request goes to the first instance. To compare instances, send to each in turn (round robin) under Configuration → Load balancing.'));
+        }
       }
       setTimeout(() => { if (traffic.isConnected) renderTraffic(); }, document.hidden ? 5000 : 1000);
     };
@@ -558,9 +587,11 @@
             if (help && !src.environmentId) help.textContent = `A new environment named "${src.name}" is created on the first sync.`;
           } })),
         ls ? h('span.muted.small', ls.error ? h('span.text-error', `Last sync failed: ${ls.error}`) : `Last synced ${new Date(ls.time).toLocaleString()} · ${plural(ls.count, isOpenApi(src) ? 'operation' : 'service')}`) : null),
-      h('div.panel-pad', h('div.muted.small', p.help)),
-      h('div.discovery-layout', config, h('div.discovery-side', results, traffic))));
-    renderTraffic();
+      HD.tabStrip([{ id: 'config', label: 'Configuration' }, { id: 'traffic', label: 'Traffic' }], sub, (id) => { tab.ui.sub = id; HD.save(); rerender(); }),
+      sub === 'traffic' ? traffic : h('div',
+        h('div.panel-pad', h('div.muted.small', p.help)),
+        h('div.discovery-layout', config, results))));
+    if (sub === 'traffic') renderTraffic();
 
     if (isOpenApi(src) && ls && !ls.error && ls.spec) {
       renderReport({ spec: ls.spec, requests: ls.requests, diff: ls.diff, services: ls.services, warnings: ls.warnings }, true);
