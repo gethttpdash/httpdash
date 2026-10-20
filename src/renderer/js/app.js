@@ -108,6 +108,8 @@
     }
     if (S.sending.get(id)) window.api.cancel(id);
     HD.closeWebSocketTab(id);
+    S.resRenderers.delete(id);
+    S.streamViews.delete(id);
     const idx = S.ws.tabs.indexOf(tab);
     S.ws.tabs.splice(idx, 1);
     S.responses.delete(id);

@@ -227,6 +227,15 @@ To add a registry, open **Environments** in the sidebar and click **Service disc
 
 ![Service discovery preview](docs/screenshots/14-discovery-preview.png)
 
+## Streaming responses (Server-Sent Events)
+
+When a response is `text/event-stream`, as with AI APIs that stream their answers, HttpDash shows each event the moment it arrives instead of waiting for the end. It works with any method and body, so a `POST` to a completion endpoint just works.
+
+- While streaming, the response pane lists events live, with the time since the request was sent, and the Send button becomes **Stop**.
+- **Stop** keeps everything that arrived, so you can inspect a long or endless stream.
+- Afterwards, the **Events** view lists every event (name, data, id); click one to see its data pretty-printed and copy it. The raw stream is still in **Raw**, and test scripts run as usual when the stream ends.
+- Events are parsed exactly as browsers do: multi-line `data`, `event`, `id`, `retry` and comments, with any line endings.
+
 ## WebSocket requests
 
 Create one with **New → WebSocket Request**, or **Add WebSocket request** on a collection or folder. It's saved like any request (shown as **WS**), so it lives in collections and syncs with your team.

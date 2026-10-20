@@ -123,6 +123,40 @@
   };
 
   /**
+   * A list of Server-Sent Events: time since the request was sent, event name, data and id.
+   * Click an event to see its data pretty-printed. Returns { append(events) } for live updates.
+   */
+  HD.renderEventList = (parent, events) => {
+    const list = h('div.sse-list');
+    const prettyData = (d) => { try { return JSON.stringify(JSON.parse(d), null, 2); } catch { return d; } };
+    const row = (e, i) => {
+      const r = h('div.sse-row',
+        h('span.sse-n.muted', String(i + 1)),
+        h('span.sse-time.muted', e.t != null ? `+${HD.formatMs(e.t)}` : ''),
+        h('span.sse-event', e.event),
+        h('span.sse-data', e.data.length > 300 ? `${e.data.slice(0, 300)}…` : e.data),
+        h('span.sse-id.muted', e.id ? `id ${e.id}` : ''));
+      r.onclick = () => {
+        const next = r.nextSibling;
+        if (next && next.classList && next.classList.contains('sse-detail')) { next.remove(); return; }
+        r.after(h('div.sse-detail', h('div.sse-detail-actions', HD.button('Copy', (ev) => { ev.stopPropagation(); HD.copy(e.data); }, { small: true, ghost: true })), h('pre', prettyData(e.data))));
+      };
+      return r;
+    };
+    let count = 0;
+    const append = (more) => {
+      const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+      const frag = document.createDocumentFragment();
+      for (const e of more) frag.appendChild(row(e, count++));
+      list.appendChild(frag);
+      if (atBottom) list.scrollTop = list.scrollHeight;
+    };
+    append(events);
+    parent.appendChild(list);
+    return { append };
+  };
+
+  /**
    * Renders the response area.
    * result: the object returned by the main process (response, error, tests, sentRequest, visualizer)
    * ui: persisted per-tab view state ({ resTab, bodyView, wrap })
@@ -199,10 +233,13 @@
     const isImage = /^image\//i.test(res.contentType || '');
     const lang = detectLang(res.contentType, res.bodyText);
     const views = [{ id: 'pretty', label: 'Pretty' }, { id: 'raw', label: 'Raw' }, { id: 'preview', label: 'Preview' }];
+    const events = res.events && res.events.length ? res.events : null;
+    if (events) views.unshift({ id: 'events', label: `Events (${events.length})` });
     const json = lang === 'json' && res.bodyText ? parsedJson(res) : undefined;
     if (json !== undefined) views.splice(1, 0, { id: 'table', label: 'Table' });
     if (result.visualizer) views.push({ id: 'visualize', label: 'Visualize' });
-    let view = ui.bodyView || 'pretty';
+    let view = ui.bodyView || (events ? 'events' : 'pretty');
+    if (view === 'events' && !events) view = 'pretty';
     if (isImage && view !== 'raw') view = 'preview';
     if (view === 'visualize' && !result.visualizer) view = 'pretty';
     if (view === 'table' && json === undefined) view = 'pretty';
@@ -239,6 +276,12 @@
         frame.srcdoc = lang === 'html' ? res.bodyText : `<pre style="white-space:pre-wrap;font:12px monospace">${res.bodyText.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</pre>`;
         area.appendChild(frame);
       } else area.appendChild(h('div.empty-state.small', `Binary response (${res.contentType || 'unknown type'}, ${HD.formatBytes(res.bodySize)}). Use "Save response to file".`));
+      return;
+    }
+    if (view === 'events') {
+      if (res.cancelled) area.appendChild(h('div.large-banner', h('span', `Stopped after ${events.length} event${events.length === 1 ? '' : 's'}. The response below is what arrived before you stopped it.`)));
+      area.classList.add('sse-area');
+      HD.renderEventList(area, events);
       return;
     }
     if (view === 'table') {

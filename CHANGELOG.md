@@ -10,6 +10,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Trust certificates installed on this computer** (on by default): CAs in the macOS Keychain, Windows certificate store or Linux system bundle are trusted, as in a browser, so company certificates work without setup.
 - Command-line runner: Newman's certificate flags `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` and `--ssl-extra-ca-certs`.
 - Clear errors when a server requires a client certificate, rejects one, or the passphrase is wrong.
+- **Streaming responses (Server-Sent Events):** `text/event-stream` responses, such as AI APIs streaming their answers, show each event live with its timing, can be stopped while keeping what arrived, and get an **Events** view.
 - **WebSocket requests:** connect to `ws://` and `wss://` servers, send text or JSON messages (with variables and saved messages), and watch a live, filterable log of everything sent and received. The handshake uses your headers, inherited auth, cookies, client certificates, CAs and proxy; refused upgrades show the server's status and body.
 - **Table view for JSON responses:** arrays of objects as sortable tables with a column per key, objects as key/value tables, nested values that expand in place, and a row filter. Long tables are virtual: only the rows on screen are drawn, so a 100,000-row response opens in about 0.1 s with under 70 rows in the page.
 - **YAML OpenAPI and Swagger import** (from files, drag and drop, paste and the CLI), with OpenAPI 3.1 support.

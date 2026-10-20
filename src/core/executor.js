@@ -9,6 +9,7 @@ const cookies = require('./cookies');
 const { resolve, mergeScopes } = require('./variables');
 const { runScript, ScriptSession } = require('./sandbox');
 const certificates = require('./certificates');
+const sse = require('./sse');
 const dependency = require('./dependency');
 
 const MIME = {
@@ -273,7 +274,8 @@ function buildResponse(raw, maxPreview) {
  * opts: {
  *   request, chain (ancestors with scripts/auth), scopes {globals, collection, environment, data},
  *   jar (cookie array, mutated), settings, info, log(level, msg), signal,
- *   scriptSession (optional: a ScriptSession shared by several requests, e.g. a collection run)
+ *   scriptSession (optional: a ScriptSession shared by several requests, e.g. a collection run),
+ *   onStream(event) (optional: called for each Server-Sent Event as it arrives)
  * }
  * Returns { response, error, tests, preRequestError, testError, nextRequest, sentRequest, scopes, visualizer }
  */
@@ -302,6 +304,7 @@ async function executeRequest(opts) {
   const chain = opts.chain || [];
   const log = opts.log || (() => {});
   const result = { tests: [], scopes, nextRequest: undefined, visualizer: null };
+  const streamed = []; // Server-Sent Events, timed from when the request was sent
 
   const scriptSendRequest = async (req) => {
     const def = typeof req === 'string' ? { url: req, method: 'GET' } : normalizeScriptRequest(req);
@@ -397,6 +400,17 @@ async function executeRequest(opts) {
     try {
       const clientOpts = clientOptions(prepared, settings, jar);
       clientOpts.signal = opts.signal;
+      const started = Date.now();
+      let parser = null;
+      const decoder = new TextDecoder();
+      clientOpts.onData = (chunk) => {
+        parser = parser || sse.createParser();
+        for (const ev of parser.push(decoder.decode(chunk, { stream: true }))) {
+          ev.t = Date.now() - started;
+          streamed.push(ev);
+          if (opts.onStream) opts.onStream(ev);
+        }
+      };
       raw = await httpClient.send(clientOpts, (hop, hopUrl) => cookies.storeFromResponse(jar, hop.headers, hopUrl));
       if (raw.status === 401 && prepared.auth.type === 'digest') {
         const challenge = raw.headers.find(([k, v]) => k.toLowerCase() === 'www-authenticate' && /^digest/i.test(v));
@@ -420,6 +434,8 @@ async function executeRequest(opts) {
   }
 
   const response = buildResponse(raw, settings.maxPreviewBytes || 20 * 1024 * 1024);
+  if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
+  if (raw.cancelled) response.cancelled = true;
   result.response = response;
   log('net', `${prepared.method} ${prepared.url} -> ${response.status} ${response.statusText} (${response.time} ms)`);
 

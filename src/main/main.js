@@ -236,12 +236,21 @@ handle('request:send', async ({ id, request, chain, scopes, settings, info, coll
   const controller = new AbortController();
   inflight.set(id, controller);
   const logs = [];
+  // Server-Sent Events go to the window in small batches while the response streams in.
+  let queue = [];
+  let flushTimer = null;
+  const flush = () => {
+    flushTimer = null;
+    if (queue.length && win && !win.isDestroyed()) win.webContents.send('request:stream', { id, events: queue });
+    queue = [];
+  };
   try {
     const res = await execute({
       request, chain, scopes, settings, info, jar,
       lookup: makeLookup(collection),
       signal: controller.signal,
       log: (level, message) => logs.push({ level, message, time: Date.now() }),
+      onStream: (ev) => { queue.push(ev); if (!flushTimer) flushTimer = setTimeout(flush, 50); },
     });
     res.logs = logs;
     audit.append('request.send', {
@@ -252,6 +261,8 @@ handle('request:send', async ({ id, request, chain, scopes, settings, info, coll
     });
     return res;
   } finally {
+    clearTimeout(flushTimer);
+    flush();
     inflight.delete(id);
     saveJar();
   }

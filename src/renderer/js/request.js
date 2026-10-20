@@ -85,6 +85,22 @@
 
   HD.views = HD.views || {};
 
+  // Streamed events (Server-Sent Events) arrive here while a request is still in flight.
+  S.streamViews = new Map(); // tabId -> function that shows newly arrived events
+  // The response pane's render function of each tab's current view. A request that finishes (or
+  // starts streaming) updates whatever is on screen now, even if the tab was redrawn meanwhile.
+  S.resRenderers = new Map();
+  window.api.onRequestStream(({ id, events }) => {
+    const list = S.streams.get(id);
+    if (!list) return;
+    const first = !list.length;
+    list.push(...events);
+    const tab = HD.currentTab();
+    if (!tab || tab.id !== id) return;
+    if (first) { const render = S.resRenderers.get(id); if (render) render(); } // switch from "Sending…" to the live list
+    else if (S.streamViews.get(id)) S.streamViews.get(id)();
+  });
+
   HD.views.request = (tab, root) => {
     if (HD.isWebSocket(tab.draft.request)) return HD.views.websocket(tab, root);
     const draft = tab.draft;
@@ -297,9 +313,27 @@
       if (S.sending.get(tab.id)) {
         sendBtn.textContent = 'Cancel';
         sendBtn.classList.add('btn-cancel');
+        const streamed = S.streams.get(tab.id);
+        if (streamed && streamed.length) {
+          // A text/event-stream response: show events as they arrive, with a way to stop.
+          sendBtn.textContent = 'Stop';
+          const count = h('span', `Streaming… ${streamed.length} events`);
+          const area = h('div.body-area.sse-area');
+          HD.clear(resPane).append(h('div.sse-live-bar', h('div.spinner.spinner-small'), count, h('span.spacer'), HD.button('Stop', () => window.api.cancel(tab.id), { small: true })), area);
+          const list = HD.renderEventList(area, streamed);
+          let shown = streamed.length;
+          S.streamViews.set(tab.id, () => {
+            const all = S.streams.get(tab.id) || [];
+            list.append(all.slice(shown));
+            shown = all.length;
+            count.textContent = `Streaming… ${all.length} events`;
+          });
+          return;
+        }
         HD.clear(resPane).appendChild(h('div.res-loading', h('div.spinner'), h('div', 'Sending request…'), HD.button('Cancel', () => window.api.cancel(tab.id), { small: true })));
         return;
       }
+      S.streamViews.delete(tab.id);
       sendBtn.textContent = 'Send';
       sendBtn.classList.remove('btn-cancel');
       const result = S.responses.get(tab.id);
@@ -409,6 +443,7 @@
 
     renderReqTabs();
     renderReqPanel();
+    S.resRenderers.set(tab.id, renderRes);
     renderRes();
 
     // ---- Send ---------------------------------------------------------------------------------
@@ -423,8 +458,9 @@
       const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
       const settings = { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
       S.sending.set(tab.id, true);
+      S.streams.set(tab.id, []);
       HD.renderTabBar();
-      if (HD.currentTab() === tab) renderRes();
+      if (HD.currentTab() === tab) (S.resRenderers.get(tab.id) || renderRes)();
       let result;
       try {
         result = await window.api.send({
@@ -440,6 +476,8 @@
         result = { error: e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), tests: [] };
       }
       S.sending.delete(tab.id);
+      S.streams.delete(tab.id);
+      S.streamViews.delete(tab.id);
       for (const l of result.logs || []) HD.log(l.level, l.message, { request: draft.name });
       if (result.scopes) HD.applyScopes(scopes, result.scopes, collection);
       S.responses.set(tab.id, result);
@@ -450,7 +488,7 @@
       });
       HD.renderTabBar();
       if (HD.currentTab() === tab) {
-        renderRes();
+        (S.resRenderers.get(tab.id) || renderRes)();
         HD.refreshVarHighlights();
       }
       if (result.skipped) HD.toast('Request skipped by pm.execution.skipRequest()', 'info');

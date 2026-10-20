@@ -124,18 +124,27 @@ async function exchange(opts) {
       reject(err);
     };
 
+    // Set once a streamed response has started, so stopping it can still return what arrived.
+    let finishPartial = null;
     const req = lib.request(reqOpts, (res) => {
       timings.firstByte = ms();
       const chunks = [];
       let rawSize = 0;
+      // Streams (text/event-stream) are handed to opts.onData as they arrive, unless compressed.
+      const streaming = opts.onData && /^\s*text\/event-stream\b/i.test(res.headers['content-type'] || '') && !res.headers['content-encoding'];
       res.on('data', (c) => {
         chunks.push(c);
         rawSize += c.length;
         if (opts.maxSize && rawSize > opts.maxSize) {
           req.destroy(new RequestError(`Response exceeded maximum size of ${opts.maxSize} bytes`, 'EMAXSIZE'));
+          return;
+        }
+        if (streaming) {
+          try { opts.onData(c); } catch (e) { req.destroy(e); }
         }
       });
-      res.on('end', () => {
+      const finish = (cancelled) => {
+        if (settled) return;
         timings.end = ms();
         const raw = Buffer.concat(chunks);
         const body = decompress(raw, res.headers['content-encoding']);
@@ -160,8 +169,11 @@ async function exchange(opts) {
           },
           remoteAddress: res.socket && res.socket.remoteAddress,
           clientCertificate: tlsOpts && tlsOpts.label ? tlsOpts.label : null,
+          ...(cancelled ? { cancelled: true } : {}),
         });
-      });
+      };
+      if (streaming) finishPartial = () => finish(true);
+      res.on('end', () => finish(false));
       res.on('error', fail);
     });
 
@@ -175,7 +187,11 @@ async function exchange(opts) {
     }
     if (opts.signal) {
       if (opts.signal.aborted) req.destroy(new RequestError('Request cancelled', 'ECANCELLED'));
-      opts.signal.addEventListener('abort', () => req.destroy(new RequestError('Request cancelled', 'ECANCELLED')), { once: true });
+      opts.signal.addEventListener('abort', () => {
+        // Stopping a stream keeps what has arrived; anything else is cancelled.
+        if (finishPartial) finishPartial();
+        req.destroy(new RequestError('Request cancelled', 'ECANCELLED'));
+      }, { once: true });
     }
     req.on('error', fail);
     if (opts.body && opts.body.length) req.write(opts.body);

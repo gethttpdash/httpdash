@@ -831,3 +831,19 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .ws-detail { position: relative; background: var(--bg-2); border-bottom: 1px solid var(--border); }
 .ws-detail pre { margin: 0; padding: 8px 12px 10px 134px; white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
 .ws-detail-actions { position: absolute; right: 8px; top: 4px; }
+
+/* Server-Sent Events (response.js) */
+.sse-area { overflow: hidden; }
+.sse-live-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-2); flex: none; }
+.spinner-small { width: 14px; height: 14px; border-width: 2px; }
+.sse-list { flex: 1; min-height: 0; overflow: auto; font: calc(var(--editor-font-size) - 1px) var(--mono); }
+.sse-row { display: grid; grid-template-columns: 44px 80px minmax(60px, max-content) minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 4px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.sse-row:hover { background: var(--bg-2); }
+.sse-n { text-align: right; font-size: 11px; }
+.sse-time { font-size: 11px; }
+.sse-event { color: var(--m-ws); font-weight: 600; }
+.sse-data { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sse-id { font-size: 11px; }
+.sse-detail { position: relative; background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.sse-detail pre { margin: 0; padding: 8px 12px 10px 146px; white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
+.sse-detail-actions { position: absolute; right: 8px; top: 4px; }

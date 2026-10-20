@@ -6,6 +6,7 @@
     ws: null, // the persisted workspace
     responses: new Map(), // tabId -> last response (kept in memory only)
     sending: new Map(), // tabId -> true while a request is in flight
+    streams: new Map(), // tabId -> Server-Sent Events received so far while a response streams in
     senders: new Map(), // tabId -> send() of the rendered request view
     consoleLogs: [],
   });
