@@ -140,3 +140,23 @@ test('TLS contexts are built once and reused', () => {
   assert.strictEqual(a.secureContext, b.secureContext);
   assert.strictEqual(tlsFor('http://localhost/a', settings), null);
 });
+
+test('sent to a chosen address (Compare by DNS), TLS still checks the host name', async () => {
+  const pinned = (address) => execute({
+    request: newRequestDef({ url: `${base}/whoami` }),
+    scopes: { globals: {}, collection: {}, environment: {}, data: {} },
+    settings: { caCertificate: { enabled: true, path: file('ca.crt') }, certificates: [cert({ crt: file('client.crt'), key: file('client.key') })] },
+    connectTo: { host: 'localhost', address, family: 4 },
+  });
+  const ok = await pinned('127.0.0.1');
+  assert.strictEqual(ok.error, undefined);
+  assert.deepStrictEqual(JSON.parse(ok.response.bodyText), { client: 'httpdash-client' });
+  // The certificate names "localhost": reaching the server by address alone would fail that check,
+  // so passing it shows the name, not the address, was checked.
+  const byAddress = await execute({
+    request: newRequestDef({ url: base.replace('localhost', '127.0.0.1') + '/whoami' }),
+    scopes: { globals: {}, collection: {}, environment: {}, data: {} },
+    settings: { caCertificate: { enabled: true, path: file('ca.crt') } },
+  });
+  assert.ok(byAddress.error, 'by address alone, the certificate does not match');
+});

@@ -91,7 +91,9 @@ function connectTunnel(proxy, target, timeout) {
  * Performs a single HTTP exchange (no redirect handling).
  * opts: { method, url, headers: [[k, v]], body: Buffer|null, timeout, verifySSL, proxy,
  *         tlsFor(url) -> { secureContext, label } | null (client and CA certificates),
- *         reuseConnections (default true) }
+ *         reuseConnections (default true),
+ *         connectTo: { host, address, family } to connect to that address for that host, keeping the
+ *         host name for the Host header, SNI and the certificate check (Compare instances, by DNS) }
  */
 async function exchange(opts) {
   try {
@@ -132,9 +134,17 @@ async function exchangeOnce(opts) {
   const tlsExtra = tlsOpts && tlsOpts.secureContext ? { secureContext: tlsOpts.secureContext } : {};
   Object.assign(reqOpts, tlsExtra);
   reqOpts.agent = opts.reuseConnections === false ? false : agentFor(isHttps, tlsExtra.secureContext);
+  // Connect to one given address of the host. A pooled connection could be to another address of
+  // the same host, so these never use the pool.
+  const pin = opts.connectTo && opts.connectTo.host === url.hostname ? opts.connectTo : null;
+  if (pin) {
+    reqOpts.agent = false;
+    reqOpts.lookup = (hostname, o, cb) => (o && o.all ? cb(null, [{ address: pin.address, family: pin.family }]) : cb(null, pin.address, pin.family));
+  }
 
   const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {
+    if (pin) throw new RequestError('A proxy picks the address of the host itself, so one address cannot be chosen', 'EPROXYPIN');
     if (isHttps) {
       const socket = await connectTunnel(proxy, { hostname: reqOpts.hostname, port }, opts.timeout || 0);
       // Without an agent, Node uses createConnection to obtain the socket for this request.

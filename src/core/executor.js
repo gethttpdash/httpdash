@@ -277,7 +277,8 @@ function buildResponse(raw, maxPreview) {
  *   request, chain (ancestors with scripts/auth), scopes {globals, collection, environment, data, pools},
  *   jar (cookie array, mutated), settings, info, log(level, msg), signal,
  *   scriptSession (optional: a ScriptSession shared by several requests, e.g. a collection run),
- *   onStream(event) (optional: called for each Server-Sent Event as it arrives)
+ *   onStream(event) (optional: called for each Server-Sent Event as it arrives),
+ *   connectTo: { host, address, family } (optional: send to that address of the host; see http-client)
  * }
  * `scopes.pools` spreads discovered services over their instances (see balancer.js), and
  * `request.payloads` varies the data each call sends (see payloads.js; `info.payloadIndex` forces one).
@@ -344,6 +345,7 @@ async function executeRequest(opts) {
     log,
     runRequest: (item, itemChain, depth) => execute({
       ...opts,
+      connectTo: undefined, // a login goes wherever the name resolves, not to the instance being compared
       request: item.request,
       chain: itemChain,
       scopes,
@@ -416,6 +418,7 @@ async function executeRequest(opts) {
     try {
       const clientOpts = clientOptions(prepared, settings, jar);
       clientOpts.signal = opts.signal;
+      if (opts.connectTo) clientOpts.connectTo = opts.connectTo;
       const started = Date.now();
       let parser = null;
       const decoder = new TextDecoder();

@@ -18,6 +18,7 @@ const balancer = require('../core/balancer');
 const trafficReport = require('../core/traffic-report');
 const payloads = require('../core/payloads');
 const compareAnswers = require('../core/compare');
+const dnsInstances = require('../core/dns-instances');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -278,17 +279,50 @@ handle('request:send', async ({ id, request, chain, scopes, settings, info, coll
 // alone, so a login runs once, and the others use what it saved.
 const COMPARE_MAX_INSTANCES = 50;
 const COMPARE_BODY_LIMIT = 1024 * 1024;
-handle('request:compare', async ({ request, chain, scopes, settings, info, collection, variable }) => {
+// The request's URL with its variables filled in, as it would be sent.
+const resolvedUrl = (request, scopes) => resolveVars(String(request.url || ''), Object.assign({}, scopes.globals, scopes.collection, scopes.environment, scopes.data));
+const proxyApplies = (settings, url) => {
+  const p = settings && settings.proxy;
+  if (!p || !p.enabled || !p.host) return false;
+  try { return !httpClient.matchesBypass(new URL(url).hostname, p.bypass); } catch { return false; }
+};
+// Whether a plain URL has instances in DNS (several addresses for its host): { host, addresses } or null.
+handle('dns:instances', async ({ request, scopes, settings }) => {
+  const url = resolvedUrl(request, scopes || {});
+  if (proxyApplies(settings, url)) return null;
+  const found = await dnsInstances.instancesFor(url);
+  return found && { host: found.host, addresses: found.addresses };
+});
+
+// Instances are either a discovered service's (`variable`) or the addresses DNS gives the URL's host (`dns`).
+handle('request:compare', async ({ request, chain, scopes, settings, info, collection, variable, dns: byDns }) => {
   const pools = scopes.pools || {};
-  const pool = pools[variable];
-  if (!pool) throw new Error(`{{${variable}}} is not a variable from service discovery, or it was changed by hand`);
-  const instances = (pool.instances || []).filter((i) => i.url && i.healthy !== false).slice(0, COMPARE_MAX_INSTANCES);
-  if (instances.length < 2) throw new Error(`${pool.service} has ${instances.length} healthy instance${instances.length === 1 ? '' : 's'}: nothing to compare`);
+  let instances;
+  let service;
+  if (byDns) {
+    const url = resolvedUrl(request, scopes);
+    if (proxyApplies(settings, url)) throw new Error('A proxy is in use, and it picks the address of the host itself. Compare by DNS needs a direct connection.');
+    const found = await dnsInstances.instancesFor(url, { fresh: true });
+    if (!found) throw new Error('The host no longer resolves to several addresses: nothing to compare');
+    service = found.host;
+    const show = (a) => (found.family === 6 ? `[${a}]` : a);
+    instances = found.addresses.slice(0, COMPARE_MAX_INSTANCES).map((address) => ({
+      url: `${found.protocol}//${show(address)}:${found.port}`, id: address, connectTo: { host: found.host, address, family: found.family },
+    }));
+  } else {
+    const pool = pools[variable];
+    if (!pool) throw new Error(`{{${variable}}} is not a variable from service discovery, or it was changed by hand`);
+    service = pool.service;
+    instances = (pool.instances || []).filter((i) => i.url && i.healthy !== false).slice(0, COMPARE_MAX_INSTANCES);
+    if (instances.length < 2) throw new Error(`${pool.service} has ${instances.length} healthy instance${instances.length === 1 ? '' : 's'}: nothing to compare`);
+  }
   const chosen = payloads.choose(request, { key: (info && info.requestId) || `${request.method} ${request.url}`, index: info && info.payloadIndex });
   const lookup = makeLookup(collection);
   const runOne = (inst, baseScopes) => execute({
     request, chain, settings, jar, lookup,
-    scopes: { ...JSON.parse(JSON.stringify({ ...baseScopes, pools: undefined })), pools: { ...pools, [variable]: { ...pool, force: inst.url } } },
+    scopes: inst.connectTo ? JSON.parse(JSON.stringify(baseScopes))
+      : { ...JSON.parse(JSON.stringify({ ...baseScopes, pools: undefined })), pools: { ...pools, [variable]: { ...pools[variable], force: inst.url } } },
+    connectTo: inst.connectTo,
     info: { ...(info || {}), payloadIndex: chosen ? chosen.index : undefined },
     log: () => {},
   });
@@ -301,10 +335,10 @@ handle('request:compare', async ({ request, chain, scopes, settings, info, colle
   const raw = [first, ...rest];
   const results = raw.map((r, i) => ({ instance: instances[i].url, instanceId: instances[i].id || '', response: r.response || null, error: r.error || null, tests: r.tests || [] }));
   const comparison = compareAnswers.compare(results, (request.compare || {}));
-  audit.append('request.compare', { name: info && info.requestName, service: pool.service, instances: instances.length, odd: comparison.differences.filter((d) => d.kind === 'odd').length });
+  audit.append('request.compare', { name: info && info.requestName, service, by: byDns ? 'dns' : 'discovery', instances: instances.length, odd: comparison.differences.filter((d) => d.kind === 'odd').length });
   // What goes back to the window: every instance's full result, with very large bodies cut.
   return {
-    variable, service: pool.service, comparison, savedScopes,
+    variable: byDns ? null : variable, dns: !!byDns, service, comparison, savedScopes,
     results: raw.map((r, i) => {
       const response = r.response && r.response.bodyText && r.response.bodyText.length > COMPARE_BODY_LIMIT
         ? { ...r.response, bodyText: r.response.bodyText.slice(0, COMPARE_BODY_LIMIT), truncated: true } : r.response;

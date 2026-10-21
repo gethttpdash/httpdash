@@ -379,7 +379,7 @@
 
     let verdict;
     if (!odd.length && !split.length) {
-      verdict = h('div.compare-verdict.same', HD.icon('check'), h('span', `All ${n} instances of ${c.service} answered the same`,
+      verdict = h('div.compare-verdict.same', HD.icon('check'), h('span', `All ${n} ${c.dns ? 'addresses' : 'instances'} of ${c.service} answered the same`,
         varies.length ? h('span.muted', `, apart from ${varies.length} value${varies.length === 1 ? '' : 's'} that differ on every instance`) : null));
     } else if (oddOnes.length) {
       verdict = h('div.compare-verdict.differs', HD.icon('x'), h('span', h('b', oddOnes.map(name).join(', ')),
@@ -387,7 +387,7 @@
     } else {
       verdict = h('div.compare-verdict.differs', HD.icon('x'), h('span', 'The instances don\'t agree, and no answer stands out', h('span.muted', ` · ${split.length} difference${split.length === 1 ? '' : 's'}`)));
     }
-    wrap.appendChild(h('div.compare-head', verdict, h('span.muted.small', `{{${c.variable}}} · sent to ${n} instances at once`)));
+    wrap.appendChild(h('div.compare-head', verdict, h('span.muted.small', c.dns ? `${c.service} · ${n} addresses from DNS, sent to at once` : `{{${c.variable}}} · sent to ${n} instances at once`)));
 
     // The instances, with a slow one flagged against the median.
     const times = cmp.instances.map((i) => i.time).filter((t) => t != null).sort((a, b) => a - b);
@@ -395,7 +395,7 @@
     wrap.appendChild(h('div.table-wrap.no-pad', h('table.data-table.compare-instances',
       h('thead', h('tr', h('th', 'Instance'), h('th', 'Status'), h('th.num', 'Time'), h('th', 'Tests'), h('th', 'Answer'), h('th', ''))),
       h('tbody', cmp.instances.map((i, idx) => h('tr', { class: c.shown === idx ? 'shown' : '' },
-        h('td', h('div', name(i)), i.instanceId ? h('div.muted.small.mono', hostOf(i.instance)) : null),
+        h('td', h('div', name(i)), hostOf(i.instance) !== name(i) ? h('div.muted.small.mono', hostOf(i.instance)) : null),
         h('td', i.error ? h('span.text-error.small', i.error) : h(`span.${HD.statusClass(i.status)}`, String(i.status))),
         h('td.num', i.time == null ? '—' : HD.formatMs(i.time),
           median != null && i.time >= 2 * median && i.time - median >= 50 ? h('span.pill.changed', { title: `median ${HD.formatMs(median)}` }, 'slow') : null),

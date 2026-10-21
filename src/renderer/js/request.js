@@ -154,25 +154,48 @@
 
     const urlHost = h('div.url-input');
     const sendBtn = h('button.btn.btn-primary.send-btn', { type: 'button', onclick: () => send() }, 'Send');
-    // Compare instances: shown when the URL uses a discovered service with two or more healthy instances.
+    // Compare instances: shown when the URL uses a discovered service with two or more healthy
+    // instances, or when its host resolves to several addresses in DNS.
     const compareBtn = h('button.btn.compare-btn', { type: 'button', hidden: true, onclick: () => compare() }, HD.icon('layers'), h('span', 'Compare'));
+    // { url, host, addresses } for the URL as it was when looked up. Recent answers are remembered
+    // (as the main process caches them), so the button doesn't blink each time the tab is drawn.
+    S.dnsAnswers = S.dnsAnswers || new Map(); // url -> { at, found }
+    const remembered = S.dnsAnswers.get(req.url);
+    let dnsTarget = remembered && Date.now() - remembered.at < 30000 && remembered.found ? { url: req.url, ...remembered.found } : null;
     const comparable = () => {
       const pools = HD.discoveryPools && HD.discoveryPools(HD.activeEnvironment());
-      if (!pools) return null;
-      for (const [variable, pool] of Object.entries(pools)) {
+      for (const [variable, pool] of Object.entries(pools || {})) {
         if (!new RegExp(`\\{\\{\\s*${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`).test(req.url || '')) continue;
         const healthy = (pool.instances || []).filter((i) => i.url && i.healthy !== false).length;
-        if (healthy >= 2) return { variable, pool, healthy };
+        if (healthy >= 2) return { variable, pool, service: pool.service, count: healthy, what: 'instances' };
       }
+      if (dnsTarget && dnsTarget.url === req.url) return { dns: true, service: dnsTarget.host, count: dnsTarget.addresses.length, what: 'addresses' };
       return null;
     };
     const updateCompare = () => {
       const target = comparable();
       compareBtn.hidden = !target;
-      if (target) compareBtn.title = `Send to all ${target.healthy} instances of ${target.pool.service} and compare their answers`;
+      if (target) {
+        compareBtn.title = target.dns
+          ? `${target.service} has ${target.count} addresses in DNS: send to each and compare their answers`
+          : `Send to all ${target.count} instances of ${target.service} and compare their answers`;
+      }
     };
+    // Looks the URL's host up in DNS, in the background, when no discovered service covers it.
+    const checkDns = HD.debounce(async () => {
+      const url = req.url;
+      if (!url || comparable()) return;
+      try {
+        const found = await window.api.dnsInstances({ request: { url }, scopes: HD.scopesFor(context().collection), settings: requestSettings() });
+        S.dnsAnswers.set(url, { at: Date.now(), found });
+        if (req.url !== url) return;
+        dnsTarget = found ? { url, ...found } : null;
+        updateCompare();
+      } catch { /* not resolvable: no Compare */ }
+    }, 400);
     const urlBar = h('div.url-bar', methodSel, urlHost, sendBtn, compareBtn);
     updateCompare();
+    checkDns();
 
     // Request sub-tabs.
     const reqTabs = () => [
@@ -522,6 +545,7 @@
         req.url = v;
         HD.syncParamsFromUrl(req);
         updateCompare();
+        checkDns();
         markDirty();
         renderReqTabs();
         if ((ui.reqTab || 'params') === 'params' && !reqPanel.contains(document.activeElement)) renderReqPanel();
@@ -559,12 +583,20 @@
 
     // Sends the request to every healthy instance of the service in its URL and compares the answers.
     const compare = async () => {
-      const target = comparable();
+      let target = comparable();
       if (!target || S.sending.get(tab.id)) return;
+      // The instances as the registry knows them now, not as of the last sync.
+      if (!target.dns) {
+        const src = HD.discoverySources().find((x) => x.id === target.pool.sourceId);
+        if (src && !(await HD.syncDiscovery(src, { silent: true }))) HD.toast(`Could not refresh ${src.name}; comparing the instances from its last sync`, 'warn', 6000);
+        target = comparable();
+        updateCompare();
+        if (!target) { HD.toast('Fewer than two healthy instances are left after refreshing: nothing to compare', 'warn', 6000); return; }
+      }
       const method = String(req.method || 'GET').toUpperCase();
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !(await HD.confirm('Send to every instance',
-        `This ${method} will be sent ${target.healthy} times, once to each instance of ${target.pool.service}, so whatever it changes is changed ${target.healthy} times.`,
-        { okLabel: `Send ${target.healthy} times` }))) return;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !(await HD.confirm(`Send to every ${target.dns ? 'address' : 'instance'}`,
+        `This ${method} will be sent ${target.count} times, once to each ${target.dns ? 'address' : 'instance'} of ${target.service}, so whatever it changes is changed ${target.count} times.`,
+        { okLabel: `Send ${target.count} times` }))) return;
       const { collection, chain } = context();
       const scopes = HD.scopesFor(collection);
       S.sending.set(tab.id, true);
@@ -574,11 +606,11 @@
       try {
         const out = await window.api.compareInstances({
           id: tab.id, request: HD.clone(req), chain: chainFor(chain), collection: collection ? HD.clone(collection) : null,
-          scopes, settings: requestSettings(), info: { requestName: draft.name, requestId: tab.refId || tab.id }, variable: target.variable,
+          scopes, settings: requestSettings(), info: { requestName: draft.name, requestId: tab.refId || tab.id }, variable: target.variable, dns: !!target.dns,
         });
         if (out.savedScopes) HD.applyScopes(scopes, out.savedScopes, collection);
         const base = out.results[out.comparison.baseline];
-        result = { ...base, compare: { variable: out.variable, service: out.service, comparison: out.comparison, results: out.results, shown: out.comparison.baseline } };
+        result = { ...base, compare: { variable: out.variable, dns: out.dns, service: out.service, comparison: out.comparison, results: out.results, shown: out.comparison.baseline } };
         ui.resTab = 'compare';
       } catch (e) {
         result = { error: HD.cleanErr(e), tests: [] };
