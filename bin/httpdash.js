@@ -16,6 +16,7 @@ const postman = require('../src/core/postman');
 const backup = require('../src/core/backup');
 const { listToObject } = require('../src/core/variables');
 const certificates = require('../src/core/certificates');
+const { describe: describeHealth } = require('../src/core/health');
 
 const HELP = `HttpDash command-line runner
 
@@ -289,6 +290,7 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
           for (const d of evt.dependencyRuns || []) io.out(p.gray(`  ↳ ran "${d.name}" first (${d.reason}) ${d.status || ''} ${d.error ? p.red(d.error) : ''}`));
           if (evt.error) io.out(`  ${evt.method} ${evt.url} ${p.red(`[${evt.error}]`)}`);
           else io.out(`  ${evt.method} ${evt.url} ${p.gray(`[${evt.status} ${evt.statusText}, ${fmtBytes(evt.size)}, ${evt.time}ms]`)}`);
+          if (evt.health) io.out((evt.health.ok ? p.gray : p.red)(`  ♥ health: ${describeHealth(evt.health)}`));
           for (const t of evt.tests) {
             if (t.skipped) io.out(p.gray(`  - ${t.name} (skipped)`));
             else if (t.passed) io.out(`  ${p.green('✓')} ${t.name}`);
