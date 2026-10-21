@@ -99,6 +99,9 @@ function importItem(item) {
     id: uid(), name: ex.name || 'Example', status: ex.code || 0, statusText: ex.status || '',
     headers: (ex.header || []).map((h) => [h.key, h.value]), body: ex.body || '',
   }));
+  // Tags are not part of the Postman format; HttpDash writes them as "x-httpdash-tags" so they survive
+  // an export and import (Postman and Newman ignore the field).
+  if (Array.isArray(item['x-httpdash-tags'])) def.tags = item['x-httpdash-tags'].map(String);
   return { id: uid(), type: 'request', name: item.name || 'Request', request: def, examples };
 }
 
@@ -462,6 +465,7 @@ function exportItem(item) {
   const d = item.request;
   return {
     name: item.name,
+    ...(d.tags && d.tags.length ? { 'x-httpdash-tags': d.tags } : {}),
     event: exportEvents(d),
     request: { method: d.method, header: exportKv(d.headers), body: exportBody(d.body), url: exportUrl(d), auth: exportAuth(d.auth), description: d.description || undefined },
     response: (item.examples || []).map((ex) => ({ name: ex.name, code: ex.status, status: ex.statusText, header: (ex.headers || []).map(([key, value]) => ({ key, value })), body: ex.body })),

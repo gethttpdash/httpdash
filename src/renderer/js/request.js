@@ -518,7 +518,9 @@
 
     // Layout.
     const vertical = (S.ws.ui.layout || 'vertical') === 'vertical';
-    const reqSection = h('div.req-section', header, urlBar, reqTabHost, reqPanel);
+    // Tags, for finding and running requests by what they're for (smoke, orders, admin...).
+    const tagsRow = h('div.req-tags', HD.tagInput({ tags: (req.tags = req.tags || []), onChange: () => markDirty() }));
+    const reqSection = h('div.req-section', header, tagsRow, urlBar, reqTabHost, reqPanel);
     const split = h(`div.split-handle.${vertical ? 'horizontal' : 'vertical'}`);
     const body = h(`div.request-view.${vertical ? 'layout-v' : 'layout-h'}`, reqSection, split, resPane);
     root.appendChild(body);

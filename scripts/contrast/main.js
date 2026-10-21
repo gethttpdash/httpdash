@@ -63,6 +63,11 @@ app.on('browser-window-created', (_e, win) => {
       const c = HD.S.ws.collections[0]; const methods = ['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'];
       if (!c.items.some((i) => i.name === 'audit-methods')) { c.items.push(...methods.map((m) => HD.newRequestItem(m.toLowerCase() + ' item', { method: m }))); c.items.push(HD.newRequestItem('ws item', HD.newWebSocketDef())); c.items.push({ ...HD.newFolder('audit-methods') }); }
       HD.S.ws.ui.sidebarTab = 'collections'; HD.S.ws.ui.expanded = HD.S.ws.ui.expanded || {}; HD.S.ws.ui.expanded[c.id] = true; HD.renderSidebar();`);
+    // The search suggestions, with a tagged request (its tags in the tree and in the editor).
+    await run('search suggestions and tags', `const c = HD.S.ws.collections[0]; const it = c.items.find((i) => i.type === 'request');
+      it.request.tags = ['smoke', 'orders']; HD.S.ws.ui.sidebarTab = 'collections'; HD.S.ws.ui.expanded = HD.S.ws.ui.expanded || {}; HD.S.ws.ui.expanded[c.id] = true;
+      HD.renderSidebar(); HD.openRequest(it.id); await wait(150);
+      const s = document.querySelector('.side-search-box .search-input'); s.focus(); s.value = 'o'; s.dispatchEvent(new Event('input'));`);
     await run('sidebar environments', `HD.S.ws.ui.sidebarTab = 'environments'; HD.renderSidebar();`);
     // The top and bottom bars tinted with each environment color, and the environment page's swatches.
     for (const color of ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray']) {

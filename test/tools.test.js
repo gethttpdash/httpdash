@@ -219,3 +219,27 @@ test('audit log appends, filters, rotates and never stores query values', () => 
   log.clear();
   assert.strictEqual(log.read().length, 0);
 });
+
+test('tags survive a Postman export and import, and the CLI runs only what --tag asks for', async () => {
+  const dir = tmp();
+  const { col } = fixtureWorkspace();
+  col.items[0].request.tags = ['smoke', 'users'];
+  col.items[1].request.tags = ['Orders'];
+  const exported = postman.exportCollection(col);
+  assert.deepStrictEqual(exported.item.map((i) => i['x-httpdash-tags']), [['smoke', 'users'], ['Orders']]);
+  assert.deepStrictEqual(postman.importPostmanCollection(exported).items.map((i) => i.request.tags), [['smoke', 'users'], ['Orders']]);
+  const pmFile = path.join(dir, 'col.json');
+  fs.writeFileSync(pmFile, JSON.stringify(exported));
+  const run = async (...tags) => {
+    const c = capture();
+    const out = path.join(dir, `r-${tags.join('-')}.json`);
+    const code = await cli(['run', pmFile, '--env-var', 'user=alice', '--no-color', '-r', 'cli,json', '--reporter-json-export', out, ...tags.flatMap((t) => ['--tag', t])], c.io);
+    return { code, lines: c.lines, names: JSON.parse(fs.readFileSync(out, 'utf8')).results.map((r) => r.name) };
+  };
+  const smoke = await run('smoke');
+  assert.strictEqual(smoke.code, 0, smoke.lines.join('\n'));
+  assert.deepStrictEqual(smoke.names, ['Echo']);
+  assert.match(smoke.lines[0], /#smoke/);
+  assert.deepStrictEqual((await run('ORDERS')).names, ['Created'], 'tags match whatever their case');
+  assert.deepStrictEqual((await run('smoke', 'orders')).names, [], 'every tag given must be on the request');
+});

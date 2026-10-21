@@ -1003,3 +1003,36 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .env-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--dot); cursor: pointer; padding: 0; }
 .env-swatch.env-none { background: linear-gradient(135deg, transparent 45%, var(--text-3) 45%, var(--text-3) 55%, transparent 55%); }
 .env-swatch.selected { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Search with suggestions (sidebar, runner) and request tags */
+.search-box { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; flex: 1;
+  min-height: 30px; padding: 2px 6px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); cursor: text; }
+.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.search-chips { display: contents; }
+.search-input { flex: 1; min-width: 70px; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; padding: 3px 2px; }
+.search-chip { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; font-size: 12px; line-height: 18px; padding: 0 2px 0 7px; border-radius: 99px; background: var(--bg-3); color: var(--text); }
+.search-chip > span:not(.search-chip-kind) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-chip-kind { color: var(--text-2); }
+.search-chip.search-tag { background: var(--accent-soft); }
+.search-chip button { border: 0; background: transparent; color: var(--text-2); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; }
+.search-chip button:hover { color: var(--text); }
+.search-menu { position: fixed; max-height: 340px; overflow: auto; z-index: 2500;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 4px; }
+.search-group { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); padding: 6px 8px 2px; }
+.search-option { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.search-option.active { background: var(--accent-soft); }
+.search-option svg { width: 14px; height: 14px; color: var(--text-2); flex: none; }
+.search-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-hint { color: var(--text-2); font-size: 11px; white-space: nowrap; }
+.search-hash { color: var(--accent-text); font-weight: 600; width: 14px; text-align: center; flex: none; }
+.side-search-box { margin: 0 2px; }
+.runner-filter { flex: 1; }
+.req-tags { padding: 0 16px 8px; }
+.tag-box { border-color: transparent; background: transparent; padding-left: 0; }
+.tag-box:hover { border-color: var(--border); }
+.tag-box-icon { color: var(--text-2); font-weight: 600; padding: 0 4px; }
+.tag-input { font-size: 12px; }
+.tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: 0 3 auto; min-width: 0; overflow: hidden; }
+.tree-row .tree-name { min-width: 48px; }
+.tree-tag { font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-tag.more { background: var(--bg-3); color: var(--text-2); }

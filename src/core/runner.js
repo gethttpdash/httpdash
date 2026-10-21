@@ -68,13 +68,16 @@ function parseDataFile(content, filename = '') {
  * opts: { collection, folderId, scopes: {globals, environment, pools}, iterations, data, delay, settings, jar,
  *         stopOnFailure, onEvent(evt), signal }
  * `delay` is the gap in milliseconds before every request after the first, across iterations too.
+ * `tags` keeps only the requests that have every one of those tags (case doesn't matter).
  * `resetPayloads` starts each request's payloads from the first (an interactive run); monitors
  * leave it off, so their runs keep walking through the payloads.
  * Returns a summary; scopes are updated in place so the caller can persist them.
  */
 async function run(opts) {
   const excluded = new Set(opts.excluded || []);
-  const list = flatten(opts.collection, opts.folderId).filter((x) => !excluded.has(x.item.id));
+  const wanted = (opts.tags || []).map((t) => String(t).toLowerCase());
+  const tagged = (item) => wanted.every((t) => ((item.request && item.request.tags) || []).some((x) => String(x).toLowerCase() === t));
+  const list = flatten(opts.collection, opts.folderId).filter((x) => !excluded.has(x.item.id) && tagged(x.item));
   // Dependencies are looked up in the whole collection, so an excluded login request still works.
   const lookup = makeLookup(opts.collection);
   const data = opts.data && opts.data.length ? opts.data : null;

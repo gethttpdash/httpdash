@@ -28,6 +28,7 @@ Usage:
 Options:
   -c, --collection <name|id>    Collection to run (when the file has several)
   -f, --folder <name>           Run only this folder
+  -t, --tag <tag>               Run only requests with this tag (repeat to require several)
   -e, --environment <file|name> Postman environment file, or an environment name inside the backup
   -g, --globals <file>          Postman globals file
       --env-var <key=value>     Set an environment variable (repeatable; use for secrets in CI)
@@ -62,6 +63,7 @@ function parseArgs(argv) {
     switch (a) {
       case '-c': case '--collection': opts.collection = val(); break;
       case '-f': case '--folder': opts.folder = val(); break;
+      case '-t': case '--tag': (opts.tags = opts.tags || []).push(val()); break;
       case '-e': case '--environment': opts.environment = val(); break;
       case '-g': case '--globals': opts.globals = val(); break;
       case '--env-var': {
@@ -248,12 +250,13 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
     };
     const cli = opts.reporters.includes('cli');
     if (cli) {
-      io.out(p.bold(`HttpDash  ${col.name}${folder ? ` / ${folder.name}` : ''}${envName ? `  (environment: ${envName})` : ''}`));
+      io.out(p.bold(`HttpDash  ${col.name}${folder ? ` / ${folder.name}` : ''}${opts.tags ? `  ${opts.tags.map((t) => `#${t}`).join(' ')}` : ''}${envName ? `  (environment: ${envName})` : ''}`));
     }
     let lastIteration = -1;
     const summary = await runner.run({
       collection: col,
       folderId: folder ? folder.id : null,
+      tags: opts.tags,
       scopes: { globals, environment, collection: listToObject(col.variables) },
       iterations: opts.iterations || (data ? data.length : 1),
       data,

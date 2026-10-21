@@ -50,34 +50,47 @@
 
   // ---- Collections --------------------------------------------------------------------------
 
-  const matches = (node, f) => {
-    if (!f) return true;
-    if (node.name.toLowerCase().includes(f)) return true;
-    if (node.type === 'request' && (node.request.url || '').toLowerCase().includes(f)) return true;
-    return (node.items || []).some((c) => matches(c, f));
+  // The collections search: chips (tags, methods, URLs, names) and typed text. A folder is shown when
+  // something inside it matches, or, for plain text, when its own name does.
+  const query = { tokens: [], text: '' };
+  const matches = (node) => {
+    if (!HD.queryActive(query)) return true;
+    if (node.type === 'request') return HD.matchRequest(node, query);
+    const text = query.text.trim().toLowerCase();
+    if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
+    return (node.items || []).some(matches);
   };
 
   function renderCollections(panel) {
-    panel.appendChild(toolbar(async () => {
-      const name = await HD.prompt('New collection', 'Name', 'New Collection');
-      if (!name) return;
-      const c = HD.newCollection(name);
-      S.ws.collections.push(c);
-      expanded()[c.id] = true;
-      HD.save();
-      HD.renderSidebar();
-      HD.openContainer(c.id);
-    }, 'New collection', HD.button('', () => HD.showImport(), { icon: 'download', ghost: true, title: 'Import' })));
+    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box' });
+    panel.appendChild(h('div.side-toolbar',
+      HD.button('', async () => {
+        const name = await HD.prompt('New collection', 'Name', 'New Collection');
+        if (!name) return;
+        const c = HD.newCollection(name);
+        S.ws.collections.push(c);
+        expanded()[c.id] = true;
+        HD.save();
+        HD.renderSidebar();
+        HD.openContainer(c.id);
+      }, { icon: 'plus', ghost: true, title: 'New collection' }),
+      search,
+      HD.button('', () => HD.showImport(), { icon: 'download', ghost: true, title: 'Import' })));
     const tree = h('div.tree');
     panel.appendChild(tree);
-    const f = filter.trim().toLowerCase();
+    // Only the tree is drawn again as the search changes, so the search box keeps its focus and menu.
+    const drawTree = () => {
+    HD.clear(tree);
+    const f = HD.queryActive(query);
     if (!S.ws.collections.length) {
       tree.appendChild(h('div.empty-state.small', h('div', 'No collections yet.'), h('div.muted', 'Create one, or import a Postman collection / OpenAPI file.')));
     }
     const active = HD.currentTab();
     const activeRef = active && active.refId;
+    let shown = 0;
     const renderNode = (node, depth, collection) => {
-      if (!matches(node, f)) return;
+      if (!matches(node)) return;
+      if (node.type === 'request') shown++;
       const isContainer = node.type !== 'request';
       const open = f ? true : !!expanded()[node.id];
       const row = h('div.tree-row', {
@@ -108,6 +121,8 @@
       isContainer ? h('span.tree-caret', { class: open ? 'open' : '' }, HD.icon('chevron')) : h('span.tree-caret.empty'),
       node.type === 'request' ? h(`span.method-tag.${HD.methodClass(node.request.method)}`, node.request.method.slice(0, 6)) : HD.icon(node.type === 'collection' ? 'layers' : 'folder'),
       h('span.tree-name', node.name),
+      node.type === 'request' && node.request.tags && node.request.tags.length ? h('span.tree-tags', { title: node.request.tags.map((t) => `#${t}`).join(' ') },
+        node.request.tags.slice(0, 2).map((t) => h('span.tree-tag', t)), node.request.tags.length > 2 ? h('span.tree-tag.more', `+${node.request.tags.length - 2}`) : null) : null,
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);
@@ -117,6 +132,9 @@
       }
     };
     S.ws.collections.forEach((c) => renderNode(c, 0, c));
+    if (f && !shown && S.ws.collections.length) tree.appendChild(h('div.empty-state.small', h('div', 'No request matches.'), h('div.muted', 'Remove a filter, or press Esc to clear the text.')));
+    };
+    drawTree();
   }
 
   const addRequest = (parent, def) => {

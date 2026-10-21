@@ -152,7 +152,8 @@
    * and All / None for what the filter shows. cfg.excluded holds the ids left out.
    */
   function requestPicker(cfg, col, runBtn) {
-    const ui = (cfg.pickerUi = cfg.pickerUi || { collapsed: {}, filter: '' });
+    const ui = (cfg.pickerUi = cfg.pickerUi || { collapsed: {} });
+    ui.query = ui.query || { tokens: [], text: ui.filter || '' };
     const scope = col && cfg.folderId ? HD.find(cfg.folderId) : null;
     const items = col ? (scope && scope.node.items ? scope.node.items : col.items) : [];
     const all = [];
@@ -160,8 +161,10 @@
     const count = h('span.muted.small');
     const tree = h('div.runner-reqs', { role: 'tree' });
     const label = runBtn.querySelector('span');
-    const q = () => ui.filter.trim().toLowerCase();
-    const matches = (it, path) => !q() || `${it.request.method} ${it.name} ${path} ${it.request.url || ''}`.toLowerCase().includes(q());
+    const q = () => HD.queryActive(ui.query);
+    // The same search as the sidebar (tags, methods, URLs, names), and typed text also finds folders.
+    const matches = (it, path) => !q() || HD.matchRequest(it, ui.query)
+      || (!!ui.query.text.trim() && HD.matchRequest(it, { tokens: ui.query.tokens }) && path.toLowerCase().includes(ui.query.text.trim().toLowerCase()));
     const included = (it) => !cfg.excluded[it.id];
     const set = (list, on) => { for (const it of list) { if (on) delete cfg.excluded[it.id]; else cfg.excluded[it.id] = true; } HD.save(); draw(); };
     // The requests below a folder that the filter shows.
@@ -192,7 +195,8 @@
             rows.push(h('label.check.runner-req', { role: 'treeitem', style: `padding-left:${depth * 14 + 22}px`, title: it.request.url || '' },
               h('input', { type: 'checkbox', checked: included(it), onchange: (e) => set([it], e.target.checked) }),
               h(`span.method-tag.${HD.methodClass(it.request.method)}`, it.request.method.slice(0, 6)),
-              h('span.runner-req-name', it.name)));
+              h('span.runner-req-name', it.name),
+              (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 2).map((t) => h('span.tree-tag', t))) : null));
           }
         }
       };
@@ -210,8 +214,7 @@
     const section = h('div.runner-picker',
       h('div.section-title', 'Requests', h('span.spacer'), count),
       h('div.runner-picker-bar',
-        h('input.input.runner-filter', { type: 'search', placeholder: 'Filter by name, method, URL or folder', value: ui.filter, spellcheck: 'false',
-          oninput: HD.debounce((e) => { ui.filter = e.target.value; HD.save(); draw(); }, 120) }),
+        HD.searchBox({ query: ui.query, onChange: () => { HD.save(); draw(); }, placeholder: 'Filter: name, URL, method, #tag or folder', className: 'runner-filter' }),
         HD.button('All', () => set(shown(), true), { ghost: true, small: true, title: 'Select the requests shown' }),
         HD.button('None', () => set(shown(), false), { ghost: true, small: true, title: 'Leave out the requests shown' })),
       tree);
