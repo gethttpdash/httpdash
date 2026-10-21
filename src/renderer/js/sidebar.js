@@ -104,18 +104,39 @@
         // A double-click keeps the tab (a single click opens a preview).
         ondblclick: () => { if (isContainer) HD.openContainer(node.id, undefined, { pin: true }); else HD.openRequest(node.id, { pin: true }); },
         oncontextmenu: (e) => HD.menu(e, nodeMenu(node, collection)),
-        ondragstart: (e) => { dragId = node.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', node.id); },
+        ondragstart: (e) => {
+          dragId = node.id;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/x-httpdash-node', node.id);
+          row.classList.add('drag-source');
+        },
+        ondragend: () => { dragId = null; clearDrop(); document.querySelectorAll('.tree-row.drag-source').forEach((r) => r.classList.remove('drag-source')); },
         ondragover: (e) => {
           if (!dragId || dragId === node.id) return;
           e.preventDefault();
-          row.classList.add(isContainer ? 'drop-into' : 'drop-before');
+          e.dataTransfer.dropEffect = 'move';
+          const pos = dropPosition(e, row, node);
+          if (row.dataset.drop !== pos) {
+            clearDrop();
+            row.dataset.drop = pos;
+            row.classList.add(`drop-${pos}`);
+            // The line starts where the item will be indented: at this row's level.
+            row.style.setProperty("--drop-left", `${28 + depth * 14}px`);
+          }
+          // Hold over a closed folder to open it.
+          if (pos === 'into' && isContainer && !open && !row.dataset.opening) {
+            row.dataset.opening = '1';
+            clearTimeout(openTimer);
+            openTimer = setTimeout(() => { if (row.dataset.drop === 'into') { expanded()[node.id] = true; HD.renderSidebar(); } }, 650);
+          }
         },
-        ondragleave: () => row.classList.remove('drop-into', 'drop-before'),
+        ondragleave: (e) => { if (!row.contains(e.relatedTarget)) { row.classList.remove('drop-into', 'drop-before', 'drop-after'); delete row.dataset.drop; delete row.dataset.opening; } },
         ondrop: (e) => {
           e.preventDefault();
           e.stopPropagation();
-          row.classList.remove('drop-into', 'drop-before');
-          moveNode(dragId, node);
+          const pos = row.dataset.drop || dropPosition(e, row, node);
+          clearDrop();
+          moveNode(dragId, node, pos);
           dragId = null;
         },
       },
@@ -237,20 +258,41 @@
     ];
   }
 
-  function moveNode(id, target) {
+  // Where a drop lands on a row: above or below a request (by which half of the row the pointer
+  // is over); into a folder from its middle, or above or below it from its top or bottom quarter.
+  // A collection only takes things into it.
+  function dropPosition(e, row, node) {
+    const r = row.getBoundingClientRect();
+    const y = (e.clientY - r.top) / (r.height || 1);
+    if (node.type === 'collection') return 'into';
+    if (node.type === 'folder') return y < 0.25 ? 'before' : y > 0.75 && !expanded()[node.id] ? 'after' : 'into';
+    return y < 0.5 ? 'before' : 'after';
+  }
+  let openTimer = null;
+  function clearDrop() {
+    clearTimeout(openTimer);
+    document.querySelectorAll('.tree-row[data-drop], .tree-row[data-opening]').forEach((r) => {
+      r.classList.remove('drop-into', 'drop-before', 'drop-after');
+      delete r.dataset.drop;
+      delete r.dataset.opening;
+    });
+  }
+
+  function moveNode(id, target, pos = target.type === 'request' ? 'before' : 'into') {
     const src = HD.find(id);
     if (!src || id === target.id) return;
     // Refuse to move a folder into itself or one of its descendants.
     let inside = false;
     HD.walk(src.node.items || [], (it) => { if (it.id === target.id) inside = true; });
     if (inside) return;
+    if (pos !== 'into' && target.type === 'collection') pos = 'into';
     src.siblings.splice(src.siblings.indexOf(src.node), 1);
-    if (target.type === 'request') {
-      const t = HD.find(target.id);
-      t.siblings.splice(t.siblings.indexOf(target), 0, src.node);
-    } else {
+    if (pos === 'into') {
       target.items.push(src.node);
       expanded()[target.id] = true;
+    } else {
+      const t = HD.find(target.id);
+      t.siblings.splice(t.siblings.indexOf(target) + (pos === 'after' ? 1 : 0), 0, src.node);
     }
     HD.save();
     HD.renderSidebar();

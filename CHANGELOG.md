@@ -13,6 +13,13 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Dragging in the sidebar:**
+  - It shows exactly where an item will land: a thin line with a dot, at the right indentation, above or below a request (by which half of the row you're over); the middle of a folder highlights it to drop into, and its edges place the item before or after it.
+  - A closed folder opens when you hold an item over it, and the item being dragged fades.
+  - You can drop after the last request in a folder.
+
+### Fixed
+- The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
 
 ## [1.7.0] - 2026-10-21

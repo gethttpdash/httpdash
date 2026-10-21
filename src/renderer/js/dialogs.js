@@ -126,9 +126,12 @@
     });
   };
 
-  // Drag & drop import.
-  document.addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('dragging'); });
+  // Drag & drop import: the overlay is for files from outside only, not for moving things inside
+  // the app (requests in the sidebar, tabs), and it goes away however a drag ends.
+  const hasFiles = (e) => !!e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+  document.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); document.body.classList.add('dragging'); });
   document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) document.body.classList.remove('dragging'); });
+  document.addEventListener('dragend', () => document.body.classList.remove('dragging'));
   document.addEventListener('drop', async (e) => {
     e.preventDefault();
     document.body.classList.remove('dragging');
