@@ -55,7 +55,7 @@
   const query = { tokens: [], text: '' };
   const matches = (node) => {
     if (!HD.queryActive(query)) return true;
-    if (node.type === 'request') return HD.matchRequest(node, query) || HD.matchingVersions(node, query).length > 0;
+    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query) || HD.matchingVersions(node, query).length > 0;
     const text = query.text.trim().toLowerCase();
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
     return (node.items || []).some(matches);
@@ -99,9 +99,10 @@
         draggable: node.type !== 'collection' ? 'true' : null,
         dataset: { id: node.id },
         onclick: () => {
-          if (isContainer) { expanded()[node.id] = !expanded()[node.id]; HD.save(); HD.renderSidebar(); } else HD.openRequest(node.id);
+          if (isContainer) { expanded()[node.id] = !expanded()[node.id]; HD.save(); HD.renderSidebar(); } else HD.openRequest(node.id, { preview: true });
         },
-        ondblclick: () => { if (isContainer) HD.openContainer(node.id); },
+        // A double-click keeps the tab (a single click opens a preview).
+        ondblclick: () => { if (isContainer) HD.openContainer(node.id, undefined, { pin: true }); else HD.openRequest(node.id, { pin: true }); },
         oncontextmenu: (e) => HD.menu(e, nodeMenu(node, collection)),
         ondragstart: (e) => { dragId = node.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', node.id); },
         ondragover: (e) => {
@@ -143,6 +144,18 @@
       }
     };
     S.ws.collections.forEach((c) => renderNode(c, 0, c));
+    // Open tabs that aren't saved yet match too, so what was just typed in one is found.
+    const unsaved = f ? HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query)) : [];
+    if (unsaved.length) {
+      shown = true;
+      tree.appendChild(h('div.side-section.tree-unsaved', h('span.section-title.flush', 'Open tabs, not saved')));
+      for (const it of unsaved) {
+        tree.appendChild(h('div.tree-row', { class: S.ws.activeTabId === it.tabId ? 'active' : '', style: { paddingLeft: '20px' }, title: 'Not saved yet: Ctrl+S keeps it in a collection', onclick: () => HD.activateTab(it.tabId) },
+          h(`span.method-tag.${HD.methodClass(it.request.method)}`, String(it.request.method).slice(0, 6)),
+          h('span.tree-name', it.name),
+          (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 3).map((t) => h('span.tree-tag', `#${t}`))) : null));
+      }
+    }
     if (f && !shown && S.ws.collections.length) tree.appendChild(h('div.empty-state.small', h('div', 'No request matches.'), h('div.muted', 'Remove a filter, or press Esc to clear the text.')));
     };
     drawTree();
@@ -260,13 +273,14 @@
     const list = h('div.tree');
     panel.appendChild(list);
     const f = filter.trim().toLowerCase();
-    list.appendChild(h('div.tree-row.env-row', { onclick: () => HD.openGlobals() }, HD.icon('globe'), h('span.tree-name', 'Globals'), h('span.muted.small', String(S.ws.globals.filter((v) => v.key).length))));
+    list.appendChild(h('div.tree-row.env-row', { onclick: () => HD.openGlobals({ preview: true }), ondblclick: () => HD.openGlobals({ pin: true }) }, HD.icon('globe'), h('span.tree-name', 'Globals'), h('span.muted.small', String(S.ws.globals.filter((v) => v.key).length))));
     for (const env of S.ws.environments) {
       if (f && !env.name.toLowerCase().includes(f)) continue;
       const isActive = S.ws.activeEnvironmentId === env.id;
       list.appendChild(h('div.tree-row.env-row', {
         class: isActive ? 'env-active' : '',
-        onclick: () => HD.openEnvironment(env.id),
+        onclick: () => HD.openEnvironment(env.id, { preview: true }),
+        ondblclick: () => HD.openEnvironment(env.id, { pin: true }),
         oncontextmenu: (e) => HD.menu(e, envMenu(env)),
       },
       h('button.env-check', {
@@ -304,6 +318,13 @@
 
   // ---- History ------------------------------------------------------------------------------
 
+  // A history entry of a saved request opens that request, so a tag or an edit goes on it; any other
+  // entry opens as a new request, as it was sent.
+  const openHistory = (e, opts) => {
+    if (e.requestId && HD.find(e.requestId)) return HD.openRequest(e.requestId, opts);
+    return HD.openNewRequest(HD.clone(e.request), e.name || e.url, opts);
+  };
+
   function renderHistory(panel) {
     panel.appendChild(toolbar(null, null, HD.button('', async () => {
       if (!(await HD.confirm('Clear history', 'Delete all history entries?', { danger: true, okLabel: 'Clear' }))) return;
@@ -327,9 +348,11 @@
       }
       list.appendChild(h('div.tree-row.history-row', {
         title: `${e.method} ${e.url}\n${new Date(e.time).toLocaleString()}${e.error ? `\n${e.error}` : ''}`,
-        onclick: () => HD.openNewRequest(HD.clone(e.request), e.name || e.url),
+        onclick: () => openHistory(e, { preview: true }),
+        ondblclick: () => HD.pinTab(HD.currentTab()),
         oncontextmenu: (ev) => HD.menu(ev, [
-          { label: 'Open', onClick: () => HD.openNewRequest(HD.clone(e.request), e.name || e.url) },
+          { label: 'Open', onClick: () => openHistory(e, { pin: true }) },
+          { label: 'Open as a new request', hint: 'a copy, as it was sent', onClick: () => HD.openNewRequest(HD.clone(e.request), e.name || e.url) },
           { label: 'Save to collection', onClick: async () => {
             const loc = await HD.pickLocation('Save request', e.name || e.url);
             if (!loc) return;

@@ -238,9 +238,9 @@
       settings: settingsFor(request), info: { requestName: name, requestId: f ? f.node.id : undefined, payloadIndex },
     });
     if (result.scopes) HD.applyScopes(scopes, result.scopes, collection);
-    HD.addHistory({
+    result.history = HD.addHistory({
       name: `${name} (AI)`, method: request.method, url: result.sentRequest ? result.sentRequest.url : request.url, status: result.response ? result.response.status : null,
-      time: Date.now(), duration: result.response ? result.response.time : null, request: HD.clone(request), collectionId: collection ? collection.id : null, error: result.error || null,
+      time: Date.now(), duration: result.response ? result.response.time : null, request: HD.clone(request), collectionId: collection ? collection.id : null, requestId: f && f.node.id ? f.node.id : null, error: result.error || null,
     });
     return result;
   }
@@ -573,7 +573,11 @@
       const name = body.name ? String(body.name) : defaultName(req);
       const result = await send({ request: req, f, environmentId: body.environmentId, name });
       const out = shape(result, body.maxBodyBytes);
-      if (body.save) out.saved = keep(req, result, body, name);
+      if (body.save) {
+        out.saved = keep(req, result, body, name);
+        // Its history entry now opens the saved request.
+        if (out.saved.kept && result.history) { result.history.requestId = out.saved.requestId; HD.save(); HD.emit('history'); }
+      }
       return out;
     },
     compareInstances: async ({ requestId, body }) => {

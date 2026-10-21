@@ -119,6 +119,7 @@
 
     let afterEdit = () => {};
     const markDirty = () => {
+      HD.pinTab(tab); // an edit keeps a preview tab open
       if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); }
       HD.save();
       afterEdit();
@@ -651,7 +652,7 @@
       S.responses.set(tab.id, result);
       HD.addHistory({
         name: `${draft.name} (compare)`, method: req.method, url: req.url, status: result.response ? result.response.status : null, time: Date.now(),
-        duration: result.response ? result.response.time : null, request: HD.clone(req), collectionId: collection ? collection.id : null, error: result.error || null,
+        duration: result.response ? result.response.time : null, request: HD.clone(req), collectionId: collection ? collection.id : null, requestId: tab.refId || null, error: result.error || null,
       });
       HD.renderTabBar();
       if (HD.currentTab() === tab) (S.resRenderers.get(tab.id) || renderRes)();
@@ -659,6 +660,7 @@
 
     // `payloadIndex` sends with that payload ("Send with this"), whatever the payloads mode.
     const send = async (payloadIndex) => {
+      HD.pinTab(tab); // its response would be lost if the next click replaced it
       if (S.sending.get(tab.id)) { window.api.cancel(tab.id); return; }
       if (!req.url.trim()) { HD.toast('Enter a request URL', 'warn'); return; }
       const { collection, chain } = context();
@@ -692,7 +694,7 @@
       HD.addHistory({
         name: draft.name, method: req.method, url: result.sentRequest ? result.sentRequest.url : req.url,
         status: result.response ? result.response.status : null, time: Date.now(), duration: result.response ? result.response.time : null,
-        request: HD.clone(req), collectionId: collection ? collection.id : null, error: result.error || null,
+        request: HD.clone(req), collectionId: collection ? collection.id : null, requestId: tab.refId || null, error: result.error || null,
       });
       HD.renderTabBar();
       if (HD.currentTab() === tab) {

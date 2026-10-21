@@ -6,13 +6,13 @@
   const S = HD.S;
   HD.views = HD.views || {};
 
-  const openTab = (kind, refId) => {
+  const openTab = (kind, refId, opts = {}) => {
     const existing = S.ws.tabs.find((t) => t.kind === kind && (refId === undefined || t.refId === refId));
-    if (existing) return HD.activateTab(existing.id);
-    const cur = HD.currentTab();
-    const tab = { id: HD.uid(), kind, refId };
-    S.ws.tabs.splice(cur ? S.ws.tabs.indexOf(cur) + 1 : S.ws.tabs.length, 0, tab);
-    return HD.activateTab(tab.id);
+    if (existing) {
+      if (opts.pin) HD.pinTab(existing);
+      return HD.activateTab(existing.id);
+    }
+    return HD.addTab({ id: HD.uid(), kind, refId }, opts);
   };
   const ago = (t) => {
     if (!t) return 'never';
@@ -121,7 +121,8 @@
       const state = running.has(m.id) ? 'running' : !m.enabled ? 'paused' : !last ? 'idle' : last.ok ? 'ok' : 'fail';
       list.appendChild(h('div.tree-row.env-row', {
         class: active && active.kind === 'monitor' && active.refId === m.id ? 'active' : '',
-        onclick: () => openTab('monitor', m.id),
+        onclick: () => openTab('monitor', m.id, { preview: true }),
+        ondblclick: () => openTab('monitor', m.id, { pin: true }),
         oncontextmenu: (e) => HD.menu(e, [
           { label: 'Run now', onClick: () => HD.runMonitor(m) },
           { label: m.enabled ? 'Pause' : 'Resume', onClick: () => { m.enabled = !m.enabled; HD.save(); HD.renderSidebar(); } },
@@ -144,7 +145,7 @@
     const m = monitors().find((x) => x.id === tab.refId);
     if (!m) { root.appendChild(h('div.empty-state', 'This monitor no longer exists.')); return; }
     HD.variableInfo = () => ({});
-    const touch = () => { HD.save(); HD.renderSidebar(); };
+    const touch = () => { HD.pinTab(HD.currentTab()); HD.save(); HD.renderSidebar(); };
     const rerender = () => { HD.clear(root); HD.views.monitor(tab, root); };
     const col = S.ws.collections.find((c) => c.id === m.collectionId);
     const folders = [];

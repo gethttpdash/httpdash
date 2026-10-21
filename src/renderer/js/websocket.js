@@ -67,7 +67,7 @@
       return { collection: found.collection, chain: [found.collection, ...found.parents], found };
     };
     HD.variableInfo = () => HD.variableInfoFor(context().collection);
-    const markDirty = () => { if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); } HD.save(); };
+    const markDirty = () => { HD.pinTab(tab); if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); } HD.save(); };
 
     // Header and URL bar.
     const ctx = context();

@@ -28,6 +28,15 @@
    * Everything the search can suggest, from every request in the workspace: tags, methods, URLs (without
    * their query) and names, each with how many requests have it, most used first.
    */
+  // A request as its open tab shows it: unsaved edits (a new tag, a new name) count right away.
+  HD.liveItem = (item) => {
+    const tab = item && S.ws.tabs.find((t) => t.kind === 'request' && t.refId === item.id && t.dirty && t.draft);
+    return tab ? { ...item, name: tab.draft.name, request: tab.draft.request } : item;
+  };
+  // Open tabs whose request isn't saved anywhere (new ones, history copies), as search sees them.
+  HD.unsavedTabItems = () => S.ws.tabs.filter((t) => t.kind === 'request' && !t.refId && t.draft)
+    .map((t) => ({ id: t.id, type: 'request', name: t.draft.name, request: t.draft.request, tabId: t.id }));
+
   HD.requestCatalog = () => {
     const tags = new Map();
     const methods = new Map();
@@ -35,16 +44,21 @@
     const names = new Map();
     const versions = new Map();
     const bump = (m, key, label) => { if (!key) return; const e = m.get(key) || { value: label, count: 0 }; e.count++; m.set(key, e); };
+    const count = (it) => {
+      for (const t of it.request.tags || []) bump(tags, t.toLowerCase(), t);
+      bump(methods, String(it.request.method || 'GET').toUpperCase(), String(it.request.method || 'GET').toUpperCase());
+      const u = urlKey(it.request.url);
+      bump(urls, u, u);
+      bump(names, (it.name || '').toLowerCase(), it.name);
+    };
+    for (const it of HD.unsavedTabItems()) count(it);
     for (const col of S.ws.collections) {
-      HD.walk(col.items, (it) => {
-        if (it.type !== 'request' || !it.request) return;
-        for (const t of it.request.tags || []) bump(tags, t.toLowerCase(), t);
-        bump(methods, String(it.request.method || 'GET').toUpperCase(), String(it.request.method || 'GET').toUpperCase());
-        const u = urlKey(it.request.url);
-        bump(urls, u, u);
-        bump(names, it.name.toLowerCase(), it.name);
+      HD.walk(col.items, (raw) => {
+        if (raw.type !== 'request' || !raw.request) return;
+        const it = HD.liveItem(raw);
+        count(it);
         // Named or tagged versions of the request (see versions.js).
-        for (const v of curatedVersions(it)) {
+        for (const v of curatedVersions(raw)) {
           if (v.name) bump(versions, v.name.toLowerCase(), v.name);
           for (const t of v.tags || []) bump(tags, t.toLowerCase(), t);
         }

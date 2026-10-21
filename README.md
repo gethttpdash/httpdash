@@ -433,7 +433,8 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Collection / folder settings: description, auth, scripts, collection variables
 - Environments (with secret values and a color that tints the top and bottom bars while active), globals, environment quick look, dynamic variables (`{{$guid}}`, `{{$timestamp}}`, `{{$randomEmail}}`, …)
 - A sidebar search that suggests from every request's name, URL, method and tag, with chips that combine
-- History grouped by day, multiple tabs with unsaved-change tracking, all restored on restart
+- History grouped by day (an entry of a saved request opens that request), multiple tabs with unsaved-change tracking, all restored on restart
+- Preview tabs: a single click opens a temporary tab (in italics) that the next click replaces; edit it, send it or double-click it to keep it
 
 **Collection Runner**
 - Run a collection or folder, and pick its requests from a tree or by tag; environment, iterations and a gap in milliseconds between requests

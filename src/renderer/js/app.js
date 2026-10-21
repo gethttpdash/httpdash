@@ -18,49 +18,95 @@
   };
   HD.activateTab = activate;
 
-  const addTab = (tab) => {
+  // ---- Preview tabs ---------------------------------------------------------------------------
+  //
+  // Clicking something in the sidebar opens it in a preview tab (its title in italics), which the
+  // next thing clicked replaces, so looking around doesn't pile up tabs. A preview tab stays once
+  // it's used: an edit, a send or a save, a double-click on the tab, or a double-click in the
+  // sidebar. Opening any other way (search, buttons, AI) opens a tab that stays.
+
+  /** Makes a preview tab stay. */
+  HD.pinTab = (tab) => {
+    if (!tab || !tab.preview) return;
+    delete tab.preview;
+    HD.save();
+    HD.renderTabBar();
+  };
+
+  // What a closed tab leaves behind: a request in flight, a WebSocket, its response.
+  const forget = (tab) => {
+    if (S.sending.get(tab.id)) window.api.cancel(tab.id);
+    HD.closeWebSocketTab(tab.id);
+    S.resRenderers.delete(tab.id);
+    S.streamViews.delete(tab.id);
+    S.responses.delete(tab.id);
+  };
+
+  /** Opens a tab after the current one; a preview takes the place of the last preview tab. */
+  const addTab = (tab, { preview = false } = {}) => {
+    if (preview) {
+      tab.preview = true;
+      const old = S.ws.tabs.find((t) => t.preview && !t.dirty && !S.sending.get(t.id));
+      if (old) {
+        const at = S.ws.tabs.indexOf(old);
+        forget(old);
+        S.ws.tabs.splice(at, 1, tab);
+        activate(tab.id);
+        return tab;
+      }
+    }
     const cur = HD.currentTab();
     const idx = cur ? S.ws.tabs.indexOf(cur) + 1 : S.ws.tabs.length;
     S.ws.tabs.splice(idx, 0, tab);
     activate(tab.id);
     return tab;
   };
+  HD.addTab = addTab;
 
-  HD.openRequest = (itemId) => {
-    const existing = S.ws.tabs.find((t) => t.kind === 'request' && t.refId === itemId);
-    if (existing) return activate(existing.id);
-    const found = HD.find(itemId);
-    if (!found) return null;
-    return addTab({ id: HD.uid(), kind: 'request', refId: itemId, draft: { name: found.node.name, request: HD.clone(found.node.request) }, dirty: false, ui: {} });
+  // An already open tab: shown, and kept when asked to.
+  const reuse = (tab, { pin } = {}) => {
+    if (pin) HD.pinTab(tab);
+    activate(tab.id);
+    return tab;
   };
 
-  HD.openNewRequest = (request, name) => {
+  /** opts: { preview } opens it as a preview; { pin } keeps it (a double-click). */
+  HD.openRequest = (itemId, opts = {}) => {
+    const existing = S.ws.tabs.find((t) => t.kind === 'request' && t.refId === itemId);
+    if (existing) return reuse(existing, opts);
+    const found = HD.find(itemId);
+    if (!found) return null;
+    return addTab({ id: HD.uid(), kind: 'request', refId: itemId, draft: { name: found.node.name, request: HD.clone(found.node.request) }, dirty: false, ui: {} }, opts);
+  };
+
+  HD.openNewRequest = (request, name, opts = {}) => {
     const def = HD.newRequestDef({ auth: { type: 'none' }, ...(request || {}) });
     // A URL with a query string fills the Params table, as typing it would.
     if (def.url && !(def.params && def.params.length) && !HD.isWebSocket(def)) HD.syncParamsFromUrl(def);
-    return addTab({ id: HD.uid(), kind: 'request', refId: null, draft: { name: name || 'Untitled Request', request: def }, dirty: !!request, ui: {} });
+    // A preview (of a history entry) isn't an unsaved change: history still has it.
+    return addTab({ id: HD.uid(), kind: 'request', refId: null, draft: { name: name || 'Untitled Request', request: def }, dirty: !!request && !opts.preview, ui: {} }, opts);
   };
 
-  HD.openContainer = (id, sub) => {
+  HD.openContainer = (id, sub, opts = {}) => {
     const found = HD.find(id);
     if (!found) return;
     const existing = S.ws.tabs.find((t) => (t.kind === 'collection' || t.kind === 'folder') && t.refId === id);
     if (existing) {
       if (sub) existing.ui = { ...(existing.ui || {}), sub };
-      return activate(existing.id);
+      return reuse(existing, opts);
     }
-    return addTab({ id: HD.uid(), kind: found.node.type, refId: id, ui: sub ? { sub } : {} });
+    return addTab({ id: HD.uid(), kind: found.node.type, refId: id, ui: sub ? { sub } : {} }, opts);
   };
 
-  HD.openEnvironment = (id) => {
+  HD.openEnvironment = (id, opts = {}) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'environment' && t.refId === id);
-    if (existing) return activate(existing.id);
-    return addTab({ id: HD.uid(), kind: 'environment', refId: id });
+    if (existing) return reuse(existing, opts);
+    return addTab({ id: HD.uid(), kind: 'environment', refId: id }, opts);
   };
-  HD.openGlobals = () => {
+  HD.openGlobals = (opts = {}) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'globals');
-    if (existing) return activate(existing.id);
-    return addTab({ id: HD.uid(), kind: 'globals' });
+    if (existing) return reuse(existing, opts);
+    return addTab({ id: HD.uid(), kind: 'globals' }, opts);
   };
   HD.openRunner = (collectionId, folderId) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'runner');
@@ -107,13 +153,9 @@
       if (choice === 'cancel') return;
       if (choice === 'save' && !(await HD.saveTab(tab))) return;
     }
-    if (S.sending.get(id)) window.api.cancel(id);
-    HD.closeWebSocketTab(id);
-    S.resRenderers.delete(id);
-    S.streamViews.delete(id);
+    forget(tab);
     const idx = S.ws.tabs.indexOf(tab);
     S.ws.tabs.splice(idx, 1);
-    S.responses.delete(id);
     if (S.ws.activeTabId === id) {
       const next = S.ws.tabs[idx] || S.ws.tabs[idx - 1];
       S.ws.activeTabId = next ? next.id : null;
@@ -142,6 +184,7 @@
       found.node.name = tab.draft.name;
     }
     tab.dirty = false;
+    delete tab.preview;
     HD.save();
     HD.renderSidebar();
     HD.renderTabBar();
@@ -159,15 +202,17 @@
         ? h(`span.method-tag.${HD.methodClass(t.draft.request.method)}`, t.draft.request.method.slice(0, 6))
         : HD.icon({ collection: 'layers', folder: 'folder', environment: 'globe', globals: 'globe', runner: 'play', discovery: 'search', monitor: 'pulse', secrets: 'shield', audit: 'history', team: 'users' }[t.kind] || 'file');
       const el = h('div.tab', {
-        class: [t.id === S.ws.activeTabId && 'active', t.dirty && 'dirty', S.sending.get(t.id) && 'sending'].filter(Boolean).join(' '),
-        title: t.kind === 'request' ? `${tabTitle(t)}\n${t.draft.request.url}` : tabTitle(t),
+        class: [t.id === S.ws.activeTabId && 'active', t.dirty && 'dirty', S.sending.get(t.id) && 'sending', t.preview && 'preview'].filter(Boolean).join(' '),
+        title: `${t.kind === 'request' ? `${tabTitle(t)}\n${t.draft.request.url}` : tabTitle(t)}${t.preview ? '\nPreview: the next item you open replaces it. Double-click to keep it.' : ''}`,
         draggable: 'true',
         onclick: () => activate(t.id),
+        ondblclick: () => HD.pinTab(t),
         onauxclick: (e) => { if (e.button === 1) HD.closeTab(t.id); },
         oncontextmenu: (e) => HD.menu(e, [
           { label: 'Close', onClick: () => HD.closeTab(t.id) },
           { label: 'Close other tabs', onClick: async () => { for (const o of S.ws.tabs.filter((x) => x.id !== t.id)) await HD.closeTab(o.id); } },
           { label: 'Close all tabs', onClick: async () => { for (const o of [...S.ws.tabs]) await HD.closeTab(o.id); } },
+          t.preview ? { label: 'Keep open', onClick: () => HD.pinTab(t) } : null,
           t.kind === 'request' ? { label: 'Duplicate tab', onClick: () => HD.openNewRequest(HD.clone(t.draft.request), `${t.draft.name} Copy`) } : null,
         ]),
         ondragstart: (e) => { e.dataTransfer.setData('text/tab', t.id); },

@@ -6,7 +6,8 @@
   const S = HD.S;
   HD.views = HD.views || {};
 
-  const touch = () => { HD.save(); };
+  // An edit keeps a preview tab open.
+  const touch = () => { HD.pinTab(HD.currentTab()); HD.save(); };
 
   // ---- Collection & folder ------------------------------------------------------------------
 

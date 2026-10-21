@@ -178,11 +178,13 @@
 
   HD.addHistory = (entry) => {
     const ws = S.ws;
-    ws.history.unshift({ id: HD.uid(), time: Date.now(), ...entry });
+    const e = { id: HD.uid(), time: Date.now(), ...entry };
+    ws.history.unshift(e);
     const limit = ws.settings.historyLimit || 200;
     if (ws.history.length > limit) ws.history.length = limit;
     HD.save();
     HD.emit('history');
+    return e;
   };
 
   // ---- Console ----------------------------------------------------------------------------

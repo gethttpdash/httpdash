@@ -178,16 +178,14 @@
   };
 
   // `sub` picks the tab's page: 'config' (the default) or 'traffic'.
-  HD.openDiscovery = (id, sub) => {
+  HD.openDiscovery = (id, sub, opts = {}) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'discovery' && t.refId === id);
     if (existing) {
       if (sub) existing.ui = { ...(existing.ui || {}), sub };
+      if (opts.pin) HD.pinTab(existing);
       return HD.activateTab(existing.id);
     }
-    const cur = HD.currentTab();
-    const tab = { id: HD.uid(), kind: 'discovery', refId: id, ...(sub ? { ui: { sub } } : {}) };
-    S.ws.tabs.splice(cur ? S.ws.tabs.indexOf(cur) + 1 : S.ws.tabs.length, 0, tab);
-    return HD.activateTab(tab.id);
+    return HD.addTab({ id: HD.uid(), kind: 'discovery', refId: id, ...(sub ? { ui: { sub } } : {}) }, opts);
   };
 
   HD.addDiscoverySource = () => {
@@ -328,7 +326,8 @@
       const ls = src.lastSync;
       list.appendChild(h('div.tree-row.env-row', {
         class: active && active.kind === 'discovery' && active.refId === src.id ? 'active' : '',
-        onclick: () => HD.openDiscovery(src.id),
+        onclick: () => HD.openDiscovery(src.id, undefined, { preview: true }),
+        ondblclick: () => HD.openDiscovery(src.id, undefined, { pin: true }),
         oncontextmenu: (e) => HD.menu(e, sourceMenu(src)),
       },
       HD.icon('search'),
@@ -381,7 +380,7 @@
     HD.variableInfo = () => HD.variableInfoFor(null);
     tab.ui = tab.ui || {};
     const sub = tab.ui.sub === 'traffic' ? 'traffic' : 'config';
-    const touch = () => HD.save();
+    const touch = () => { HD.pinTab(tab); HD.save(); };
     const rerender = () => { HD.clear(root); HD.views.discovery(tab, root); };
     const p = PROVIDERS[src.provider];
 

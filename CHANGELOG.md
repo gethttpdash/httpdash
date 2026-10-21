@@ -4,6 +4,16 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Preview tabs:** a single click in the sidebar (a request, environment, discovery source, monitor or history entry) opens a preview tab, its title in italics, which the next single click replaces, so looking around doesn't pile up tabs. It stays as soon as you use it:
+  - an edit, a send or a save
+  - a double-click on the tab or on the item in the sidebar
+  - **Keep open** in the tab's menu.
+- **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
+
+### Changed
+- **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
+
 ## [1.7.0] - 2026-10-21
 
 ### Added
