@@ -58,7 +58,9 @@
     const setPaused = (p) => {
       paused = p;
       pause.classList.toggle('is-paused', p);
-      pause.setAttribute('aria-label', p ? 'Play messages' : 'Pause messages');
+      pause.setAttribute('aria-label', p ? 'Play messages and animation' : 'Pause messages and animation');
+      // The background animation (hero-web.js) stops and starts with the messages.
+      window.dispatchEvent(new CustomEvent('hero:paused', { detail: p }));
       schedule();
     };
     const hold = (h) => { holding = h; schedule(); };

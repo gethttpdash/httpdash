@@ -75,7 +75,9 @@ p { margin: 0; }
 .nav-cta { margin-left: auto; }
 
 /* Hero */
-.hero { padding: 80px 0 56px; background: radial-gradient(1200px 560px at 50% -12%, var(--accent-soft), transparent 70%); overflow: hidden; }
+.hero { position: relative; padding: 80px 0 56px; background: radial-gradient(1200px 560px at 50% -12%, var(--accent-soft), transparent 70%); overflow: hidden; }
+.hero-web { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 0; }
+.hero-inner { position: relative; z-index: 1; }
 .hero-inner { display: flex; flex-direction: column; align-items: center; gap: 56px; }
 .hero-copy { max-width: 960px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .hero h1 { font-size: clamp(38px, 5.4vw, 60px); margin-bottom: 20px; }
