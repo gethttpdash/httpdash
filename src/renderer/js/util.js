@@ -76,6 +76,8 @@ HD.icon = (name) => {
     rows: 'M3 3h18v18H3zM3 12h18',
     edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z',
     check: 'M20 6L9 17l-5-5',
+    info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+    alert: 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
     stop: 'M6 6h12v12H6z',
     file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
     wrap: 'M3 6h18M3 12h15a3 3 0 1 1 0 6h-4M3 18h7M14 15l-3 3 3 3',
@@ -133,10 +135,14 @@ HD.tabStrip = (tabs, active, onSelect, cls = '') => h(`div.subtabs${cls ? '.' + 
 
 // ---- Toasts -----------------------------------------------------------------------------------
 
+// A calm card: the app's surface and text colors, with the kind of message shown by a colored bar
+// and icon rather than a loud fill.
+const TOAST_ICONS = { success: 'check', error: 'x', warn: 'alert', info: 'info' };
 HD.toast = (message, type = 'info', ms = 3500) => {
   let host = document.getElementById('toasts');
   if (!host) { host = h('div#toasts'); document.body.appendChild(host); }
-  const el = h(`div.toast.toast-${type}`, String(message));
+  const el = h(`div.toast.toast-${type}`, { role: type === 'error' ? 'alert' : 'status' },
+    h('span.toast-icon', HD.icon(TOAST_ICONS[type] || 'info')), h('span.toast-text', String(message)));
   host.appendChild(el);
   setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 300); }, ms);
 };
