@@ -45,7 +45,7 @@
         <div class="hero-copy">
           <p class="eyebrow">Free · Source available · Windows · macOS · Linux</p>
           <h1>The API client that <span class="accent">logs in for you</span>.</h1>
-          <p class="lead">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, builds environments from your service registry, and keeps everything on your own machine.</p>
+          <p class="lead">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, builds environments from your service registry, compares every instance of a service, lets AI agents work alongside you, and keeps everything on your own machine.</p>
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" id="primary-download" href="#download">Download HttpDash</a>
             <a class="btn btn-ghost btn-lg" href="#features">See what it does</a>
@@ -77,7 +77,7 @@
             <span class="stat-label">from launch to a ready window, and under half a second with 6,000 requests</span>
           </li>
           <li class="stat">
-            <span class="stat-value">12<span class="stat-unit">×</span></span>
+            <span class="stat-value">16<span class="stat-unit">×</span></span>
             <span class="stat-label">faster than Postman's collection runner on 500 requests with scripts and tests</span>
           </li>
           <li class="stat">
@@ -92,23 +92,23 @@
             <p>Requests per second, running 500 requests that each have a pre-request script and two tests. Higher is better.</p>
           </figcaption>
           <div class="bench-chart" role="list">
-            <div class="bench-row is-us" role="listitem" tabindex="0" aria-label="HttpDash 1.3.0: 1,176 requests per second, 0.43 seconds in total, 109 MB peak memory">
+            <div class="bench-row is-us" role="listitem" tabindex="0" aria-label="HttpDash 1.4.0: 1,545 requests per second, 0.32 seconds in total, 107 MB peak memory">
               <span class="bench-name">HttpDash</span>
-              <span class="bench-track"><span class="bench-bar" style="--v: 1176"></span></span>
-              <span class="bench-value">1,176/s</span>
-              <span class="bench-tip" role="tooltip"><b>HttpDash 1.3.0</b><span>0.43 s for 500 requests</span><span>109 MB peak memory</span></span>
+              <span class="bench-track"><span class="bench-bar" style="--v: 1545"></span></span>
+              <span class="bench-value">1,545/s</span>
+              <span class="bench-tip" role="tooltip"><b>HttpDash 1.4.0</b><span>0.32 s for 500 requests</span><span>107 MB peak memory</span></span>
             </div>
-            <div class="bench-row" role="listitem" tabindex="0" aria-label="Postman's runner, Newman 6.2.3: 95 requests per second, 5.26 seconds in total, 252 MB peak memory">
+            <div class="bench-row" role="listitem" tabindex="0" aria-label="Postman's runner, Newman 6.2.3: 97 requests per second, 5.14 seconds in total, 253 MB peak memory">
               <span class="bench-name">Postman <small>(Newman)</small></span>
-              <span class="bench-track"><span class="bench-bar" style="--v: 95"></span></span>
-              <span class="bench-value">95/s</span>
-              <span class="bench-tip" role="tooltip"><b>Newman 6.2.3</b><span>5.26 s for 500 requests</span><span>252 MB peak memory</span></span>
+              <span class="bench-track"><span class="bench-bar" style="--v: 97"></span></span>
+              <span class="bench-value">97/s</span>
+              <span class="bench-tip" role="tooltip"><b>Newman 6.2.3</b><span>5.14 s for 500 requests</span><span>253 MB peak memory</span></span>
             </div>
-            <div class="bench-row" role="listitem" tabindex="0" aria-label="Bruno CLI 4.2.1: 12 requests per second, 42.63 seconds in total, 421 MB peak memory">
+            <div class="bench-row" role="listitem" tabindex="0" aria-label="Bruno CLI 4.2.1: 11 requests per second, 43.78 seconds in total, 427 MB peak memory">
               <span class="bench-name">Bruno <small>(CLI)</small></span>
-              <span class="bench-track"><span class="bench-bar" style="--v: 12"></span></span>
-              <span class="bench-value">12/s</span>
-              <span class="bench-tip" role="tooltip"><b>Bruno CLI 4.2.1</b><span>42.63 s for 500 requests</span><span>421 MB peak memory</span></span>
+              <span class="bench-track"><span class="bench-bar" style="--v: 11"></span></span>
+              <span class="bench-value">11/s</span>
+              <span class="bench-tip" role="tooltip"><b>Bruno CLI 4.2.1</b><span>43.78 s for 500 requests</span><span>427 MB peak memory</span></span>
             </div>
           </div>
           <details class="bench-details">
@@ -117,9 +117,9 @@
               <table>
                 <thead><tr><th scope="col">Runner</th><th scope="col">Total time</th><th scope="col">Requests/s</th><th scope="col">Peak memory</th></tr></thead>
                 <tbody>
-                  <tr><th scope="row">HttpDash 1.3.0</th><td>0.43 s</td><td>1,176</td><td>109 MB</td></tr>
-                  <tr><th scope="row">Postman's Newman 6.2.3</th><td>5.26 s</td><td>95</td><td>252 MB</td></tr>
-                  <tr><th scope="row">Bruno CLI 4.2.1</th><td>42.63 s</td><td>12</td><td>421 MB</td></tr>
+                  <tr><th scope="row">HttpDash 1.4.0</th><td>0.32 s</td><td>1,545</td><td>107 MB</td></tr>
+                  <tr><th scope="row">Postman's Newman 6.2.3</th><td>5.14 s</td><td>97</td><td>253 MB</td></tr>
+                  <tr><th scope="row">Bruno CLI 4.2.1</th><td>43.78 s</td><td>11</td><td>427 MB</td></tr>
                 </tbody>
               </table>
             </div>
@@ -181,6 +181,66 @@
             </ul>
           </div>
           <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/traffic.webp" width="2880" height="1736" loading="lazy" alt="Traffic by instance for a Consul cluster: orders-2 flagged failing, orders-3 flagged slow at 312 ms, and by payload, a large payment flagged slow at 370 ms while other payloads answer in about 20 ms."></div></figure>
+        </article>
+
+        <article class="feature">
+          <div class="feature-copy">
+            <div class="feature-text">
+              <h3>Compare every instance of a service</h3>
+              <p>One click sends the same request to every instance behind a service and puts the answers side by side. HttpDash finds the instances in your registry, or in every address the host name resolves to, and points out the one that answered differently: an old version, a missing field, a different state.</p>
+            </div>
+            <ul class="ticks">
+              <li>Instances come from Consul, Eureka, Kubernetes or DNS, refreshed when you compare</li>
+              <li>Tells an odd one out from a split, and ignores dates, timestamps and IDs made on the spot</li>
+              <li>Ignore the headers and JSON paths that are meant to differ</li>
+            </ul>
+          </div>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/compare.webp" width="2880" height="1736" loading="lazy" alt="Compare for Get order across three instances: orders-3 answered differently from the other two, with version 2.3.0 instead of 2.4.1, no qty field and state planned instead of released."></div></figure>
+        </article>
+
+        <article class="feature">
+          <div class="feature-copy">
+            <div class="feature-text">
+              <h3>Let AI agents work in HttpDash</h3>
+              <p>Claude and other AI agents can use HttpDash the way you do: find requests, send them, add and update them, start runs and read the results, and look at the screen. They connect through an OpenAPI document or MCP, on your own computer only, and you decide what they are allowed to do.</p>
+            </div>
+            <ul class="ticks">
+              <li>30 operations, described in an OpenAPI 3.1 document, or <code>httpdash mcp</code> for MCP clients</li>
+              <li>Separate permissions to read, run, edit, use the screen and see secrets</li>
+              <li>A status bar light while an agent works, and a history of every call it made</li>
+            </ul>
+          </div>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/ai-agents.webp" width="2880" height="1736" loading="lazy" alt="The AI access panel while an agent is working: calls from Claude Code to search requests, update a request, send it (200 in 21 ms), start a run and take a screen snapshot."></div></figure>
+        </article>
+
+        <article class="feature">
+          <div class="feature-copy">
+            <div class="feature-text">
+              <h3>Every version you sent, and a warning when the spec moves on</h3>
+              <p>Each request you send by hand is kept as a version, with the response it got. Switch back to one in a click, rename it, tag it and find it in search. When the OpenAPI document the request came from changes, HttpDash tells you what no longer fits before you send it.</p>
+            </div>
+            <ul class="ticks">
+              <li>Versions keep the URL, parameters, headers, body and the response</li>
+              <li>Flags missing required parameters and fields, unknown ones, and values outside an enum</li>
+              <li>Collection runs don't add versions, so the list stays yours</li>
+            </ul>
+          </div>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/versions.webp" width="2880" height="1736" loading="lazy" alt="A List lots request with a warning that it does not fit Lots API 2.0.0: the required query parameter status is missing and state is not in the spec. The versions menu is open with two earlier versions marked with a warning."></div></figure>
+        </article>
+
+        <article class="feature">
+          <div class="feature-copy">
+            <div class="feature-text">
+              <h3>Find any request by name, URL or tag</h3>
+              <p>Give requests as many tags as you like, and HttpDash suggests the ones you already use. The search box knows every name, URL, method and tag in your workspace, so you pick from a list instead of remembering what you called it.</p>
+            </div>
+            <ul class="ticks">
+              <li>Combine tags with text, such as <code>#smoke</code> and “pay”</li>
+              <li>Pick what a run includes from the folder tree, or by tag</li>
+              <li>Run only the tagged requests in CI with <code>httpdash run backup.json --tag smoke</code></li>
+            </ul>
+          </div>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/search.webp" width="2880" height="1736" loading="lazy" alt="Searching for pay with the smoke tag selected: suggestions grouped as tags, URLs and request names, and the Take payment request with its tags."></div></figure>
         </article>
 
         <article class="feature">
@@ -250,9 +310,9 @@
           <h2>From the first request to the nightly check</h2>
         </header>
         <ul class="grid">
-          <li class="card"><span class="card-icon" aria-hidden="true">{ }</span><h3>Collections &amp; environments</h3><p>Folders, tabs, history, globals and secret variables with <code>{{autocomplete}}</code> and hover previews.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">{ }</span><h3>Collections &amp; environments</h3><p>Folders, tabs, history, globals and secret variables with <code>{{autocomplete}}</code> and hover previews. Give each environment a color so you always know where you are sending.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">✓</span><h3>Scripts &amp; tests</h3><p>Pre-request and test scripts with a familiar <code>pm</code> API, Chai assertions, JSON Schema checks and a snippet library.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">▶</span><h3>Collection runner</h3><p>Iterations, CSV/JSON data files, request ordering, a gap in milliseconds between requests and a detailed, exportable report.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">▶</span><h3>Collection runner</h3><p>Pick the requests to run from a tree or by tag, then iterations, CSV/JSON data files, a gap in milliseconds between requests and a detailed, exportable report.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">≈</span><h3>Mock server</h3><p>Serve saved examples on a local port, pick responses with a header, and switch an environment to the mock in one click.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">♥</span><h3>Monitors</h3><p>Run a collection every few minutes and get a desktop notification when it fails, and again when it recovers.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">&lt;/&gt;</span><h3>Code generation</h3><p>Turn any request into cURL, fetch, Axios, Python, Go, PHP, C#, Java, PowerShell, wget or raw HTTP.</p></li>
@@ -265,6 +325,10 @@
           <li class="card"><span class="card-icon" aria-hidden="true">⚖</span><h3>Load balancing</h3><p>Send to the first instance, each in turn or a random one, from Consul, Eureka or Kubernetes pods. Unhealthy instances are skipped.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">≡</span><h3>Payloads</h3><p>Give a request the variations it should be called with, typed in or imported from CSV or JSON, and send them in turn or at random.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">▤</span><h3>Traffic reports</h3><p>Requests, timings and errors per instance and per payload, live, with slow and failing ones flagged. Export to Excel, PDF or an image.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">≠</span><h3>Compare instances</h3><p>Send one request to every instance of a service, from your registry or DNS, and see which one answered differently.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">✦</span><h3>AI agents</h3><p>An OpenAPI document and an MCP server let AI agents search, send, edit and run requests, with permissions you set and a history of every call.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">↺</span><h3>Request versions</h3><p>Every request you send by hand is kept with its response. Rename, tag and search versions, and get a warning when the spec no longer fits.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">#</span><h3>Tags &amp; search</h3><p>Any number of tags per request, suggested as you type, and one search across names, URLs, methods and tags.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⚿</span><h3>Client certificates</h3><p>Mutual TLS per host, your company's CA, and certificates already installed on your computer, trusted as in a browser.</p></li>
         </ul>
       </div>

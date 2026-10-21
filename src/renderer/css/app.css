@@ -1032,7 +1032,8 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .tag-box:hover { border-color: var(--border); }
 .tag-box-icon { color: var(--text-2); font-weight: 600; padding: 0 4px; }
 .tag-input { font-size: 12px; }
-.tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: none; }
+.tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; }
+.tree-tags .tree-tag { flex: none; }
 .tree-row .tree-name { min-width: 48px; }
 .tree-tag { font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-tag.more { background: var(--bg-3); color: var(--text-2); }

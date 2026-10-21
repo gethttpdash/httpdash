@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-21
+
 ### Added
 - **Request versions, with their responses:** every distinct version of a request you send by hand (method, URL, params, headers, body, auth) is kept with the response it got, so you can switch back to any of them from **Versions** in the request's header, and see that response straight away. Sending the same thing again doesn't make a new version. Name and tag versions ("released orders", #smoke) in **Manage versions**; named and tagged versions show up in the sidebar search (and its suggestions) under their request. Runs and monitors don't add versions. Versions are your own working history: they stay in your workspace, not in the collection, so they aren't exported or shared; each request keeps 50, the named and tagged ones longest.
 - **Warnings when a request no longer fits its API:** for an API that comes from an OpenAPI source, each operation's shape is kept at every sync (its query and header parameters, required ones and allowed values, and its JSON body's fields and types). A request, and each of its versions, is checked against it: a banner says when its operation is gone or deprecated, a required parameter or field is missing, a value isn't one the spec allows, a field has the wrong type, or it sends something the spec doesn't know. Versions that no longer fit are marked ⚠ in the versions menu.
@@ -94,7 +96,8 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.4.0
 [1.3.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.2.0
 [1.1.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.1.0
