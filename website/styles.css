@@ -153,6 +153,7 @@ p { margin: 0; }
 .cli { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
 .cli-copy p { color: #b9bec9; margin-top: 16px; }
 .ticks-light li { color: #c9cdd6; }
+.section-dark code { background: #22252e; border-color: #2b2e38; color: #e9ebf0; }
 .ticks-light li::before { background-color: #2e2119; }
 .terminal { min-width: 0; background: var(--dark-2); border: 1px solid var(--dark-line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, .45); }
 .terminal-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-bottom: 1px solid var(--dark-line); }
