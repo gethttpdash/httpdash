@@ -98,6 +98,7 @@ httpdash run backup.json -c "Orders API" -e "Staging" --env-var password=$API_PA
 - **Other options:**
   - `-n` for iterations and `-d data.csv` for data-driven runs.
   - `--folder`, `--tag` (repeat it to require several tags), `--bail`, `--delay-request`, `--timeout-request`.
+  - `--socks5 host:port` to send every request through a SOCKS5 proxy; `--no-tunnels` to ignore the backup's tunnels.
   - `-k` to skip SSL verification.
   - Client certificates with Newman's flags: `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` (Newman's JSON format) and `--ssl-extra-ca-certs`.
   - Reporters: `cli`, `json` and `junit` (JUnit XML is read by Jenkins, GitLab, Azure DevOps and GitHub test reporters).
@@ -333,6 +334,19 @@ Create one with **New → WebSocket Request**, or **Add WebSocket request** on a
 
 The collection runner, mock servers and Postman export skip WebSocket requests.
 
+## Tunnels into internal networks
+
+Reach services on a private network (a plant, a data center, a Kubernetes cluster) without a VPN. Add tunnels in **Settings → Tunnels**:
+
+- **SSH jump host:** HttpDash runs your system's `ssh` with dynamic port forwarding (`ssh -D`), so your keys, `ssh-agent`, `~/.ssh/config` and known hosts work as they do in a terminal. Optional: user, port, key file, and other jump hosts to go through first (`ssh -J`). It opens on first use and stays open; if it drops, the next request opens it again. ssh runs in batch mode, so it never waits for a password: use a key. A new host key is refused unless you tick **Accept a new host key the first time**, and a changed one is always refused.
+- **SOCKS5 proxy:** any SOCKS5 server, with an optional user name and password.
+
+Each tunnel carries the hosts you list, one per line: names with `*` wildcards (`*.mes.corp`) or address ranges (`10.42.0.0/16`). An environment can instead send all its requests through one tunnel (**Tunnel** under its color), or through none. Host names are resolved on the far side, so internal DNS names work.
+
+Everything goes through the tunnel: Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app's own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). **Open** / **Check** opens a tunnel and can try a `host:port` through it.
+
+The CLI uses the tunnels saved in a backup (with the environment's choice), or `--socks5 host:port` for every request, for example through an `ssh -D` started by your CI job. `--no-tunnels` ignores the saved ones.
+
 ## Client certificates and custom CAs
 
 For APIs that use mutual TLS, add a client certificate in **Settings → Certificates**:
@@ -419,7 +433,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Export everything as a restorable backup or as Postman files, or export single collections, environments and globals
 - Code generation: cURL, raw HTTP, JavaScript fetch, Node.js Axios, Python requests, Go, PHP cURL, C# HttpClient, Java OkHttp, PowerShell, wget
 - Cookie manager (view / add / edit / delete per domain)
-- Settings: timeout, redirects, SSL verification, connection reuse, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), network tracing and segment size, user agent, response size limit, light / dark / system theme, editor font size, stacked or side-by-side layout
+- Settings: timeout, redirects, SSL verification, connection reuse, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), tunnels (SSH jump hosts and SOCKS5) into internal networks, network tracing and segment size, user agent, response size limit, light / dark / system theme, editor font size, stacked or side-by-side layout
 - Console panel with network and script logs; keyboard shortcuts (Ctrl/Cmd+T, Enter, S, W, O)
 
 ## Screenshots
@@ -471,6 +485,7 @@ src/core/      request engine (no Electron dependency, unit-tested)
   dns-instances.js  a host's addresses in DNS, for Compare
   health.js       reads a health endpoint around a request
   network.js      addresses, octets, segments, reverse DNS and traceroute
+  tunnels.js      SSH (ssh -D) and SOCKS5 tunnels, and which requests go through them
   traffic-report.js  traffic report as CSV, Excel, JSON, Markdown and HTML
   ai-api-spec.js  the AI agents' API (OpenAPI document); ai-server.js serves it, mcp.js bridges MCP
   postman.js      Postman / OpenAPI import and export

@@ -271,6 +271,7 @@ function buildResponse(raw, maxPreview) {
     remoteAddress: raw.remoteAddress,
     localAddress: raw.localAddress,
     ...(raw.viaProxy ? { viaProxy: true } : {}),
+    ...(raw.tunnel ? { tunnel: raw.tunnel } : {}),
     clientCertificate: raw.clientCertificate || null,
   };
 }
@@ -484,9 +485,9 @@ async function executeRequest(opts) {
   await finishHealth();
   const response = buildResponse(raw, settings.maxPreviewBytes || 20 * 1024 * 1024);
   // Where it went on the network: the name's addresses, the one connected to, segments and adapter.
-  if (traceNet && response.remoteAddress) {
+  if (traceNet && (response.remoteAddress || response.tunnel)) {
     try {
-      result.network = await network.trace({ url: response.url || prepared.url, remoteAddress: response.remoteAddress, localAddress: response.localAddress, viaProxy: response.viaProxy }, { bits4: settings.segmentBits4, bits6: settings.segmentBits6 });
+      result.network = await network.trace({ url: response.url || prepared.url, remoteAddress: response.remoteAddress, localAddress: response.localAddress, viaProxy: response.viaProxy, tunnel: response.tunnel }, { bits4: settings.segmentBits4, bits6: settings.segmentBits6 });
     } catch (e) { log('warn', `Could not trace the network path: ${e.message}`); }
   }
   if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
@@ -534,6 +535,7 @@ function clientOptions(prepared, settings, jar) {
     followRedirects: settings.followRedirects !== false,
     maxRedirects: settings.maxRedirects || 10,
     proxy: settings.proxy,
+    ...(settings.tunnelId !== undefined ? { tunnelId: settings.tunnelId } : {}),
     reuseConnections: settings.reuseConnections !== false,
     maxSize: settings.maxResponseBytes || 0,
     tlsFor: (u) => certificates.tlsFor(u, settings),

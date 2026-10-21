@@ -4,6 +4,18 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Tunnels into internal networks:** reach services on a private network (a plant, a data center, a cluster) without a VPN, from **Settings → Tunnels**.
+  - **Two kinds:** an **SSH jump host**, run with your system's `ssh -D` so your keys, agent, `~/.ssh/config` and known hosts apply (optional user, port, key file and further jump hosts; batch mode, so never a password prompt; new host keys only if you allow it), or a **SOCKS5 proxy** with an optional user name and password.
+  - **Which requests:** a tunnel carries the hosts you list (`*.mes.corp`, `10.42.0.0/16`), or an environment sends all its requests through one. Names are resolved on the far side.
+  - **Everything goes through it:** Send, Runner, Monitors, Compare, health reads, WebSockets, service discovery, OAuth and imports.
+  - **What you see:** the Timeline shows the tunnel's time and that the address is on the far side, the status bar shows an open or failed tunnel, and **Open / Check** can try a `host:port` through it.
+  - **CLI:** uses a backup's tunnels, or `--socks5 host:port`, and `--no-tunnels` ignores them.
+  - "Leave out secrets" exports empty SOCKS passwords.
+
+### Changed
+- The network trace waits at most 0.4 s for DNS details (they finish in the background and are kept for a minute), and doesn't ask DNS servers about `localhost` or single-label names, so a slow or blocked DNS server never holds up a response.
+
 ## [1.5.0] - 2026-10-21
 
 ### Added

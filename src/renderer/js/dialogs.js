@@ -218,7 +218,7 @@
     const body = h('div.settings');
     const render = () => {
       HD.clear(body);
-      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'certificates', label: 'Certificates' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'ai', label: 'AI access' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
+      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'certificates', label: 'Certificates' }, { id: 'tunnels', label: 'Tunnels' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'ai', label: 'AI access' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
       const panel = h('div.settings-panel');
       if (section === 'general') {
         panel.append(
@@ -249,6 +249,8 @@
           text('bypass', 'Bypass for hosts', 'Comma-separated, supports *.example.com', p));
       } else if (section === 'certificates') {
         renderCertificates(panel, s, render);
+      } else if (section === 'tunnels') {
+        HD.renderTunnelSettings(panel, render);
       } else if (section === 'appearance') {
         panel.append(
           h('div.setting-row', h('div', h('div.setting-label', 'Theme')), HD.select([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], s.theme || 'system', (v) => { s.theme = v; HD.save(); HD.applyTheme(); })),

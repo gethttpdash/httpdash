@@ -691,6 +691,21 @@ li.CodeMirror-hint-active .hint-scope { color: #fff; }
 .net-route .table-wrap { background: var(--bg); }
 .net .discovery-warning, .net .info-box { margin: 4px 0 8px; }
 
+/* Tunnels */
+.tunnel-intro { margin-bottom: 12px; }
+.tunnel-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; background: var(--bg); }
+.tunnel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tunnel-name { max-width: 260px; font-weight: 600; }
+.tunnel-hosts { min-height: 64px; font: 12px var(--mono); resize: vertical; }
+.tunnel-actions { margin-top: 8px; }
+.tunnel-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; }
+.tunnel-error { flex-basis: 100%; }
+.pill.tunnel-ok { background: var(--ok-soft); color: var(--ok); }
+.pill.tunnel-warn { background: var(--warn-soft); color: var(--warn); }
+.pill.tunnel-err { background: var(--err-soft); color: var(--err); }
+.pill.tunnel-muted { background: var(--bg-3); color: var(--text-2); }
+.tunnel-light .icon { color: var(--ok); }
+
 /* Service discovery */
 .side-section { display: flex; align-items: center; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
 .tree-more.visible { opacity: 1; }

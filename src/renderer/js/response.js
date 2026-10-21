@@ -478,10 +478,11 @@
         t.dns != null ? `DNS lookup        ${HD.formatMs(t.dns)}` : null,
         t.connect != null ? `TCP connected     ${HD.formatMs(t.connect)}` : null,
         t.tls != null ? `TLS handshake     ${HD.formatMs(t.tls)}` : null,
+        t.tunnel != null ? `Tunnel            ${HD.formatMs(t.tunnel)}${res.tunnel ? ` (${res.tunnel})` : ''}` : null,
         t.reused ? 'Connection        reused (no DNS, TCP or TLS setup)' : null,
         t.firstByte != null ? `First byte        ${HD.formatMs(t.firstByte)}` : null,
         `Total             ${HD.formatMs(t.total)}`,
-        res.remoteAddress ? `Remote address    ${res.remoteAddress}` : null,
+        res.remoteAddress && !res.tunnel ? `Remote address    ${res.remoteAddress}` : null,
         res.clientCertificate ? `Client cert       ${res.clientCertificate}` : null,
       ].filter(Boolean).join('\n')));
     }

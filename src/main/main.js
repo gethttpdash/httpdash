@@ -26,6 +26,7 @@ const requestShape = require('../core/request-shape');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
+const { TunnelManager } = require('../core/tunnels');
 const update = require('../core/update');
 const { seedWorkspace } = require('./seed');
 
@@ -238,8 +239,38 @@ handle('lock:unlock', ({ username, password }) => audited('lock.unlock', { usern
 handle('lock:recover', (code) => audited('lock.recover', {}, () => appLock.recover(code)));
 handle('lock:disable', ({ username, password }) => audited('lock.disable', { username }, () => appLock.disable(username, password)));
 
-handle('workspace:load', () => workspaceStore.load());
-handle('workspace:save', (data) => { workspaceStore.save(data); return true; });
+// Tunnels into internal networks (tunnels.js): every connection the app makes asks the manager
+// which tunnel, if any, its URL goes through. The workspace says which tunnels exist and which one
+// the active environment uses.
+const tunnels = new TunnelManager({ onStatus: (list) => { if (win && !win.isDestroyed()) win.webContents.send('tunnels:status', list); } });
+httpClient.setRouter((url, o) => tunnels.socksFor(url, o));
+const configureTunnels = (ws) => {
+  if (!ws) return;
+  const env = (ws.environments || []).find((e) => e.id === ws.activeEnvironmentId);
+  tunnels.configure({ tunnels: ws.tunnels || [], envTunnelId: env && env.tunnelId ? env.tunnelId : undefined });
+};
+handle('workspace:load', () => { const ws = workspaceStore.load(); configureTunnels(ws); return ws; });
+handle('workspace:save', (data) => { workspaceStore.save(data); configureTunnels(data); return true; });
+handle('tunnels:status', () => tunnels.status());
+handle('tunnels:stop', ({ id }) => { tunnels.stop(id); return tunnels.status(); });
+// Opens a tunnel (an SSH one is started) and, through it, connects to a host when one is given.
+handle('tunnels:test', async ({ id, target }) => {
+  const t = tunnels.tunnels.find((x) => x.id === id);
+  if (!t) throw new Error('No such tunnel');
+  const started = Date.now();
+  const socks = t.type === 'socks5'
+    ? { host: (t.socks || {}).host, port: Number((t.socks || {}).port) || 1080, username: (t.socks || {}).username, password: (t.socks || {}).password, label: t.name }
+    : { host: '127.0.0.1', port: await tunnels.start(t), label: t.name };
+  if (!target) {
+    if (t.type === 'socks5') await new Promise((resolve, reject) => { const s = require('net').connect(socks.port, socks.host); s.setTimeout(10000, () => { s.destroy(); reject(new Error(`No answer from ${socks.host}:${socks.port}`)); }); s.once('connect', () => { s.destroy(); resolve(); }); s.once('error', (e) => reject(new Error(`Could not reach ${socks.host}:${socks.port}: ${e.message}`))); });
+    return { ok: true, ms: Date.now() - started, status: tunnels.status() };
+  }
+  const m = /^\[?([^\]]+?)\]?(?::(\d+))?$/.exec(String(target).trim());
+  if (!m) throw new Error('Write the host to try as host:port');
+  const sock = await httpClient.socksConnect(socks, { host: m[1], port: Number(m[2] || 443) }, 15000);
+  sock.destroy();
+  return { ok: true, ms: Date.now() - started, status: tunnels.status() };
+});
 handle('app:info', () => ({ version: app.getVersion(), platform: process.platform, dataDir, dark: nativeTheme.shouldUseDarkColors }));
 
 handle('request:send', async ({ id, request, chain, scopes, settings, info, collection }) => {
@@ -402,7 +433,7 @@ handle('ws:connect', async ({ id, request, chain, scopes, settings }) => {
   let conn;
   try {
     conn = await websocket.connect({
-      url, headers: prepared.headers, protocols, timeout: s.timeout || 30000, verifySSL: s.verifySSL !== false, proxy: s.proxy,
+      url, headers: prepared.headers, protocols, timeout: s.timeout || 30000, verifySSL: s.verifySSL !== false, proxy: s.proxy, tunnelId: s.tunnelId,
       tlsFor: (u) => certificates.tlsFor(u, s),
     });
   } catch (e) {
@@ -977,7 +1008,7 @@ handle('ai:status', () => aiServer.status());
 handle('ai:token', () => aiServer.token());
 handle('ai:regenerate', () => { const t = aiServer.regenerateToken(); audit.append('ai.token', { action: 'regenerated' }); return t; });
 handle('ai:log', (limit) => aiServer.log(limit));
-app.on('before-quit', () => { aiServer.stop(); });
+app.on('before-quit', () => { aiServer.stop(); tunnels.stopAll(); });
 
 handle('shell:openExternal', (url) => { if (/^https?:/.test(url)) shell.openExternal(url); });
 

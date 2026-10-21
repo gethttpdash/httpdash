@@ -17,7 +17,8 @@ const os = require('os');
 const { execFile } = require('child_process');
 
 const CACHE_MS = 60 * 1000;
-const DNS_TIMEOUT = 1500;
+const DNS_TIMEOUT = 1000;
+const TRACE_BUDGET = 400; // how long a response waits for DNS details; they finish in the background
 const MAX_CNAMES = 8;
 const MAX_ADDRESSES = 32;
 
@@ -157,6 +158,15 @@ function adapterOf(localAddress, own = interfaces()) {
   return { address: format(p), adapter: a ? a.name : null, cidr: a ? a.cidr : null };
 }
 
+/** Whether an address is inside a range such as 10.42.0.0/16. */
+function inCidr(ip, cidr) {
+  const [base, bits] = String(cidr || '').split('/');
+  const p = parse(ip);
+  const b = parse(base);
+  if (!p || !b || bits === undefined || !/^\d+$/.test(bits)) return false;
+  return inRange(p, b, Number(bits));
+}
+
 // ---- DNS --------------------------------------------------------------------------------------
 
 const within = (promise, ms, fallback) => Promise.race([promise.catch(() => fallback), new Promise((r) => { const t = setTimeout(() => r(fallback), ms); if (t.unref) t.unref(); })]);
@@ -181,19 +191,24 @@ function resolveHost(host, { resolver = dns.promises, timeout = DNS_TIMEOUT } = 
   return cached(`host:${host}`, () => (async () => {
     const out = { host, cnames: [], addresses: [], direct: null, splitDns: false };
     const system = within(resolver.lookup(host, { all: true, verbatim: true }), timeout, null);
-    // The alias chain, one name at a time.
-    let name = host;
-    for (let i = 0; i < MAX_CNAMES; i++) {
-      const next = await within(resolver.resolveCname(name), timeout, null);
-      if (!next || !next.length || next[0] === name) break;
-      name = next[0];
-      out.cnames.push(name);
-    }
-    const [v4, v6, sys] = await Promise.all([
-      within(resolver.resolve4(name, { ttl: true }), timeout, null),
-      within(resolver.resolve6(name, { ttl: true }), timeout, null),
-      system,
-    ]);
+    // DNS servers don't know localhost or a single-label name (the hosts file or a search domain
+    // does): only the system resolver is asked about those.
+    const askServers = !/(^|\.)localhost$/i.test(host) && host.includes('.');
+    // The alias chain, one name at a time; the addresses are asked for the name itself meanwhile
+    // (for a name with no alias, that's the answer).
+    const chain = (async () => {
+      let name = host;
+      for (let i = 0; askServers && i < MAX_CNAMES; i++) {
+        const next = await within(resolver.resolveCname(name), timeout, null);
+        if (!next || !next.length || next[0] === name) break;
+        name = next[0];
+        out.cnames.push(name);
+      }
+      return name;
+    })();
+    const ask = (name) => (askServers ? Promise.all([within(resolver.resolve4(name, { ttl: true }), timeout, null), within(resolver.resolve6(name, { ttl: true }), timeout, null)]) : Promise.resolve([null, null]));
+    const [first, sys, name] = await Promise.all([ask(host), system, chain]);
+    const [v4, v6] = name === host ? first : await ask(name);
     const ttl = new Map([...(v4 || []), ...(v6 || [])].map((r) => [r.address, r.ttl]));
     if (v4 || v6) out.direct = [...(v4 || []), ...(v6 || [])].map((r) => r.address);
     if (sys) out.addresses = sys.slice(0, MAX_ADDRESSES).map((a) => ({ address: a.address, family: a.family, ...(ttl.has(a.address) ? { ttl: ttl.get(a.address) } : {}) }));
@@ -213,19 +228,26 @@ function reverse(ip, { resolver = dns.promises, timeout = DNS_TIMEOUT } = {}) {
 
 /**
  * The network side of one request:
- * { host, viaProxy, connected: describe() + ptr, local: adapterOf(), resolution: resolveHost() }
+ * { host, viaProxy, tunnel, connected: describe() + ptr, local: adapterOf(), resolution: resolveHost() }
  * Addresses carry `used` when the request connected to them.
  */
-async function trace({ url, remoteAddress, localAddress, viaProxy = false }, opts = {}) {
+async function trace({ url, remoteAddress, localAddress, viaProxy = false, tunnel = null }, opts = {}) {
   let host = '';
   try { host = new URL(url).hostname.replace(/^\[|\]$/g, ''); } catch { /* not a URL */ }
+  // Through a tunnel the name is resolved, and the connection made, on the far side: nothing here
+  // would describe it.
+  if (tunnel) return { host, viaProxy: false, tunnel, connected: null, local: null, resolution: null };
   const own = opts.interfaces || interfaces();
   const out = { host, viaProxy: !!viaProxy, connected: null, local: localAddress ? adapterOf(localAddress, own) : null, resolution: null };
   const literal = !!parse(host);
+  // DNS details are waited for only briefly: they carry on in the background and are cached, so
+  // a slow or blocked DNS server never holds up a response.
+  const budget = opts.budget == null ? TRACE_BUDGET : opts.budget;
   const [resolution, ptr] = await Promise.all([
-    host && !literal ? resolveHost(host, opts) : Promise.resolve(null),
-    remoteAddress && !viaProxy ? reverse(remoteAddress, opts) : Promise.resolve([]),
+    host && !literal ? within(resolveHost(host, opts), budget, null) : Promise.resolve(null),
+    remoteAddress && !viaProxy ? within(reverse(remoteAddress, opts), budget, []) : Promise.resolve([]),
   ]);
+  if (host && !literal && !resolution) out.pending = true;
   if (remoteAddress) out.connected = { ...describe(remoteAddress, { ...opts, own }), ptr };
   if (resolution) {
     const used = out.connected && !viaProxy ? out.connected.address : null;
@@ -285,4 +307,4 @@ function parseRoute(text) {
   return out;
 }
 
-module.exports = { parse, segment, describe, adapterOf, interfaces, resolveHost, reverse, trace, prefetch, traceRoute, parseRoute, kindOf };
+module.exports = { parse, inCidr, segment, describe, adapterOf, interfaces, resolveHost, reverse, trace, prefetch, traceRoute, parseRoute, kindOf };

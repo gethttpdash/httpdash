@@ -37,6 +37,10 @@
     const c = net.connected;
     const r = net.resolution;
 
+    if (net.tunnel) {
+      box.appendChild(h('div.info-box.small', `Sent through the tunnel "${net.tunnel}": ${net.host} was resolved, and the connection made, on the far side. Its addresses and route are as the far side sees them, not this computer.`));
+      return box;
+    }
     if (net.viaProxy) {
       box.appendChild(h('div.info-box.small', 'Sent through a proxy: the address below is the proxy\'s. The service\'s own address is only known to the proxy.'));
     }
@@ -62,6 +66,7 @@
     } else if (r && r.error) {
       box.appendChild(row('Resolves to', h('span.text-error.small', r.error)));
     }
+    if (net.pending) box.appendChild(row('Resolves to', h('span.muted.small', 'DNS was slow to answer; send again to see every address (the answer is kept for a minute).')));
     if (r && r.splitDns) {
       box.appendChild(h('div.discovery-warning', `DNS servers asked directly give ${r.direct.join(', ')}, not what this computer's resolver gives (hosts file, VPN or split DNS). Requests use the resolver's answer.`));
     }

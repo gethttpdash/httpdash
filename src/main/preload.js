@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('api', {
   dnsInstances: invoke('dns:instances'),
   readHealth: invoke('health:read'),
   traceRoute: invoke('network:traceroute'),
+  tunnelStatus: invoke('tunnels:status'),
+  testTunnel: invoke('tunnels:test'),
+  stopTunnel: invoke('tunnels:stop'),
+  onTunnelStatus: (fn) => ipcRenderer.on('tunnels:status', (_e, list) => fn(list)),
   checkShape: invoke('shape:check'),
   cancel: invoke('request:cancel'),
 

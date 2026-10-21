@@ -55,6 +55,7 @@ function stripSecrets(ws) {
     for (const hd of s.headers || []) if (/authorization|token|key|secret/i.test(hd.key || '')) hd.value = '';
   }
   if (ws.settings && ws.settings.proxy) ws.settings.proxy.password = '';
+  for (const t of ws.tunnels || []) if (t.socks) t.socks.password = '';
   for (const c of (ws.settings && ws.settings.certificates) || []) c.passphrase = '';
   delete ws.cookies;
   return ws;

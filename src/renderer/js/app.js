@@ -314,10 +314,13 @@
       HD.button(errors ? `Console (${errors} errors)` : 'Console', () => { S.ws.ui.consoleOpen = !S.ws.ui.consoleOpen; HD.save(); renderConsole(); renderStatusbar(); }, { icon: 'terminal', ghost: true, small: true, class: errors ? 'has-errors' : '' }),
       h('span.spacer'),
       HD.aiIndicator ? HD.aiIndicator() : null,
+      (HD.tunnelIndicator && HD.tunnelIndicator()) || '',
       HD.button('Cookies', () => HD.showCookies(), { icon: 'cookie', ghost: true, small: true }),
       HD.button('Runner', () => HD.openRunner(), { icon: 'play', ghost: true, small: true }),
       HD.button('', () => { S.ws.ui.layout = (S.ws.ui.layout || 'vertical') === 'vertical' ? 'horizontal' : 'vertical'; HD.save(); HD.renderActiveTab(); }, { icon: (S.ws.ui.layout || 'vertical') === 'vertical' ? 'columns' : 'rows', ghost: true, small: true, title: 'Toggle request/response layout' }));
   };
+
+  HD.on('tunnels', () => renderStatusbar());
 
   const applyLayout = () => {
     const side = document.getElementById('sidebar-wrap');

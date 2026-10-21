@@ -136,7 +136,7 @@ function settle(picks, pools, { response, error, payload } = {}) {
     const entry = {
       ...p, servedBy: headerValue(response, pool.header), at: Date.now(), payload: payload || '',
       status: response ? response.status : null, time: response ? response.time : null, error: error || null,
-      ...(response && response.remoteAddress && !response.viaProxy ? { address: response.remoteAddress } : {}),
+      ...(response && response.remoteAddress && !response.viaProxy && !response.tunnel ? { address: response.remoteAddress } : {}),
     };
     record(entry);
     out.push(entry);

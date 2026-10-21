@@ -4,6 +4,8 @@ const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const { URL } = require('url');
+const net = require('net');
+const tls = require('tls');
 
 const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
 
@@ -58,6 +60,93 @@ function decompress(buffer, encoding) {
     // Fall through and return the raw bytes if the server lied about the encoding.
   }
   return buffer;
+}
+
+// ---- Tunnels (SOCKS5) -------------------------------------------------------------------------
+//
+// A router chooses, per URL, the SOCKS5 endpoint a request goes through: an SSH tunnel's local
+// port or a SOCKS proxy (see tunnels.js). It's set once by the app or the CLI; without one, or when
+// it returns null, requests connect directly.
+let router = null;
+function setRouter(fn) { router = fn || null; }
+/** The SOCKS5 endpoint a URL goes through, or null (for connections made elsewhere, e.g. WebSockets). */
+async function tunnelFor(url, opts = {}) { return router ? router(url, opts) : null; }
+
+const SOCKS_ERRORS = {
+  1: 'general failure', 2: 'connection not allowed by its rules', 3: 'network unreachable', 4: 'host unreachable',
+  5: 'connection refused', 6: 'TTL expired', 7: 'command not supported', 8: 'address type not supported',
+};
+
+/**
+ * Opens a connection to target { host, port } through a SOCKS5 server (RFC 1928, with RFC 1929
+ * user/password). The host name is sent as a name, so it is resolved on the far side.
+ */
+function socksConnect(socks, target, timeout) {
+  return new Promise((resolve, reject) => {
+    const socket = net.connect(Number(socks.port) || 1080, socks.host);
+    let buf = Buffer.alloc(0);
+    let step = 'hello';
+    const fail = (msg, code = 'ETUNNEL') => { socket.destroy(); reject(new RequestError(msg, code)); };
+    if (timeout) socket.setTimeout(timeout, () => fail(`The tunnel ${socks.label ? `"${socks.label}" ` : ''}did not answer in time`, 'ETIMEDOUT'));
+    socket.once('error', (e) => fail(`Could not reach the tunnel ${socks.label ? `"${socks.label}" ` : ''}at ${socks.host}:${socks.port}: ${e.message}`));
+    socket.once('connect', () => {
+      const methods = socks.username ? [0x00, 0x02] : [0x00];
+      socket.write(Buffer.from([0x05, methods.length, ...methods]));
+    });
+    const sendRequest = () => {
+      step = 'connect';
+      const ip = net.isIP(target.host);
+      let addr;
+      if (ip === 4) addr = Buffer.from([0x01, ...target.host.split('.').map(Number)]);
+      else if (ip === 6) {
+        const groups = require('./network').parse(target.host).bytes;
+        addr = Buffer.from([0x04, ...groups]);
+      } else {
+        const name = Buffer.from(target.host, 'utf8');
+        if (name.length > 255) return fail('The host name is too long for SOCKS');
+        addr = Buffer.concat([Buffer.from([0x03, name.length]), name]);
+      }
+      const port = Number(target.port);
+      socket.write(Buffer.concat([Buffer.from([0x05, 0x01, 0x00]), addr, Buffer.from([port >> 8, port & 0xff])]));
+      return undefined;
+    };
+    const onData = (chunk) => {
+      buf = Buffer.concat([buf, chunk]);
+      if (step === 'hello') {
+        if (buf.length < 2) return;
+        const method = buf[1];
+        buf = buf.subarray(2);
+        if (method === 0x00) sendRequest();
+        else if (method === 0x02 && socks.username) {
+          step = 'auth';
+          const u = Buffer.from(String(socks.username));
+          const pw = Buffer.from(String(socks.password || ''));
+          socket.write(Buffer.concat([Buffer.from([0x01, u.length]), u, Buffer.from([pw.length]), pw]));
+        } else return fail('The SOCKS server wants a sign-in this tunnel does not have');
+      }
+      if (step === 'auth') {
+        if (buf.length < 2) return;
+        const ok = buf[1] === 0x00;
+        buf = buf.subarray(2);
+        if (!ok) return fail('The SOCKS server refused the user name or password');
+        sendRequest();
+      }
+      if (step === 'connect') {
+        if (buf.length < 5) return;
+        if (buf[1] !== 0x00) return fail(`Through the tunnel${socks.label ? ` "${socks.label}"` : ''}, ${target.host}:${target.port} could not be reached: ${SOCKS_ERRORS[buf[1]] || `error ${buf[1]}`}`, buf[1] === 5 ? 'ECONNREFUSED' : 'ETUNNEL');
+        const len = buf[3] === 0x01 ? 4 : buf[3] === 0x04 ? 16 : 1 + buf[4];
+        if (buf.length < 4 + len + 2) return;
+        socket.removeListener('data', onData);
+        socket.setTimeout(0);
+        socket.removeAllListeners('error');
+        const rest = buf.subarray(4 + len + 2);
+        if (rest.length) socket.unshift(rest);
+        resolve(socket);
+      }
+      return undefined;
+    };
+    socket.on('data', onData);
+  });
 }
 
 // Opens a CONNECT tunnel through an HTTP proxy for HTTPS targets.
@@ -137,12 +226,32 @@ async function exchangeOnce(opts) {
   // Connect to one given address of the host. A pooled connection could be to another address of
   // the same host, so these never use the pool.
   const pin = opts.connectTo && opts.connectTo.host === url.hostname ? opts.connectTo : null;
+  let tunnelMs = null;
   if (pin) {
     reqOpts.agent = false;
     reqOpts.lookup = (hostname, o, cb) => (o && o.all ? cb(null, [{ address: pin.address, family: pin.family }]) : cb(null, pin.address, pin.family));
   }
 
-  const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
+  // A tunnel takes precedence over the proxy: it is chosen for this host on purpose.
+  let socks = opts.socks !== undefined ? opts.socks : null;
+  if (opts.socks === undefined && router) {
+    try { socks = await router(url.href, { tunnelId: opts.tunnelId }); } catch (e) { throw new RequestError(e.message, e.code || 'ETUNNEL'); }
+  }
+  let viaTunnel = null;
+  if (socks) {
+    viaTunnel = socks.label || `${socks.host}:${socks.port}`;
+    const t0 = Date.now();
+    // Connecting to one given address (Compare) asks the far side for that address.
+    const socket = await socksConnect(socks, { host: pin ? pin.address : url.hostname.replace(/^\[|\]$/g, ''), port: Number(port) }, opts.timeout || 30000);
+    tunnelMs = Date.now() - t0;
+    // Without an agent, Node takes the socket from createConnection.
+    delete reqOpts.agent;
+    delete reqOpts.lookup;
+    reqOpts.createConnection = () => (isHttps
+      ? tls.connect({ socket, servername: net.isIP(url.hostname.replace(/^\[|\]$/g, '')) ? undefined : url.hostname, rejectUnauthorized: reqOpts.rejectUnauthorized, ...tlsExtra })
+      : socket);
+  }
+  const proxy = !socks && opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   let viaProxy = false;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {
     viaProxy = true;
@@ -231,10 +340,12 @@ async function exchangeOnce(opts) {
             download: timings.end - timings.firstByte,
             total: timings.end,
             ...(reused ? { reused: true } : {}),
+            ...(tunnelMs != null ? { tunnel: tunnelMs } : {}),
           },
           remoteAddress,
           localAddress,
           ...(viaProxy ? { viaProxy: true } : {}),
+          ...(viaTunnel ? { tunnel: viaTunnel } : {}),
           clientCertificate: tlsOpts && tlsOpts.label ? tlsOpts.label : null,
           ...(cancelled ? { cancelled: true } : {}),
         });
@@ -317,4 +428,4 @@ async function send(opts, onHop) {
   }
 }
 
-module.exports = { send, exchange, RequestError, decompress, connectTunnel, matchesBypass, closeIdleConnections };
+module.exports = { send, exchange, RequestError, decompress, connectTunnel, socksConnect, setRouter, tunnelFor, matchesBypass, closeIdleConnections };

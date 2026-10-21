@@ -201,7 +201,7 @@
       HD.renderTabBar();
       try {
         const r = await window.api.ws.connect({
-          id: tab.id, request: HD.clone(req), settings: S.ws.settings, scopes: HD.scopesFor(collection),
+          id: tab.id, request: HD.clone(req), settings: { ...S.ws.settings, tunnelId: HD.tunnelIdFor(HD.activeEnvironment()) }, scopes: HD.scopesFor(collection),
           chain: chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth })),
         });
         c.state = 'open';

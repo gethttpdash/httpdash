@@ -130,6 +130,7 @@
           onclick: () => { if (c) env.color = c; else delete env.color; touch(); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab(); },
         }))),
         h('span.muted.small', 'While this environment is active, the top and bottom bars take a faint tint of it. Red for production is a good habit.')),
+      HD.envTunnelRow(env, touch),
       h('div.panel-pad', h('div.muted.small', 'Reference variables with {{name}} in URLs, headers, bodies and auth fields. Mark sensitive values as "secret" to mask them.')),
       HD.kvTable({ rows: env.values, secret: true, onChange: () => { touch(); HD.refreshVarHighlights(); } })));
   };
@@ -379,7 +380,7 @@
           delay: cfg.delay,
           stopOnFailure: cfg.stopOnFailure,
           useCookies: cfg.useCookies,
-          settings: S.ws.settings,
+          settings: { ...S.ws.settings, tunnelId: HD.tunnelIdFor(env) },
         });
         // The returned summary is authoritative; the last progress event can arrive after the reply.
         run.results = summary.results;

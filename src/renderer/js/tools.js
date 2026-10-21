@@ -61,7 +61,7 @@
     try {
       const sum = await window.api.runMonitor({
         collection: HD.clone(col), folderId: m.folderId, scopes: HD.clone(before), iterations: 1,
-        settings: S.ws.settings, monitorName: m.name, useCookies: true,
+        settings: { ...S.ws.settings, tunnelId: HD.tunnelIdFor(env) }, monitorName: m.name, useCookies: true,
       });
       if (m.persistVariables) {
         let changed = HD.applyScope(S.ws.globals, before.globals, sum.scopes.globals);

@@ -131,7 +131,7 @@
     const g = S.ws.settings;
     const o = req.settings || {};
     const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
-    return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
+    return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout, tunnelId: HD.tunnelIdFor(HD.activeEnvironment()) };
   };
   function shape(result, maxBody = 100000) {
     const r = result.response;

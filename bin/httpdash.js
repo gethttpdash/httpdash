@@ -17,6 +17,8 @@ const backup = require('../src/core/backup');
 const { listToObject } = require('../src/core/variables');
 const certificates = require('../src/core/certificates');
 const { describe: describeHealth } = require('../src/core/health');
+const httpClient = require('../src/core/http-client');
+const { TunnelManager } = require('../src/core/tunnels');
 
 const HELP = `HttpDash command-line runner
 
@@ -46,6 +48,8 @@ Options:
       --ssl-client-passphrase <text>  Passphrase for the key or PFX
       --ssl-client-cert-list <file>   JSON list of certificates per host (Newman's format)
       --ssl-extra-ca-certs <file>     Extra trusted CA certificates (PEM)
+      --socks5 <host:port>      Send every request through this SOCKS5 proxy (such as ssh -D)
+      --no-tunnels              Ignore the tunnels saved in the backup
       --bail                    Stop at the first failure
   -r, --reporters <list>        cli,json,junit (default: cli)
       --reporter-json-export <file>   Where to write the JSON report (default: httpdash-report.json)
@@ -82,6 +86,8 @@ function parseArgs(argv) {
       case '--delay-request': opts.delay = Number(val()); break;
       case '--timeout-request': opts.timeout = Number(val()); break;
       case '-k': case '--insecure': opts.insecure = true; break;
+      case '--socks5': opts.socks5 = val(); break;
+      case '--no-tunnels': opts.noTunnels = true; break;
       case '--ssl-client-cert': opts.clientCert = val(); break;
       case '--ssl-client-key': opts.clientKey = val(); break;
       case '--ssl-client-passphrase': opts.clientPassphrase = val(); break;
@@ -197,6 +203,7 @@ function junit(collectionName, summary) {
 // ---- Main ---------------------------------------------------------------------------------
 
 async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err: (s) => process.stderr.write(`${s}\n`) }) {
+  let tunnelManager = null; // the backup's tunnels, closed when the run ends
   // The MCP server speaks JSON-RPC on stdout until its client closes stdin.
   if (argv[0] === 'mcp') {
     const get = (name) => { const i = argv.indexOf(name); return i !== -1 ? argv[i + 1] : undefined; };
@@ -234,6 +241,7 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
 
     let environment = {};
     let envName = null;
+    let envTunnelId;
     if (opts.environment) {
       if (fs.existsSync(opts.environment)) {
         const r = postman.importAny(readJson(opts.environment));
@@ -244,6 +252,7 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
         const env = pick(src.environments || [], opts.environment, 'environment');
         environment = listToObject(env.values);
         envName = env.name;
+        envTunnelId = env.tunnelId;
       }
     }
     Object.assign(environment, opts.envVars);
@@ -263,6 +272,17 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
       certificates: clientCertificates(opts),
       caCertificate: opts.extraCa ? { enabled: true, path: path.resolve(opts.extraCa) } : null,
     };
+    // Tunnels into internal networks: one SOCKS5 proxy for everything, or the backup's tunnels.
+    if (opts.socks5) {
+      const m = /^\[?([^\]]+?)\]?:(\d+)$/.exec(opts.socks5);
+      if (!m) throw usage('--socks5 takes host:port');
+      const socks = { host: m[1], port: Number(m[2]), label: `SOCKS5 ${opts.socks5}` };
+      httpClient.setRouter(async () => socks);
+    } else if (!opts.noTunnels && (src.tunnels || []).length) {
+      tunnelManager = new TunnelManager();
+      tunnelManager.configure({ tunnels: src.tunnels, envTunnelId });
+      httpClient.setRouter((url, o) => tunnelManager.socksFor(url, o));
+    }
     const cli = opts.reporters.includes('cli');
     if (cli) {
       io.out(p.bold(`HttpDash  ${col.name}${folder ? ` / ${folder.name}` : ''}${opts.tags ? `  ${opts.tags.map((t) => `#${t}`).join(' ')}` : ''}${envName ? `  (environment: ${envName})` : ''}`));
@@ -327,6 +347,9 @@ async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err
   } catch (e) {
     io.err(p.red(`Error: ${e.message}`));
     return e.exitCode || 2;
+  } finally {
+    if (tunnelManager) tunnelManager.stopAll();
+    httpClient.setRouter(null);
   }
 }
 

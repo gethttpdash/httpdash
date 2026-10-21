@@ -609,7 +609,7 @@
       const g = S.ws.settings;
       const o = req.settings || {};
       const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
-      return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
+      return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout, tunnelId: HD.tunnelIdFor(HD.activeEnvironment()) };
     };
     const chainFor = (chain) => chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency, health: n.health }));
 

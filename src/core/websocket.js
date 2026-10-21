@@ -10,7 +10,7 @@ const https = require('https');
 const tls = require('tls');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
-const { connectTunnel, matchesBypass, RequestError } = require('./http-client');
+const { connectTunnel, socksConnect, tunnelFor, matchesBypass, RequestError } = require('./http-client');
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const MAX_MESSAGE_BYTES = 100 * 1024 * 1024;
@@ -194,7 +194,17 @@ async function connect(opts) {
     const t = opts.tlsFor(`https://${url.host}${url.pathname}`);
     if (t && t.secureContext) reqOpts.secureContext = t.secureContext;
   }
-  const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
+  // Through a tunnel when one carries this host (see tunnels.js), else through the proxy.
+  let socks = null;
+  try { socks = await tunnelFor(`${secure ? 'https' : 'http'}://${url.host}/`, { tunnelId: opts.tunnelId }); } catch (e) { throw new RequestError(e.message, 'ETUNNEL'); }
+  if (socks) {
+    const socket = await socksConnect(socks, { host: hostname, port }, opts.timeout || 30000);
+    delete reqOpts.agent;
+    reqOpts.createConnection = () => (secure
+      ? tls.connect({ socket, servername: hostname, rejectUnauthorized: reqOpts.rejectUnauthorized, ...(reqOpts.secureContext ? { secureContext: reqOpts.secureContext } : {}) })
+      : socket);
+  }
+  const proxy = !socks && opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
   if (proxy && !matchesBypass(hostname, proxy.bypass)) {
     // A WebSocket stays open, so both ws:// and wss:// go through a CONNECT tunnel.
     const socket = await connectTunnel(proxy, { hostname, port }, opts.timeout || 0);
