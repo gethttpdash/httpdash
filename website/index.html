@@ -44,8 +44,37 @@
       <div class="wrap hero-inner">
         <div class="hero-copy">
           <p class="eyebrow">Free · Source available · Windows · macOS · Linux</p>
-          <h1>The API client that <span class="accent">logs in for you</span>.</h1>
-          <p class="lead">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, builds environments from your service registry, compares every instance of a service, lets AI agents work alongside you, and keeps everything on your own machine.</p>
+          <div class="hero-carousel" role="region" aria-roledescription="carousel" aria-label="What HttpDash does">
+            <div class="hero-messages" aria-live="off">
+              <h1>The API client that <span class="hero-rotator">
+              <span class="hero-slide is-active" data-slide="0"><span class="accent">logs in for you</span>.</span>
+              <span class="hero-slide" aria-hidden="true" data-slide="1"><span class="accent">compares instances</span>.</span>
+              <span class="hero-slide" aria-hidden="true" data-slide="2"><span class="accent">works with your AI</span>.</span>
+              <span class="hero-slide" aria-hidden="true" data-slide="3"><span class="accent">finds the slow pod</span>.</span>
+              <span class="hero-slide" aria-hidden="true" data-slide="4"><span class="accent">keeps every version</span>.</span>
+              <span class="hero-slide" aria-hidden="true" data-slide="5"><span class="accent">runs 16× faster</span>.</span>
+              </span></h1>
+              <div class="hero-rotator hero-leads">
+            <p class="lead hero-slide is-active" data-slide="0">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, so you never paste a token again.</p>
+            <p class="lead hero-slide" aria-hidden="true" data-slide="1">Send one request to every instance behind a service, found in Consul, Eureka, Kubernetes or DNS, and see which one answered differently: an old release, a missing field, a stale cache.</p>
+            <p class="lead hero-slide" aria-hidden="true" data-slide="2">Claude and other AI agents can search, send, edit and run your requests through OpenAPI or MCP, on your own computer, with permissions you set and a history of every call.</p>
+            <p class="lead hero-slide" aria-hidden="true" data-slide="3">Spread requests across every instance and payload, and HttpDash counts what each one answers: p50, p95 and errors, with the slow and failing ones flagged as they happen.</p>
+            <p class="lead hero-slide" aria-hidden="true" data-slide="4">Every request you send by hand is kept with its response, so you can switch back in a click. When the API's spec moves on, HttpDash tells you what no longer fits.</p>
+            <p class="lead hero-slide" aria-hidden="true" data-slide="5">500 requests with scripts and tests in 0.32 seconds, 16 times faster than Postman's runner. No account, no cloud sync, nothing between you and your first request.</p>
+              </div>
+            </div>
+            <div class="hero-controls" hidden>
+              <button type="button" class="hero-pause" aria-label="Pause messages"><svg class="i-pause" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg><svg class="i-play" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5Z"/></svg></button>
+              <div class="hero-dots" role="group" aria-label="Choose a message">
+                <button type="button" class="hero-dot" data-slide="0" aria-label="1 of 6: logs in for you" aria-current="true"></button>
+                <button type="button" class="hero-dot" data-slide="1" aria-label="2 of 6: compares instances"></button>
+                <button type="button" class="hero-dot" data-slide="2" aria-label="3 of 6: works with your AI"></button>
+                <button type="button" class="hero-dot" data-slide="3" aria-label="4 of 6: finds the slow pod"></button>
+                <button type="button" class="hero-dot" data-slide="4" aria-label="5 of 6: keeps every version"></button>
+                <button type="button" class="hero-dot" data-slide="5" aria-label="6 of 6: runs 16× faster"></button>
+              </div>
+            </div>
+          </div>
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" id="primary-download" href="#download">Download HttpDash</a>
             <a class="btn btn-ghost btn-lg" href="#features">See what it does</a>
