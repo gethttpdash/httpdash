@@ -19,7 +19,7 @@ Security fixes go into the latest release. Please check that the problem still h
 
 ## How scripts are isolated
 
-Pre-request and test scripts run in **QuickJS**, a separate JavaScript engine compiled to WebAssembly, with a fresh engine for every script. A script has no access to Node, `require` beyond a few built-in helpers, the file system, other processes, environment variables or HttpDash's own data. It only sees the `pm` API: the request, the response and the variables in scope. Each script is limited to 30 seconds, 256 MB of memory and a fixed stack depth.
+Pre-request and test scripts run in **QuickJS**, a separate JavaScript engine compiled to WebAssembly, with its own engine for each request (its collection, folder and auth-dependency scripts included) or collection run, and a fresh context with its own globals for every script. A script has no access to Node, `require` beyond a few built-in helpers, the file system, other processes, environment variables or HttpDash's own data. It only sees the `pm` API: the request, the response and the variables in scope. Each script is limited to 30 seconds and a fixed stack depth, and each engine to 256 MB of memory.
 
 **What a script can still do:** send HTTP requests with `pm.sendRequest`, and read and change the variables in scope. So a script from someone you don't trust could send your variables, including secrets, to a server of their choosing. Review scripts in collections you import or receive through team sync, as you would review code.
 

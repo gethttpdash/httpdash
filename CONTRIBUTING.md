@@ -33,6 +33,9 @@ There is no build step: the app is plain JavaScript, and changes show up on the 
 | `src/renderer/` | The UI, in plain JavaScript with CodeMirror 5. |
 | `bin/` | The `httpdash` command-line runner. |
 | `test/` | `node:test` unit tests, run against a local echo server in `test/helpers.js`. |
+| `bench/` | The runner benchmark against Newman and Bruno (`npm run bench`). |
+| `scripts/` | Chai vendoring (`npm run vendor`) and the contrast audit (`npm run audit:contrast`). |
+| `build/`, `docs/` | The app icon for packaging, and the README's screenshots. |
 | `website/` | The httpdash.com site. |
 
 Put logic in `src/core/` whenever you can, so it can be tested without Electron and works in the CLI too.

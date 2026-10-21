@@ -82,7 +82,7 @@
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="3" data-text="Claude and other AI agents can search, send, edit and run your requests through OpenAPI or MCP, on your own computer, with permissions you set and a history of every call."></p>
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="4" data-text="Logins, instance comparisons, slow-pod flags and spec warnings all work on their own, on your machine. No AI subscription, and nothing sent to a model."></p>
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="5" data-text="Type a few letters and pick from every name, URL, method and tag in your workspace, grouped and most used first. No need to remember what you called it."></p>
-                <p class="lead hero-slide gen" aria-hidden="true" data-slide="6" data-text="Give requests as many tags as you like, suggested as you type. Filter by them, pick what a run includes by them, and run only #smoke in CI with --tag."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="6" data-text="Give requests up to 20 tags, suggested as you type. Filter by them, pick what a run includes by them, and run only #smoke in CI with --tag."></p>
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="7" data-text="Spread requests across every instance and payload, and HttpDash counts what each one answers: p50, p95 and errors, with the slow and failing ones flagged as they happen."></p>
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="8" data-text="Read a service&#x27;s health endpoint before, during and after each request, and see what moved while it answered: connections, queues, a pool filling up."></p>
                 <p class="lead hero-slide gen" aria-hidden="true" data-slide="9" data-text="Every address a name resolves to, the one it went to split into octets with its segment, the adapter it left from, and each router on the way."></p>
@@ -260,7 +260,7 @@
             <ul class="ticks">
               <li>Flags instances that are slow or failing, and payloads that are worse than their siblings</li>
               <li>Behind a load balancer, counts by the header that names who answered, such as <code>X-Served-By</code></li>
-              <li>Export the report to Excel, CSV, PDF, an image or Markdown</li>
+              <li>Export the report to Excel, CSV, PDF, an image, HTML, Markdown or JSON</li>
             </ul>
           </div>
           <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/traffic.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="Traffic by instance for a Consul cluster: orders-2 flagged failing, orders-3 flagged slow at 312 ms, and by payload, a large payment flagged slow at 370 ms while other payloads answer in about 20 ms."></div></figure>
@@ -334,7 +334,7 @@
             </div>
             <ul class="ticks">
               <li>30 operations, described in an OpenAPI 3.1 document, or <code>httpdash mcp</code> for MCP clients</li>
-              <li>Separate permissions to read, run, edit, use the screen and see secrets</li>
+              <li>Reading always, and separate permissions to run, edit, use the screen and see secrets</li>
               <li>Instead of curl: an agent tests endpoints with your logins and keeps the ones that work, as saved requests</li>
               <li>A status bar light while an agent works, and a history of every call it made</li>
             </ul>
@@ -345,8 +345,8 @@
         <article class="feature">
           <div class="feature-copy">
             <div class="feature-text">
-              <h3>Every version you sent, and a warning when the spec moves on</h3>
-              <p>Each request you send by hand is kept as a version, with the response it got. Switch back to one in a click, rename it, tag it and find it in search. When the OpenAPI document the request came from changes, HttpDash tells you what no longer fits before you send it.</p>
+              <h3>The versions you sent, and a warning when the spec moves on</h3>
+              <p>The last 50 versions of a request you send by hand are kept, each with the response it got. Switch back to one in a click, rename it, tag it and find it in search. When the OpenAPI document the request came from changes, HttpDash tells you what no longer fits before you send it.</p>
             </div>
             <ul class="ticks">
               <li>Versions keep the URL, parameters, headers, body and the response</li>
@@ -361,7 +361,7 @@
           <div class="feature-copy">
             <div class="feature-text">
               <h3>Find any request by name, URL or tag</h3>
-              <p>Give requests as many tags as you like, and HttpDash suggests the ones you already use. The search box knows every name, URL, method and tag in your workspace, so you pick from a list instead of remembering what you called it.</p>
+              <p>Give requests up to 20 tags, and HttpDash suggests the ones you already use. The search box knows every name, URL, method and tag in your workspace, so you pick from a list instead of remembering what you called it.</p>
             </div>
             <ul class="ticks">
               <li>Combine tags with text, such as <code>#smoke</code> and “pay”</li>
@@ -442,7 +442,7 @@
           <li class="card"><span class="card-icon" aria-hidden="true">{ }</span><h3>Collections &amp; environments</h3><p>Folders, tabs, history, globals and secret variables with <code>{{autocomplete}}</code> and hover previews. Give each environment a color so you always know where you are sending.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">✓</span><h3>Scripts &amp; tests</h3><p>Pre-request and test scripts with a familiar <code>pm</code> API, Chai assertions, JSON Schema checks and a snippet library.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">▶</span><h3>Collection runner</h3><p>Pick the requests to run from a tree or by tag, then iterations, CSV/JSON data files, a gap in milliseconds between requests and a detailed, exportable report.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">≈</span><h3>Mock server</h3><p>Serve saved examples on a local port, pick responses with a header, and switch an environment to the mock in one click.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">≈</span><h3>Mock server</h3><p>Serve saved examples on a local port, pick responses with a header, and point a copy of an environment at the mock in one click.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">♥</span><h3>Monitors</h3><p>Run a collection every few minutes and get a desktop notification when it fails, and again when it recovers.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">&lt;/&gt;</span><h3>Code generation</h3><p>Turn any request into cURL, fetch, Axios, Python, Go, PHP, C#, Java, PowerShell, wget or raw HTTP.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇅</span><h3>Import &amp; export</h3><p>Bring in Postman collections, OpenAPI and Swagger (JSON or YAML) and cURL. Export everything as a backup, or as portable collection files.</p></li>
@@ -453,11 +453,11 @@
           <li class="card"><span class="card-icon" aria-hidden="true">⟳</span><h3>OpenAPI sync</h3><p>A collection that follows your OpenAPI document. Each new version shows what changed, operation by operation, before you apply it.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⚖</span><h3>Load balancing</h3><p>Send to the first instance, each in turn or a random one, from Consul, Eureka or Kubernetes pods. Unhealthy instances are skipped.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">≡</span><h3>Payloads</h3><p>Give a request the variations it should be called with, typed in or imported from CSV or JSON, and send them in turn or at random.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">▤</span><h3>Traffic reports</h3><p>Requests, timings and errors per instance and per payload, live, with slow and failing ones flagged. Export to Excel, PDF or an image.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">▤</span><h3>Traffic reports</h3><p>Requests, timings and errors per instance and per payload, live, with slow and failing ones flagged. Export to Excel, CSV, PDF, an image and more.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">≠</span><h3>Compare instances</h3><p>Send one request to every instance of a service, from your registry or DNS, and see which one answered differently.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">✦</span><h3>AI agents</h3><p>An OpenAPI document and an MCP server let AI agents search, send, edit and run requests, with permissions you set and a history of every call.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">↺</span><h3>Request versions</h3><p>Every request you send by hand is kept with its response. Rename, tag and search versions, and get a warning when the spec no longer fits.</p></li>
-          <li class="card"><span class="card-icon" aria-hidden="true">#</span><h3>Tags &amp; search</h3><p>Any number of tags per request, suggested as you type, and one search across names, URLs, methods and tags.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">↺</span><h3>Request versions</h3><p>The last 50 versions you send by hand are kept with their responses. Rename, tag and search versions, and get a warning when the spec no longer fits.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">#</span><h3>Tags &amp; search</h3><p>Up to 20 tags per request, suggested as you type, and one search across names, URLs, methods and tags.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">∿</span><h3>Health while it runs</h3><p>Read a service's health endpoint before, during and after each request, and see which fields moved while it answered.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⋔</span><h3>Network trace</h3><p>Every address a name resolves to, the one it went to in octets and segments, your adapter, and the route hop by hop.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">↻</span><h3>Auth dependencies</h3><p>Run the login first when the token is missing or expired, save the new token and send your request, without copying anything.</p></li>
@@ -548,7 +548,7 @@ Total time 412 ms. <span class="t-green">PASSED</span></code></pre>
         <div class="downloads">
           <div class="dl-card" data-os="windows">
               <h3>Windows</h3>
-            <p>Windows 10 and 11, x64 and ARM64. Installer or portable app.</p>
+            <p>Windows 10 and 11, x64 and ARM64. Installer, or a portable app for x64.</p>
             <a class="btn btn-primary" href="https://github.com/gethttpdash/httpdash/releases/latest">Download for Windows</a>
             <p class="dl-hint">Not signed yet: if SmartScreen appears, choose <em>More info → Run anyway</em>.</p>
           </div>
