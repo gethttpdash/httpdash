@@ -9,7 +9,7 @@ Key facts:
 - Built with Electron and plain JavaScript. Data is stored as JSON on the user's computer. No sign-in.
 - Imports Postman collections (v2.0/v2.1), environments and globals, OpenAPI 3.0/3.1 and Swagger 2 (JSON or YAML), and cURL. Scripts use the Postman-compatible `pm` API in a QuickJS sandbox.
 - Command line: `npm install -g github:gethttpdash/httpdash`, then `httpdash run backup.json -e "Staging" -r cli,junit` (Newman-style options; `--tag`, `--socks5`; JUnit and JSON reports).
-- AI agents: with Settings → AI access turned on, the app serves an OpenAPI 3.1 document at `http://127.0.0.1:47823/openapi.json` (local only, bearer token), and `httpdash mcp` exposes the same operations to MCP clients such as Claude Code (`claude mcp add httpdash -- httpdash mcp`).
+- AI agents: with "AI access" turned on in Settings, the app serves an OpenAPI 3.1 document at `http://127.0.0.1:47823/openapi.json` (local only, bearer token), and `httpdash mcp` exposes the same operations to MCP clients such as Claude Code (`claude mcp add httpdash -- httpdash mcp`).
 - Contact: contact.httpdash@gmail.com. Source: https://github.com/gethttpdash/httpdash
 
 ## Docs
