@@ -85,7 +85,7 @@ const OPERATIONS = [
   // ---- Sending --------------------------------------------------------------------------------
   { id: 'sendRequest', method: 'post', path: '/requests/{requestId}/send', permission: 'run', target: 'renderer', tag: 'Sending',
     summary: 'Send a saved request and get the response',
-    description: 'Sends with the active environment (or the one given), runs its scripts and tests, and returns status, headers, body (cut at maxBodyBytes), test results, timings, and the instance and payload used. With show, the request opens in the app with its response.',
+    description: 'Sends with the active environment (or the one given), runs its scripts and tests, and returns status, headers, body (cut at maxBodyBytes), test results, timings, the instance and payload used, and, when a health URL is set for it, what the service\'s health endpoint said before, during and after (the fields that changed). With show, the request opens in the app with its response.',
     parameters: [id('requestId', 'Request id')],
     body: obj({ environmentId: str('Environment to use instead of the active one'), payloadIndex: int('Send with this payload (0-based)'), show: bool('Open it in the app with the response'), maxBodyBytes: int('Cut the body at this size (default 100000)') }) },
   { id: 'sendAdHoc', method: 'post', path: '/send', permission: 'run', target: 'renderer', tag: 'Sending',

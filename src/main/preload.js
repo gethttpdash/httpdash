@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   compareInstances: invoke('request:compare'),
   compareAnswers: invoke('compare:answers'),
   dnsInstances: invoke('dns:instances'),
+  readHealth: invoke('health:read'),
   checkShape: invoke('shape:check'),
   cancel: invoke('request:cancel'),
 

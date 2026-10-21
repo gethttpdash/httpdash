@@ -26,6 +26,7 @@
       { id: 'auth', label: 'Authorization' },
       { id: 'pre', label: 'Pre-request Script', dot: !!(node.preRequestScript || '').trim() },
       { id: 'tests', label: 'Tests', dot: !!(node.testScript || '').trim() },
+      { id: 'health', label: 'Health', dot: !!(node.health && node.health.mode === 'enabled') },
     ];
     if (kind === 'collection') tabs.push({ id: 'variables', label: 'Variables', badge: (node.variables || []).filter((v) => v.key).length || null }, { id: 'mock', label: 'Mock server' });
 
@@ -72,6 +73,18 @@
           ['Status code is 2xx', "pm.test('Status code is 2xx', () => {\n  pm.response.to.be.success;\n});"],
           ['Response time below 1s', "pm.test('Response time below 1s', () => {\n  pm.expect(pm.response.responseTime).to.be.below(1000);\n});"],
         ], () => { touch(); renderStrip(); }, `This script runs after every request in this ${kind}.`));
+      } else if (t === 'health') {
+        panel.appendChild(HD.healthEditor(node, {
+          kind, collection: found.collection, parents: found.parents, onChange: () => { touch(); renderStrip(); },
+          // A path is read on a request's host: the first request in this folder or collection.
+          sample: () => {
+            let first = null;
+            HD.walk(node.items || [], (it, parents) => { if (!first && it.type === 'request') first = { it, parents }; });
+            if (!first) return null;
+            const above = kind === 'collection' ? [node] : [found.collection, ...found.parents, node];
+            return { request: first.it.request, chain: [...above, ...first.parents].map((n) => ({ id: n.id, name: n.name, auth: n.auth })), settings: HD.S.ws.settings };
+          },
+        }));
       } else if (t === 'mock') {
         HD.renderMockPanel(panel, node);
       } else if (t === 'variables') {
@@ -327,6 +340,7 @@
             h('span.muted.small', HD.formatMs(r.time)),
             h('span.muted.small', HD.formatBytes(r.size))),
           r.dependencyRuns && r.dependencyRuns.length ? h('div.runner-deps', HD.dependencyBanner(r.dependencyRuns)) : null,
+          r.health ? h('div.runner-health', { class: r.health.ok ? '' : 'unhealthy' }, HD.icon('pulse'), h('span', `Health: ${HD.healthLine(r.health)}`)) : null,
           r.tests.length ? h('div.runner-tests', r.tests.map((t) => h('div.test-item.compact',
             h(`span.test-badge.${t.skipped ? 'skip' : t.passed ? 'pass' : 'fail'}`, t.skipped ? 'SKIP' : t.passed ? 'PASS' : 'FAIL'),
             h('span.test-name', t.name), t.error ? h('span.test-error', t.error) : null))) : null,

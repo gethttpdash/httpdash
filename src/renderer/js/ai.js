@@ -121,7 +121,7 @@
 
   // ---- Sending -----------------------------------------------------------------------------------
 
-  const chainOf = (f) => (f ? [f.collection, ...f.parents] : []).map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency }));
+  const chainOf = (f) => (f ? [f.collection, ...f.parents] : []).map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency, health: n.health }));
   function scopesWith(collection, environmentId) {
     if (!environmentId) return HD.scopesFor(collection);
     const env = findEnvironment(environmentId);
@@ -149,6 +149,11 @@
       ...(result.sentRequest ? { sent: { method: result.sentRequest.method, url: result.sentRequest.url } } : {}),
       ...(result.routing ? { instances: result.routing.map((x) => ({ variable: x.variable, instance: x.instanceId || x.instance, servedBy: x.servedBy || undefined })) } : {}),
       ...(result.payload ? { payload: result.payload.name } : {}),
+      ...(result.health ? { health: {
+        url: result.health.url, healthy: result.health.ok, unhealthyReadings: result.health.unhealthy, readings: result.health.samples.length, slowestMs: result.health.slowest,
+        summary: HD.healthLine(result.health, 5),
+        changed: result.health.fields.filter((f) => f.changed).slice(0, 50).map((f) => ({ field: f.path, before: f.before, after: f.after, ...(f.numeric ? { min: f.min, max: f.max } : {}) })),
+      } } : {}),
     };
   }
   async function send({ request, f, environmentId, payloadIndex, name }) {

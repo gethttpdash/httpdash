@@ -6,7 +6,8 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { JsonStore } = require('./store');
-const { execute, prepare } = require('../core/executor');
+const { execute, prepare, clientOptions } = require('../core/executor');
+const health = require('../core/health');
 const { mergeScopes } = require('../core/variables');
 const codegen = require('../core/codegen');
 const { parseCurl } = require('../core/curl');
@@ -288,6 +289,20 @@ const proxyApplies = (settings, url) => {
   if (!p || !p.enabled || !p.host) return false;
   try { return !httpClient.matchesBypass(new URL(url).hostname, p.bypass); } catch { return false; }
 };
+// Reads a health endpoint once, for "Read it now" in the health settings: every field it gives.
+// A path is read on the origin of `request` (the request itself, or one in the folder).
+handle('health:read', async ({ cfg, request, chain, scopes, settings }) => {
+  const s = settings || {};
+  const vars = mergeScopes(scopes || {});
+  let prepared = null;
+  try { if (request && request.url) prepared = prepare(request, { chain: chain || [], vars, settings: s, jar }); } catch { prepared = null; }
+  const url = health.healthUrl(cfg || {}, vars, prepared ? prepared.url : '');
+  if (!/^https?:\/\//i.test(url)) return { url, error: url.startsWith('/') ? 'A path needs a request to read it on: add a request here first, or enter a full URL' : 'Enter a full URL, or a path such as /healthz' };
+  const headers = cfg && cfg.sendAuth && prepared ? prepared.headers.filter(([k]) => k.toLowerCase() === 'authorization') : [];
+  const r = await health.read({ url, base: prepared ? clientOptions(prepared, s, jar) : { verifySSL: s.verifySSL !== false, proxy: s.proxy }, headers });
+  return { url, ...r };
+});
+
 // Whether a plain URL has instances in DNS (several addresses for its host): { host, addresses } or null.
 handle('dns:instances', async ({ request, scopes, settings }) => {
   const url = resolvedUrl(request, scopes || {});

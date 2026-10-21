@@ -220,7 +220,7 @@
       { id: 'payloads', label: 'Payloads', badge: req.payloads && req.payloads.mode && req.payloads.mode !== 'off' ? (req.payloads.items || []).filter((x) => x.enabled !== false).length || null : null },
       { id: 'pre', label: 'Pre-request Script', dot: !!(req.preRequestScript || '').trim() },
       { id: 'tests', label: 'Tests', dot: !!(req.testScript || '').trim() },
-      { id: 'settings', label: 'Settings' },
+      { id: 'settings', label: 'Settings', dot: !!(req.health && req.health.mode === 'enabled') },
       { id: 'docs', label: 'Docs' },
     ];
     const reqTabHost = h('div.req-tabs-host');
@@ -427,6 +427,11 @@
         tri('sendCookies', 'Send cookies from the cookie jar', 'Attach stored cookies and store new ones.', g.sendCookies !== false),
         h('div.setting-row', h('div', h('div.setting-label', 'Request timeout (ms)'), h('div.setting-help', 'Leave empty to use the global setting. 0 means no timeout.')),
           h('input.input.input-small', { type: 'number', min: 0, value: s.timeout == null ? '' : s.timeout, placeholder: String(g.timeout || 0), oninput: (e) => { s.timeout = e.target.value === '' ? null : Number(e.target.value); markDirty(); } }))));
+      const c = context();
+      reqPanel.appendChild(HD.healthEditor(req, {
+        kind: 'request', collection: c.collection, parents: c.found ? c.found.parents : [], onChange: panelChanged,
+        sample: () => ({ request: req, chain: chainFor(context().chain), settings: requestSettings() }),
+      }));
     };
 
     // Response pane.
@@ -606,7 +611,7 @@
       const pick = (k) => (o[k] === undefined || o[k] === null ? g[k] : o[k]);
       return { ...g, followRedirects: pick('followRedirects'), verifySSL: pick('verifySSL'), sendCookies: pick('sendCookies'), timeout: o.timeout == null ? g.timeout : o.timeout };
     };
-    const chainFor = (chain) => chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency }));
+    const chainFor = (chain) => chain.map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency, health: n.health }));
 
     // Sends the request to every healthy instance of the service in its URL and compares the answers.
     const compare = async () => {

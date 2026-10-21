@@ -191,9 +191,11 @@
       const odd = cmp.instances.filter((i) => i.odd).length;
       tabs.unshift({ id: 'compare', label: 'Compare', badge: odd ? `${odd}/${cmp.instances.length}` : String(cmp.instances.length), dot: odd > 0 });
     }
+    if (result.health) tabs.push({ id: 'health', label: 'Health', dot: !result.health.ok });
     let active = ui.resTab || 'body';
     if (active === 'compare' && !cmp) active = 'body';
-    if (!res && active !== 'tests' && active !== 'timeline' && active !== 'compare') active = 'body';
+    if (active === 'health' && !result.health) active = 'body';
+    if (!res && active !== 'tests' && active !== 'timeline' && active !== 'compare' && active !== 'health') active = 'body';
 
     const actions = h('div.res-actions',
       res ? HD.button('', (e) => HD.menu(e, [
@@ -205,7 +207,7 @@
       ]), { icon: 'dots', ghost: true, small: true, title: 'More actions' }) : null);
 
     const content = h('div.res-content');
-    const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body' || t.id === 'compare'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
+    const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body' || t.id === 'compare' || t.id === 'health'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
     root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing, result.payload) : null));
     if (result.fromVersion) {
       root.appendChild(h('div.dep-banner.version-banner', h('div.dep-run', HD.icon('history'),
@@ -223,7 +225,7 @@
       renderCompare(content, result, opts, () => HD.renderResponse(root, result, ui, opts), (i) => {
         // Shows one instance's answer in the other tabs.
         const r = result.compare.results[i];
-        for (const k of ['response', 'tests', 'sentRequest', 'routing', 'error', 'payload', 'dependencyRuns']) result[k] = r[k];
+        for (const k of ['response', 'tests', 'sentRequest', 'routing', 'error', 'payload', 'dependencyRuns', 'health']) result[k] = r[k];
         result.compare.shown = i;
         ui.resTab = 'body';
         HD.save();
@@ -249,6 +251,8 @@
       renderTests(content, result, ui, () => HD.renderResponse(root, result, ui, opts));
     } else if (active === 'timeline') {
       renderTimeline(content, result);
+    } else if (active === 'health') {
+      HD.renderHealth(content, result.health);
     }
   };
 

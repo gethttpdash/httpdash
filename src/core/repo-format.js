@@ -4,7 +4,7 @@
  * Team repository format: shared collections and environments as readable, merge-friendly files.
  *
  *   httpdash.json                                  marker { format: 'httpdash-repo', version }
- *   collections/<collection>/_collection.json      collection settings (auth, scripts, variables, dependency)
+ *   collections/<collection>/_collection.json      collection settings (auth, scripts, variables, dependency, health)
  *   collections/<collection>/<folder>/_folder.json folder settings
  *   collections/<collection>/…/<request>.request.json  one file per request (with its examples)
  *   environments/<environment>.json
@@ -107,11 +107,13 @@ const collectionMeta = (col, tokenVars) => ({
   id: col.id, name: col.name, description: col.description || '', auth: shareAuth(col.auth), preRequestScript: col.preRequestScript || '', testScript: col.testScript || '',
   variables: shareVars(col.variables, tokenVars),
   ...(col.dependency ? { dependency: col.dependency } : {}),
+  ...(col.health ? { health: col.health } : {}),
   ...(col.mock ? { mock: col.mock } : {}),
 });
 const folderMeta = (it, seq) => ({
   id: it.id, seq, name: it.name, description: it.description || '', auth: shareAuth(it.auth), preRequestScript: it.preRequestScript || '', testScript: it.testScript || '',
   ...(it.dependency ? { dependency: it.dependency } : {}),
+  ...(it.health ? { health: it.health } : {}),
 });
 const requestFile = (it, seq) => ({ id: it.id, seq, name: it.name, request: it.request && { ...it.request, auth: shareAuth(it.request.auth) }, ...(it.examples && it.examples.length ? { examples: it.examples } : {}) });
 const environmentFile = (env, tokenVars) => ({ id: env.id, name: env.name, values: shareVars(env.values, tokenVars) });

@@ -150,6 +150,7 @@ async function run(opts) {
           sentRequest: res.sentRequest,
           routing: res.routing,
           payload: res.payload,
+          health: res.health,
         };
         if (res.routing) routing.push(...res.routing);
         summary.results.push(entry);

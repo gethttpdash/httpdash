@@ -13,6 +13,7 @@ const sse = require('./sse');
 const dependency = require('./dependency');
 const balancer = require('./balancer');
 const payloads = require('./payloads');
+const health = require('./health');
 
 const MIME = {
   json: 'application/json', xml: 'application/xml', html: 'text/html', text: 'text/plain', javascript: 'application/javascript',
@@ -379,7 +380,18 @@ async function executeRequest(opts) {
     }
   }
 
-  // 2. Send (again after refreshing the token if the server answers 401 and retryOn401 is set).
+  // 2. Send (again after refreshing the token if the server answers 401 and retryOn401 is set),
+  // reading the service's health endpoint before, during and after when one is set.
+  const healthCfg = opts.depth ? null : health.effectiveHealth(request, chain);
+  let profile = null;
+  const finishHealth = async () => {
+    if (!profile) return;
+    const p = profile;
+    profile = null;
+    await p.after();
+    result.health = p.result();
+    if (!result.health.ok) log('warn', `Health of ${result.health.url}: ${health.describe(result.health)}`);
+  };
   let prepared;
   let raw;
   for (let attempt = 0; ; attempt++) {
@@ -395,8 +407,20 @@ async function executeRequest(opts) {
       headers: prepared.headers,
       bodyText: prepared.body ? (prepared.body.length > 1e6 ? `<${prepared.body.length} bytes>` : prepared.body.toString('utf8')) : null,
     };
+    if (healthCfg && attempt === 0) {
+      // The same instance as the request: pooled variables resolve to the instance it was sent to.
+      const url = health.healthUrl(healthCfg, balancer.bind(mergeScopes(scopes), pools, picks, { payload: payloadName }), prepared.url);
+      let sameHost = false;
+      try { sameHost = new URL(url).hostname === new URL(prepared.url).hostname; } catch { /* checked when read */ }
+      const auth = healthCfg.sendAuth ? prepared.headers.filter(([k]) => k.toLowerCase() === 'authorization') : [];
+      profile = health.profiler(healthCfg, { url, base: clientOptions(prepared, settings, jar), headers: auth, connectTo: sameHost ? opts.connectTo : undefined });
+      await profile.before();
+    }
+    if (profile) profile.start();
     raw = await sendPrepared(prepared);
+    if (profile) await profile.end();
     if (!raw) {
+      await finishHealth();
       // A request the user cancelled says nothing about the instance.
       if (picks.size) result.routing = opts.signal && opts.signal.aborted ? [...picks.values()] : balancer.settle(picks, pools, { error: result.error, payload: payloadName });
       return result;
@@ -452,6 +476,7 @@ async function executeRequest(opts) {
     return raw;
   }
 
+  await finishHealth();
   const response = buildResponse(raw, settings.maxPreviewBytes || 20 * 1024 * 1024);
   if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
   if (raw.cancelled) response.cancelled = true;
@@ -547,4 +572,4 @@ function describeNetworkError(e) {
   return e && e.code && map[e.code] ? `${map[e.code]}: ${base}` : base;
 }
 
-module.exports = { execute, prepare, effectiveAuth, buildBody, digestHeader, normalizeUrl };
+module.exports = { execute, prepare, clientOptions, effectiveAuth, buildBody, digestHeader, normalizeUrl };

@@ -217,6 +217,25 @@ Auth dependencies are saved in HttpDash's workspace. Postman's export format has
 
 ![Auth dependency settings](docs/screenshots/10-auth-dependency-setup.png)
 
+## Health while it runs (profiling)
+
+Give a request, a folder or a collection a **health URL**, and HttpDash reads it before the request is sent, while it is in flight, and after it answers. You see what the server went through while it handled your request: connections or transactions held, queues, memory, a database that went down.
+
+Set it up in a folder's or collection's **Health** tab, or in a request's **Settings** tab:
+
+- **Health URL:** a path such as `/healthz` or `/actuator/health` is read on each request's own host. So a request sent to one instance (through service discovery or Compare) reads that instance's health. A full URL such as `{{mes_url}}/healthz` is read as written.
+- **Read every (ms):** how often to read it while the request is in flight, 250 ms by default. The first reading goes out with the request, so even a fast request has one, and readings never overlap.
+- **Only these fields:** optional, one JSON path per line. `db.transactions` covers everything under it.
+- **Send the request's Authorization header:** for health endpoints that need it.
+- **Read it now:** reads the endpoint once and lists every field, with **Watch** to pick the ones you care about.
+
+The response gets a **Health** tab:
+- whether the service said it was healthy in every reading (a 4xx/5xx answer, `ok: false`, or `status` other than `UP`/`ok`/`pass` counts as unhealthy)
+- the fields that changed, with their value before, their range during and their value after, and a small chart of each numeric field over time with the request's own span shaded
+- the fields that didn't change, and every reading with its status and how long the health endpoint took to answer.
+
+Health readings never fail the request itself; an endpoint that can't be reached is shown as an unhealthy reading. The Collection Runner shows one line per request (`healthy throughout; db.transactions.waiting 0 → 3 → 0`), the CLI prints it under each request, and the AI API's `sendRequest` returns it.
+
 ## Service discovery (auto-create environments)
 
 Point HttpDash at a service registry and it builds an environment with one variable per service. For example, `{{orders_url}}` = `http://10.0.1.5:8080`, so requests can use `{{orders_url}}/api/orders`.
