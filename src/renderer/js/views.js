@@ -237,7 +237,7 @@
     const section = h('div.runner-picker',
       h('div.section-title', 'Requests', h('span.spacer'), count),
       h('div.runner-picker-bar',
-        HD.searchBox({ query: ui.query, onChange: () => { HD.save(); draw(); }, placeholder: 'Filter: name, URL, method, #tag or folder', className: 'runner-filter' }),
+        HD.searchBox({ query: ui.query, onChange: () => { HD.save(); draw(); }, placeholder: 'Filter: name, URL, method, tag or folder', className: 'runner-filter' }),
         HD.button('All', () => set(shown(), true), { ghost: true, small: true, title: 'Select the requests shown' }),
         HD.button('None', () => set(shown(), false), { ghost: true, small: true, title: 'Leave out the requests shown' })),
       tree);

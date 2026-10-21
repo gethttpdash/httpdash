@@ -99,7 +99,7 @@ httpdash send '{{orders_url}}/orders' -e Staging      # one request through the 
 - **Other options:**
   - `-n` for iterations and `-d data.csv` for data-driven runs.
   - `-f` / `--folder`, `--tag` (repeat it to require several tags), `--bail`, `--delay-request`, `--timeout-request`, `--no-color`.
-  - `--socks5 host:port` to send every request through a SOCKS5 proxy; `--no-tunnels` to ignore the backup's tunnels.
+  - `--socks5 host:port` to send every request through a SOCKS5 proxy; `--no-tunnels` to ignore the tunnels saved in a `workspace.json`.
   - `-k` to skip SSL verification.
   - Client certificates with Newman's flags: `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` (Newman's JSON format) and `--ssl-extra-ca-certs`.
   - Reporters: `cli`, `json` and `junit` (JUnit XML is read by Jenkins, GitLab, Azure DevOps and GitHub test reporters). They write `httpdash-report.json` and `httpdash-junit.xml` unless `--reporter-json-export` / `--reporter-junit-export` name another file.
@@ -361,7 +361,7 @@ Each tunnel carries the hosts you list, one per line: names with `*` wildcards (
 
 Everything goes through the tunnel: Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app's own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). **Open** / **Check** opens a tunnel and can try a `host:port` through it.
 
-The CLI uses the tunnels saved in a backup (with the environment's choice), or `--socks5 host:port` for every request, for example through an `ssh -D` started by your CI job. `--no-tunnels` ignores the saved ones.
+The CLI uses the tunnels saved in a `workspace.json` from HttpDash's data folder (with the environment's choice; HttpDash backups don't include tunnels), or `--socks5 host:port` for every request, for example through an `ssh -D` started by your CI job. `--no-tunnels` ignores the saved ones.
 
 ## Client certificates and custom CAs
 

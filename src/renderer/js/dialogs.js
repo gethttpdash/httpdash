@@ -235,7 +235,7 @@
           toggle('verifySSL', 'SSL certificate verification', 'Turn off to allow self-signed or expired certificates.'),
           toggle('reuseConnections', 'Reuse connections (keep-alive)', 'Requests to a host you just called skip DNS, TCP and the TLS handshake. Turn off to open a new connection for every request.'),
           toggle('traceNetwork', 'Trace where requests go on the network', 'For each request: the addresses its host name resolves to, the one it connected to with its segment and reverse-DNS name, and the network adapter it left from (Timeline → Network).'),
-          h('div.setting-row', h('div', h('div.setting-label', 'Network segment size'), h('div.setting-help', 'How addresses are grouped into segments, in the Timeline and in Traffic by segment.')),
+          h('div.setting-row', h('div', h('div.setting-label', 'Network segment size'), h('div.setting-help', 'How addresses are grouped into segments in the Timeline. Traffic by segment and trace route use /24 and /64.')),
             h('div.button-row.flush',
               HD.select([8, 16, 20, 22, 24, 26, 28].map((n) => [n, `IPv4 /${n}`]), s.segmentBits4 || 24, (v) => { s.segmentBits4 = Number(v); HD.save(); }, 'select-small'),
               HD.select([32, 48, 56, 64].map((n) => [n, `IPv6 /${n}`]), s.segmentBits6 || 64, (v) => { s.segmentBits6 = Number(v); HD.save(); }, 'select-small'))),
@@ -291,7 +291,7 @@
     const ca = (s.caCertificate = s.caCertificate || { enabled: false, path: '' });
     panel.append(
       h('div.setting-row',
-        h('div', h('div.setting-label', 'Trust certificates installed on this computer'), h('div.setting-help', 'Uses the certificate authorities in your system\'s store (macOS Keychain, Windows certificate store), as browsers do, so company certificates work without extra setup.')),
+        h('div', h('div.setting-label', 'Trust certificates installed on this computer'), h('div.setting-help', 'Uses the certificate authorities in your system\'s store (macOS Keychain, Windows certificate store, the Linux system bundle), as browsers do, so company certificates work without extra setup.')),
         h('label.switch', h('input', { type: 'checkbox', checked: s.useSystemCertificates !== false, onchange: (e) => { s.useSystemCertificates = e.target.checked; HD.save(); } }), h('span.slider'))),
       h('div.setting-row',
         h('div', h('div.setting-label', 'CA certificate'), h('div.setting-help', ca.path ? h('span.mono', ca.path) : 'Trust an extra certificate authority, such as your company\'s, in addition to the built-in ones. PEM file.')),

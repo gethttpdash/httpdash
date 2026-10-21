@@ -5,7 +5,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
-- **Preview tabs:** a single click in the sidebar (a request, environment, discovery source, monitor or history entry) opens a preview tab, its title in italics, which the next single click replaces, so looking around doesn't pile up tabs. It stays as soon as you use it:
+- **Preview tabs:** a single click in the sidebar (a request, environment, globals, discovery source, monitor or history entry) opens a preview tab, its title in italics, which the next single click replaces, so looking around doesn't pile up tabs. It stays as soon as you use it:
   - an edit, a send or a save
   - a double-click on the tab or on the item in the sidebar
   - **Keep open** in the tab's menu.
@@ -21,6 +21,11 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ### Fixed
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
+- Help text that said more than the app does:
+  - **Show auto-generated** no longer lists `Cache-Control` when **Send no-cache header** is off.
+  - The segment size setting says it applies to the Timeline (Traffic and trace route use /24 and /64).
+  - **Trust certificates installed on this computer** names the Linux system bundle too.
+  - The search placeholders no longer suggest typing `#` before a tag.
 
 ## [1.7.0] - 2026-10-21
 

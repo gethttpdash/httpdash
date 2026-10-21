@@ -344,7 +344,7 @@
     };
 
     const renderHeaders = () => {
-      const auto = [['User-Agent', S.ws.settings.userAgent || 'HttpDash/1.0'], ['Accept', '*/*'], ['Accept-Encoding', 'gzip, deflate, br'], ['Cache-Control', 'no-cache'], ['Host', '<calculated when request is sent>']];
+      const auto = [['User-Agent', S.ws.settings.userAgent || 'HttpDash/1.0'], ['Accept', '*/*'], ['Accept-Encoding', 'gzip, deflate, br'], ...(S.ws.settings.sendNoCache !== false ? [['Cache-Control', 'no-cache']] : []), ['Host', '<calculated when request is sent>']];
       if (req.body && req.body.mode !== 'none') auto.push(['Content-Type', '<calculated from body>'], ['Content-Length', '<calculated when request is sent>']);
       const hidden = !ui.showAutoHeaders;
       reqPanel.appendChild(HD.kvTable({

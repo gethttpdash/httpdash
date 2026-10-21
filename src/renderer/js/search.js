@@ -176,7 +176,7 @@
    * onChange() is called whenever the query changes. Keys: ↑ ↓ to choose, Enter to add, Esc to close,
    * Backspace in an empty field removes the last chip. "tag:", "method:", "url:", "name:" narrow it.
    */
-  HD.searchBox = ({ query, onChange, placeholder = 'Search or #tag', className = '' }) => {
+  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '' }) => {
     query.tokens = query.tokens || [];
     query.text = query.text || '';
     let items = [];
