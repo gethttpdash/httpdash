@@ -256,6 +256,7 @@
         time: Date.now(), count: res.operations ? res.operations.length : res.services.length, diff: res.diff, warnings: res.warnings, error: null,
         services: res.services.map((s) => ({ name: s.name, variable: s.variable, url: s.url, instances: (s.instances || []).map((i) => ({ id: i.id || '', url: i.url, healthy: i.healthy })) })),
         spec: res.spec || null, requests: trimReport(rq),
+        ...(res.shapes ? { shapes: res.shapes } : {}),
       };
       // Every version that changed something is kept in the source's history.
       if (res.spec && changeCount(res)) {

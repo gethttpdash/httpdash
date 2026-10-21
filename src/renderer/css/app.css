@@ -1061,3 +1061,27 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .ai-perm { display: flex; align-items: baseline; gap: 8px; margin: 6px 0; }
 .ai-token { display: block; margin: 4px 0; font-size: 12px; word-break: break-all; user-select: all; }
 .ai-snippet { display: block; margin: 4px 0 8px; padding: 6px 8px; background: var(--bg-3); border-radius: 4px; font-size: 12px; word-break: break-all; user-select: all; }
+
+/* Request versions and spec warnings */
+.version-chip { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--bg-3); color: var(--text-2); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-chip svg { width: 12px; height: 12px; flex: none; }
+.versions-help { margin-bottom: 12px; }
+.versions-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+.version-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); }
+.version-row.current { border-color: var(--accent); background: var(--accent-soft); }
+.version-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.version-name { font-weight: 600; }
+.version-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.version-warn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--warn); }
+.version-warn svg, .spec-banner > svg { width: 14px; height: 14px; flex: none; }
+.version-actions { display: flex; gap: 4px; }
+.tree-version { color: var(--text-2); font-size: 12px; }
+.tree-version svg { width: 12px; height: 12px; flex: none; }
+.version-banner { margin: 8px 16px 0; }
+.spec-host:empty { display: none; }
+.spec-banner { display: flex; gap: 10px; align-items: flex-start; margin: 0 16px 8px; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; border-left: 4px solid var(--warn); background: var(--warn-soft); color: var(--text); }
+.spec-banner.bad { border-left-color: var(--err); background: var(--err-soft); }
+.spec-banner > svg { color: var(--warn); margin-top: 2px; }
+.spec-banner.bad > svg { color: var(--err); }
+.spec-banner-title { font-weight: 600; margin-bottom: 2px; }
+.spec-banner ul { margin: 2px 0 0; padding-left: 18px; }

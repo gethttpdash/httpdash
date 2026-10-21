@@ -33,6 +33,7 @@
     const methods = new Map();
     const urls = new Map();
     const names = new Map();
+    const versions = new Map();
     const bump = (m, key, label) => { if (!key) return; const e = m.get(key) || { value: label, count: 0 }; e.count++; m.set(key, e); };
     for (const col of S.ws.collections) {
       HD.walk(col.items, (it) => {
@@ -42,10 +43,15 @@
         const u = urlKey(it.request.url);
         bump(urls, u, u);
         bump(names, it.name.toLowerCase(), it.name);
+        // Named or tagged versions of the request (see versions.js).
+        for (const v of curatedVersions(it)) {
+          if (v.name) bump(versions, v.name.toLowerCase(), v.name);
+          for (const t of v.tags || []) bump(tags, t.toLowerCase(), t);
+        }
       });
     }
     const list = (m) => [...m.values()].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
-    return { tags: list(tags), methods: list(methods), urls: list(urls), names: list(names) };
+    return { tags: list(tags), methods: list(methods), urls: list(urls), names: list(names), versions: list(versions) };
   };
 
   /**
@@ -53,8 +59,41 @@
    * Every tag must be on the request; any one of the methods will do (a request has one); URL, name and
    * text must all match. Text (typed, not yet picked) matches the name, the URL or a tag.
    */
+  const curatedVersions = (item) => ((S.ws.requestVersions || {})[item.id] || []).filter((v) => v.name || (v.tags || []).length);
+
+  /**
+   * The named or tagged versions of a request that match a search: a version's own name and tags
+   * count, with its request's tags. A "version" chip matches version names only.
+   */
+  HD.matchingVersions = (item, query) => {
+    if (!item || item.type !== 'request' || !HD.queryActive(query)) return [];
+    const reqTags = (item.request.tags || []).map((t) => t.toLowerCase());
+    return curatedVersions(item).filter((v) => {
+      const tags = [...reqTags, ...(v.tags || []).map((t) => t.toLowerCase())];
+      const name = String(v.name || '').toLowerCase();
+      const url = String(v.request.url || '').toLowerCase();
+      const own = (q) => name.includes(q) || (v.tags || []).some((t) => t.toLowerCase().includes(q));
+      const tokens = query.tokens || [];
+      const methods = tokens.filter((t) => t.kind === 'method').map((t) => t.value.toUpperCase());
+      if (methods.length && !methods.includes(String(v.request.method || 'GET').toUpperCase())) return false;
+      let ownMatch = false;
+      for (const t of tokens) {
+        const val = String(t.value).toLowerCase();
+        if (t.kind === 'tag') { if (!tags.includes(val)) return false; if ((v.tags || []).some((x) => x.toLowerCase() === val)) ownMatch = true; }
+        if (t.kind === 'version') { if (!name.includes(val)) return false; ownMatch = true; }
+        if (t.kind === 'url' && !url.includes(val)) return false;
+        if ((t.kind === 'text' || t.kind === 'name') && !own(val) && !item.name.toLowerCase().includes(val)) return false;
+        if ((t.kind === 'text' || t.kind === 'name') && own(val)) ownMatch = true;
+      }
+      const text = String(query.text || '').trim().toLowerCase();
+      if (text) { if (!own(text) && !item.name.toLowerCase().includes(text) && !url.includes(text)) return false; if (own(text)) ownMatch = true; }
+      return ownMatch;
+    });
+  };
+
   HD.matchRequest = (item, query) => {
     if (!item || item.type !== 'request') return false;
+    if (((query && query.tokens) || []).some((t) => t.kind === 'version')) return false; // only versions have version names
     const req = item.request || {};
     const tags = (req.tags || []).map((t) => t.toLowerCase());
     const name = (item.name || '').toLowerCase();
@@ -76,8 +115,8 @@
   };
   HD.queryActive = (query) => !!(query && ((query.tokens && query.tokens.length) || String(query.text || '').trim()));
 
-  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names' };
-  const PREFIX = /^(tag|method|url|name):\s*/i;
+  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names', version: 'Versions' };
+  const PREFIX = /^(tag|method|url|name|version):\s*/i;
 
   // The suggestions for what was typed: grouped, a few of each, the most used first.
   function suggestions(text, query, catalog) {
@@ -95,6 +134,7 @@
     pick('tag', catalog.tags, q ? 6 : 8);
     pick('method', catalog.methods, q ? 3 : 7);
     if (q || only) {
+      pick('version', catalog.versions, 5);
       pick('url', catalog.urls, 5);
       pick('name', catalog.names, 5);
     }
@@ -150,7 +190,7 @@
           onmousedown: (e) => { e.preventDefault(); choose(i); },
           onmousemove: () => highlight(i),
         },
-        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : null,
+        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : it.kind === 'version' ? HD.icon('history') : null,
         h('span.search-label', it.kind === 'method' ? '' : it.label),
         it.hint ? h('span.search-hint', it.kind === 'text' ? it.hint : `${it.hint} request${it.hint === '1' ? '' : 's'}`) : null));
       });

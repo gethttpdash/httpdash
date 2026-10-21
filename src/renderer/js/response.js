@@ -207,6 +207,10 @@
     const content = h('div.res-content');
     const strip = HD.tabStrip(tabs.filter((t) => res || t.id === 'tests' || t.id === 'timeline' || t.id === 'body' || t.id === 'compare'), active, (id) => { ui.resTab = id; HD.save(); HD.renderResponse(root, result, ui, opts); });
     root.appendChild(h('div.res-header', strip, res ? statusLine(res, actions, result.routing, result.payload) : null));
+    if (result.fromVersion) {
+      root.appendChild(h('div.dep-banner.version-banner', h('div.dep-run', HD.icon('history'),
+        h('span', `The response version “${result.fromVersion.name}” got when you sent it ${HD.versionAgo ? HD.versionAgo(result.fromVersion.time) : ''}. Send to get a fresh one.`))));
+    }
     const banner = HD.dependencyBanner && HD.dependencyBanner(result.dependencyRuns);
     if (banner) root.appendChild(banner);
     if (result.savedVariables && result.savedVariables.length) {

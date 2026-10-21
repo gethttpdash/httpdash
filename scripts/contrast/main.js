@@ -59,6 +59,12 @@ app.on('browser-window-created', (_e, win) => {
     await run('toasts', `document.querySelectorAll('#toasts .toast').forEach((t) => t.remove()); for (const t of ['info', 'success', 'warn', 'error']) HD.toast('This is a ' + t + ' message with some detail', t, 60000);`);
     await run('context menu', `document.querySelectorAll('#toasts .toast').forEach((t) => t.remove()); HD.menu(document.querySelector('.btn'), [{ label: 'Rename', hint: 'F2' }, { label: 'Checked', checked: true }, { separator: true }, { label: 'Delete', danger: true }]);`);
     for (const section of ['general', 'proxy', 'certificates', 'appearance', 'ai', 'data', 'about']) await run('settings: ' + section, `HD.showSettings('${section}'); await wait(150);`);
+    // A request's versions: the chip, the menu's button and the Manage versions panel.
+    await run('request versions', `document.querySelectorAll('.modal-overlay').forEach((n) => n.remove());
+      const t = HD.S.ws.tabs.find((x) => x.id === window.__reqTab.id); HD.S.ws.activeTabId = t.id; HD.renderTabBar();
+      HD.recordVersion(t, t.draft.request, { response: { status: 200, statusText: 'OK', headers: [], bodyText: '{}' }, tests: [] });
+      const v = HD.recordVersion(t, { ...t.draft.request, url: t.draft.request.url + '&v=2' }, { error: 'connect ECONNREFUSED', tests: [] }); v.name = 'second'; v.tags = ['smoke'];
+      HD.renderActiveTab(); await wait(150); HD.manageVersions(t); await wait(300);`);
     await run('AI access history', `document.querySelectorAll('.modal-overlay').forEach((n) => n.remove()); HD.showAiAccess(); await wait(200);`);
     await run('sidebar collections', `document.querySelectorAll('.modal-overlay').forEach((n) => n.remove());
       const c = HD.S.ws.collections[0]; const methods = ['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'];

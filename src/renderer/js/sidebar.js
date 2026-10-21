@@ -55,7 +55,7 @@
   const query = { tokens: [], text: '' };
   const matches = (node) => {
     if (!HD.queryActive(query)) return true;
-    if (node.type === 'request') return HD.matchRequest(node, query);
+    if (node.type === 'request') return HD.matchRequest(node, query) || HD.matchingVersions(node, query).length > 0;
     const text = query.text.trim().toLowerCase();
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
     return (node.items || []).some(matches);
@@ -126,6 +126,17 @@
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);
+      // Versions of the request that match the search, under it: clicking one opens the request with it.
+      if (node.type === 'request' && f) {
+        for (const v of HD.matchingVersions(node, query)) {
+          tree.appendChild(h('div.tree-row.tree-version', {
+            style: { paddingLeft: `${30 + depth * 14}px` }, title: 'Open the request with this version',
+            onclick: () => { HD.openRequest(node.id); const t = HD.currentTab(); if (t) HD.useVersion(t, v); },
+          }, HD.icon('history'), h('span.tree-name', v.name || HD.versionLabel(v)),
+          (v.tags || []).length ? h('span.tree-tags', h('span.tree-tag', v.tags[0]), v.tags.length > 1 ? h('span.tree-tag.more', `+${v.tags.length - 1}`) : null) : null,
+          v.response && v.response.status ? h(`span.small.${HD.statusClass(v.response.status)}`, String(v.response.status)) : null));
+        }
+      }
       if (isContainer && open) {
         if (!node.items.length && !f) tree.appendChild(h('div.tree-empty', { style: { paddingLeft: `${34 + depth * 14}px` } }, 'Empty — ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); addRequest(node); } }, 'add a request')));
         node.items.forEach((c) => renderNode(c, depth + 1, collection));

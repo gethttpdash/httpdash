@@ -20,6 +20,7 @@ const trafficReport = require('../core/traffic-report');
 const payloads = require('../core/payloads');
 const compareAnswers = require('../core/compare');
 const dnsInstances = require('../core/dns-instances');
+const requestShape = require('../core/request-shape');
 const backup = require('../core/backup');
 const { resolve: resolveVars } = require('../core/variables');
 const httpClient = require('../core/http-client');
@@ -348,6 +349,12 @@ handle('request:compare', async ({ request, chain, scopes, settings, info, colle
   };
 });
 // Compares answers again, e.g. after a path was ignored.
+// Whether a request still fits its operation in an OpenAPI source's spec.
+handle('shape:check', ({ def, shapes, op, variable }) => {
+  const found = requestShape.findShape(def || {}, shapes, { op, variable });
+  if (!found) return null;
+  return { key: found.key, missing: !found.shape, issues: found.shape ? requestShape.checkRequest(def || {}, found.shape) : [] };
+});
 handle('compare:answers', ({ results, ignore }) => compareAnswers.compare(results, ignore || {}));
 
 handle('request:cancel', (id) => { const c = inflight.get(id); if (c) c.abort(); return !!c; });
@@ -881,6 +888,8 @@ handle('discovery:sync', async ({ config, values, collection, sourceId, settings
     generated = openapiSync.buildCollection(found.document, { variable: out.services[0].variable });
     out.spec = generated.openapi.spec;
     out.operations = openapiSync.operations(generated);
+    // What each operation accepts, to warn when a request (or a version of it) no longer fits.
+    out.shapes = requestShape.shapesOf(found.document);
     // The token as written in the source (it may be a {{variable}}), so the secret isn't copied around resolved.
     extra = openapiSync.secretVariables(generated, config.token);
     if (!previewOnly && expectHash && expectHash !== out.spec.hash) {

@@ -117,9 +117,11 @@
     };
     HD.variableInfo = () => HD.variableInfoFor(context().collection);
 
+    let afterEdit = () => {};
     const markDirty = () => {
       if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); }
       HD.save();
+      afterEdit();
     };
 
     // Header: breadcrumb + name + actions.
@@ -130,9 +132,21 @@
       oninput: (e) => { draft.name = e.target.value; markDirty(); },
     });
     const examples = ctx.found && ctx.found.node.examples ? ctx.found.node.examples : [];
+    // Versions: the button (with how many) and which version the editor holds, refreshed after a send.
+    const versionChip = h('span.version-chip-host');
+    const versionsHost = h('span.versions-host');
+    const updateVersions = () => {
+      const list = HD.versionsOf(HD.versionKey(tab));
+      const cur = HD.currentVersion(tab);
+      HD.clear(versionChip);
+      if (cur) versionChip.appendChild(h('span.version-chip', { title: `This is a version you sent ${HD.versionAgo(cur.lastSent)}` }, HD.icon('history'), HD.versionLabel(cur, list)));
+      HD.clear(versionsHost);
+      if (list.length) versionsHost.appendChild(HD.button(`Versions (${list.length})`, (e) => HD.versionsMenu(e, tab), { ghost: true, small: true, icon: 'history', title: 'Switch to another version you sent, with its response' }));
+    };
     const header = h('div.req-header',
-      h('div.breadcrumb', crumbs.map((c) => h('span.crumb', c)), nameInput),
+      h('div.breadcrumb', crumbs.map((c) => h('span.crumb', c)), nameInput, versionChip),
       h('div.req-header-actions',
+        versionsHost,
         examples.length ? HD.button(`Examples (${examples.length})`, (e) => HD.menu(e, examples.map((ex) => ({
           label: `${ex.name} — ${ex.status}`,
           onClick: () => showExample(ex),
@@ -520,7 +534,18 @@
     const vertical = (S.ws.ui.layout || 'vertical') === 'vertical';
     // Tags, for finding and running requests by what they're for (smoke, orders, admin...).
     const tagsRow = h('div.req-tags', HD.tagInput({ tags: (req.tags = req.tags || []), onChange: () => markDirty() }));
-    const reqSection = h('div.req-section', header, tagsRow, urlBar, reqTabHost, reqPanel);
+    // A warning when the request no longer fits its operation in an OpenAPI source's spec.
+    const specHost = h('div.spec-host');
+    const checkSpec = HD.debounce(async () => {
+      const c = await HD.specCheck(req, tab.refId).catch(() => null);
+      HD.clear(specHost);
+      const banner = HD.specBanner(c);
+      if (banner) specHost.appendChild(banner);
+    }, 400);
+    const reqSection = h('div.req-section', header, tagsRow, specHost, urlBar, reqTabHost, reqPanel);
+    updateVersions();
+    checkSpec();
+    afterEdit = HD.debounce(() => { updateVersions(); checkSpec(); }, 300);
     const split = h(`div.split-handle.${vertical ? 'horizontal' : 'vertical'}`);
     const body = h(`div.request-view.${vertical ? 'layout-v' : 'layout-h'}`, reqSection, split, resPane);
     root.appendChild(body);
@@ -658,6 +683,7 @@
       for (const l of result.logs || []) HD.log(l.level, l.message, { request: draft.name });
       if (result.scopes) HD.applyScopes(scopes, result.scopes, collection);
       S.responses.set(tab.id, result);
+      if (!result.skipped) { HD.recordVersion(tab, req, result); updateVersions(); }
       HD.addHistory({
         name: draft.name, method: req.method, url: result.sentRequest ? result.sentRequest.url : req.url,
         status: result.response ? result.response.status : null, time: Date.now(), duration: result.response ? result.response.time : null,
