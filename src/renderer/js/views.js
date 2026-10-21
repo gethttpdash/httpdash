@@ -81,7 +81,7 @@
       }
     };
 
-    const title = h('input.title-input', { value: node.name, spellcheck: 'false', oninput: (e) => { node.name = e.target.value; tab.title = node.name; touch(); HD.renderSidebar(); HD.renderTabBar(); } });
+    const title = h('input.title-input', { 'aria-label': 'Name', value: node.name, spellcheck: 'false', oninput: (e) => { node.name = e.target.value; tab.title = node.name; touch(); HD.renderSidebar(); HD.renderTabBar(); } });
     root.appendChild(h('div.container-view',
       h('div.req-header', h('div.breadcrumb', h('span.kind-label', kind === 'collection' ? 'Collection' : 'Folder'), found.parents.length || kind === 'folder' ? h('span.crumb', found.collection.name) : null, ...found.parents.map((p) => h('span.crumb', p.name)), title)),
       strip, panel));
@@ -104,7 +104,7 @@
     const active = S.ws.activeEnvironmentId === env.id;
     root.appendChild(h('div.container-view',
       h('div.req-header',
-        h('div.breadcrumb', h('span.kind-label', 'Environment'), h('input.title-input', { value: env.name, spellcheck: 'false', oninput: (e) => { env.name = e.target.value; tab.title = env.name; touch(); HD.renderSidebar(); HD.renderTabBar(); HD.renderEnvSelect(); } })),
+        h('div.breadcrumb', h('span.kind-label', 'Environment'), h('input.title-input', { 'aria-label': 'Name', value: env.name, spellcheck: 'false', oninput: (e) => { env.name = e.target.value; tab.title = env.name; touch(); HD.renderSidebar(); HD.renderTabBar(); HD.renderEnvSelect(); } })),
         h('div.req-header-actions',
           active ? h('span.pill', 'Active') : HD.button('Set active', () => { S.ws.activeEnvironmentId = env.id; touch(); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab(); }, { small: true }),
           HD.button('Export', () => window.api.exportEnvironment(env), { small: true, icon: 'upload' }))),

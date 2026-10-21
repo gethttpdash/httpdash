@@ -293,7 +293,7 @@
 
     root.appendChild(h('div.container-view',
       h('div.req-header',
-        h('div.breadcrumb', h('span.kind-label', 'Team'), h('input.title-input', { value: r.name, spellcheck: 'false', oninput: (e) => { r.name = e.target.value; touch(); HD.renderTabBar(); } })),
+        h('div.breadcrumb', h('span.kind-label', 'Team'), h('input.title-input', { 'aria-label': 'Name', value: r.name, spellcheck: 'false', oninput: (e) => { r.name = e.target.value; touch(); HD.renderTabBar(); } })),
         h('div.req-header-actions',
           HD.button(working === 'Getting latest…' ? working : 'Get latest', () => HD.teamSync(r, { pullOnly: true }), { small: true, icon: 'download', disabled: !!working || !!conflict }),
           HD.button(working === 'Syncing…' ? working : 'Sync', () => HD.teamSync(r, { message: tab.ui.message }), { small: true, primary: true, icon: 'refresh', disabled: !!working || !!conflict }),

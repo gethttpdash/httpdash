@@ -159,7 +159,7 @@
     const check = (key, label) => h('label.check', h('input', { type: 'checkbox', checked: !!m[key], onchange: (e) => { m[key] = e.target.checked; touch(); } }), label);
     root.appendChild(h('div.container-view',
       h('div.req-header',
-        h('div.breadcrumb', h('span.kind-label', 'Monitor'), h('input.title-input', { value: m.name, spellcheck: 'false', oninput: (e) => { m.name = e.target.value; touch(); HD.renderTabBar(); } })),
+        h('div.breadcrumb', h('span.kind-label', 'Monitor'), h('input.title-input', { 'aria-label': 'Name', value: m.name, spellcheck: 'false', oninput: (e) => { m.name = e.target.value; touch(); HD.renderTabBar(); } })),
         h('div.req-header-actions',
           HD.button(running.has(m.id) ? 'Running…' : 'Run now', () => HD.runMonitor(m), { small: true, primary: true, icon: 'play', disabled: running.has(m.id) || !col }),
           HD.button('', () => deleteMonitor(m), { icon: 'trash', ghost: true, small: true, title: 'Delete monitor' }))),

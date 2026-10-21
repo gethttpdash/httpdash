@@ -73,7 +73,7 @@
     const ctx = context();
     const crumbs = ctx.found ? [ctx.collection.name, ...ctx.found.parents.map((p) => p.name)] : [];
     const header = h('div.req-header',
-      h('div.breadcrumb', crumbs.map((x) => h('span.crumb', x)), h('input.title-input', { value: draft.name, spellcheck: 'false', oninput: (e) => { draft.name = e.target.value; markDirty(); } })),
+      h('div.breadcrumb', crumbs.map((x) => h('span.crumb', x)), h('input.title-input', { 'aria-label': 'Name', value: draft.name, spellcheck: 'false', oninput: (e) => { draft.name = e.target.value; markDirty(); } })),
       h('div.req-header-actions', HD.button('Save', () => HD.saveTab(tab), { icon: 'download', small: true, title: 'Save (Ctrl+S)' })));
     const urlHost = h('div.url-input');
     const connectBtn = h('button.btn.send-btn', { type: 'button', onclick: () => toggle() });

@@ -127,7 +127,7 @@
     // Header: breadcrumb + name + actions.
     const ctx = context();
     const crumbs = ctx.found ? [ctx.collection.name, ...ctx.found.parents.map((p) => p.name)] : [];
-    const nameInput = h('input.title-input', {
+    const nameInput = h('input.title-input', { 'aria-label': 'Name',
       value: draft.name, spellcheck: 'false',
       oninput: (e) => { draft.name = e.target.value; markDirty(); },
     });

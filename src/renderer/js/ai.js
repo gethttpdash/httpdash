@@ -206,8 +206,20 @@
     if (el.closest('#statusbar')) return 'statusbar';
     return 'main';
   };
+  // A form control's visible label: its field's caption, a checkbox's text, a setting's name.
+  const fieldLabel = (el) => {
+    const f = el.closest('label.field, label.check, .setting-row');
+    if (!f) return '';
+    const caption = f.matches('label.field') ? f.querySelector(':scope > span') : f.matches('.setting-row') ? f.querySelector('.setting-label') : null;
+    return ((caption ? caption.textContent : f.innerText) || '').replace(/\s+/g, ' ').trim();
+  };
   const label = (el) => {
     const t = el.getAttribute('aria-label') || el.getAttribute('title') || '';
+    if (el.matches('input, select, textarea')) {
+      const named = el.getAttribute('aria-label') || fieldLabel(el);
+      const ph = el.getAttribute('placeholder') || '';
+      if (named || ph) return (named && ph && named !== ph ? `${named} (${ph})` : named || ph).slice(0, 120);
+    }
     const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
     const ph = el.getAttribute('placeholder') || '';
     const kind = el.classList && el.classList.length ? String(el.classList[0]).replace(/-/g, ' ') : el.tagName.toLowerCase();

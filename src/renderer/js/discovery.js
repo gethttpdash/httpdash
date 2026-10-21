@@ -676,7 +676,7 @@
     root.appendChild(h('div.container-view',
       h('div.req-header',
         h('div.breadcrumb', h('span.kind-label', 'Service discovery'),
-          h('input.title-input', { value: src.name, spellcheck: 'false', oninput: (e) => {
+          h('input.title-input', { 'aria-label': 'Name', value: src.name, spellcheck: 'false', oninput: (e) => {
             src.name = e.target.value;
             touch();
             HD.renderSidebar();
