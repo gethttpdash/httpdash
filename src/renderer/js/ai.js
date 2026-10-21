@@ -121,6 +121,79 @@
 
   // ---- Sending -----------------------------------------------------------------------------------
 
+  // "GET /orders/{id}"-style default name: the method and the path, without the base URL variable.
+  const defaultName = (req) => {
+    const path = String(req.url || '').replace(/^\{\{[^}]+\}\}/, '').replace(/^[a-z]+:\/\/[^/]+/i, '').split('?')[0] || '/';
+    return `${req.method} ${path}`;
+  };
+
+  /**
+   * A collection (by id or name) and the folders of a path in it ("Orders/Admin"). With create,
+   * missing ones are made; without, the deepest existing folder is used (to inherit from).
+   * Returns { collection, parents, folder } or null when the collection doesn't exist.
+   */
+  function placeFor(collectionRef, folderPath, { create }) {
+    const ref = String(collectionRef || '').trim();
+    let c = S.ws.collections.find((x) => x.id === ref) || S.ws.collections.find((x) => x.name.toLowerCase() === ref.toLowerCase());
+    if (!c) {
+      if (!create) return null;
+      c = HD.newCollection(ref);
+      S.ws.collections.push(c);
+    }
+    const parents = [];
+    let items = c.items;
+    for (const name of String(folderPath || '').split('/').map((x) => x.trim()).filter(Boolean)) {
+      let folder = items.find((x) => x.type === 'folder' && x.name.toLowerCase() === name.toLowerCase());
+      if (!folder) {
+        if (!create) break;
+        folder = HD.newFolder(name);
+        items.push(folder);
+      }
+      parents.push(folder);
+      items = folder.items;
+    }
+    return { collection: c, parents, folder: parents[parents.length - 1] || null };
+  }
+
+  /**
+   * Keeps a request an agent sent: in its collection and folder (made when missing), updating the
+   * one with the same method and URL there, with the response as an example and the tag "ai".
+   */
+  function keep(req, result, body, name) {
+    const res = result.response;
+    const failedTests = (result.tests || []).some((t) => !t.passed && !t.skipped);
+    const ok = !!res && res.status < 400 && !result.error && !failedTests;
+    if ((body.saveIf || 'success') !== 'always' && !ok) {
+      const why = result.error ? 'The request failed' : `It answered ${res ? res.status : 'nothing'}${failedTests ? ' with failed tests' : ''}`;
+      return { kept: false, reason: `${why}, so it was not saved (saveIf: "always", or --save-always, keeps it anyway)` };
+    }
+    const place = placeFor(body.collection || 'AI requests', body.folder, { create: true });
+    const items = place.folder ? place.folder.items : place.collection.items;
+    const same = items.find((x) => x.type === 'request' && String(x.request.method).toUpperCase() === req.method && x.request.url === req.url);
+    const item = same || HD.newRequestItem(name);
+    const tags = HD.normalizeTags([...(item.request.tags || []), ...(body.tags || []), 'ai']);
+    if (same) {
+      applyRequestFields(item.request, { ...body.request, tags });
+      if (body.name) item.name = String(body.name);
+    } else {
+      Object.assign(item.request, HD.clone(req));
+      item.request.tags = tags;
+      items.push(item);
+    }
+    if (res) {
+      // The answer it got, as an example (one per status: the newest replaces the last).
+      const label = `${res.status} ${res.statusText || ''}`.trim();
+      item.examples = (item.examples || []).filter((e) => e.name !== label);
+      item.examples.push({ id: HD.uid(), name: label, status: res.status, statusText: res.statusText, headers: res.headers, body: String(res.bodyText || '').slice(0, 256 * 1024), request: HD.clone(item.request) });
+    }
+    changed();
+    refreshTabs(item.id);
+    return {
+      kept: true, requestId: item.id, collectionId: place.collection.id, ...(place.folder ? { folderId: place.folder.id } : {}),
+      path: [place.collection, ...place.parents].map((p) => p.name).join(' / '), name: item.name, [same ? 'updated' : 'created']: true,
+    };
+  }
+
   const chainOf = (f) => (f ? [f.collection, ...f.parents] : []).map((n) => ({ id: n.id, name: n.name, auth: n.auth, preRequestScript: n.preRequestScript, testScript: n.testScript, dependency: n.dependency, health: n.health }));
   function scopesWith(collection, environmentId) {
     if (!environmentId) return HD.scopesFor(collection);
@@ -489,10 +562,19 @@
       if (body.show) show(requestId, result, 'body');
       return shape(result, body.maxBodyBytes);
     },
-    sendAdHoc: async ({ body }) => {
-      const req = applyRequestFields(HD.newRequestDef({ auth: { type: 'none' } }), body.request || {});
+    sendAdHoc: async ({ body }, ctx) => {
+      if (body.save && !(ctx && ctx.permissions && ctx.permissions.edit)) throw fail(403, 'Saving needs the "edit" permission, which is off in HttpDash (Settings → AI access); send without save, or ask for it to be turned on');
+      // Inside a collection (and folder), the request inherits their auth and auth dependency.
+      const place = body.collection ? placeFor(body.collection, body.folder, { create: false }) : null;
+      if (body.collection && !place && !body.save) throw notFound('collection', body.collection);
+      const req = applyRequestFields(HD.newRequestDef({ auth: { type: place ? 'inherit' : 'none' } }), body.request || {});
       if (!req.url) throw fail(400, 'The request needs a url');
-      return shape(await send({ request: req, f: null, environmentId: body.environmentId, name: 'Ad hoc request' }), body.maxBodyBytes);
+      const f = place ? { collection: place.collection, parents: place.parents, node: { id: undefined, request: req } } : null;
+      const name = body.name ? String(body.name) : defaultName(req);
+      const result = await send({ request: req, f, environmentId: body.environmentId, name });
+      const out = shape(result, body.maxBodyBytes);
+      if (body.save) out.saved = keep(req, result, body, name);
+      return out;
     },
     compareInstances: async ({ requestId, body }) => {
       const f = findRequest(requestId);

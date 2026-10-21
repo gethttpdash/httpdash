@@ -90,6 +90,7 @@ Run collections without opening the app, like Postman's Newman. The runner needs
 npm install -g github:gethttpdash/httpdash     # or, in a clone: npm run cli -- run …
 httpdash list backup.json
 httpdash run backup.json -c "Orders API" -e "Staging" --env-var password=$API_PASSWORD -r cli,junit
+httpdash send '{{orders_url}}/orders' -e Staging      # one request through the running app, like curl
 ```
 
 - **Input:** an HttpDash backup (**Export → HttpDash backup**, ideally with "Leave out secrets"), a Postman collection, or a `workspace.json`.
@@ -114,6 +115,20 @@ Turn it on in **Settings → AI access** and choose what agents may do: **Read**
 - **Claude Code:** `claude mcp add httpdash -- httpdash mcp` (with the CLI installed: `npm install -g github:gethttpdash/httpdash`)
 - **Claude Desktop:** add `{"mcpServers": {"httpdash": {"command": "httpdash", "args": ["mcp"]}}}` to `claude_desktop_config.json`
 - **Anything else:** the OpenAPI document is at `http://127.0.0.1:47823/openapi.json`; send `Authorization: Bearer <token>`.
+
+### Instead of curl: test an endpoint and keep it
+
+An agent (or you) can send through HttpDash rather than with curl, and keep what works:
+
+- **MCP / OpenAPI:** `sendAdHoc` with `collection` (and `folder`) runs the request inside that collection, so its auth and automatic login apply: leave `auth` out and it inherits them. With `save`, a request that succeeded (2xx or 3xx, no failed tests; `saveIf: "always"` keeps any) is kept there, with its response as an example and the tag `ai`. A request with the same method and URL in that folder is updated instead of duplicated; missing folders and the collection are created. Saving needs the **Edit** permission, and the answer says what was saved.
+- **Terminal:** `httpdash send` works like curl, through the running app:
+
+  ```bash
+  httpdash send '{{orders_url}}/orders/ORD-1001' -c "Orders API" --folder Orders --save -t smoke
+  httpdash send POST https://api.example.com/orders --json '{"qty":3}' -e Staging -i
+  ```
+
+  `-X`, `-H`, `-d` / `--json` (`@file` reads a file), `-e` for the environment, `-c` / `--folder` / `--save` / `--save-always` / `--name` / `-t` to keep it, `-i` for the status and headers, `-v` for timing, instance, health and network details, and `-f` to exit with 22 on a status of 400 or more. The body goes to stdout, so it pipes into `jq`.
 
 `httpdash mcp` finds the port and token by itself while the app runs. Start with `getStatus`; `sendRequest` sends a saved request; `startRun` then `getRun` runs the Runner; `getUiSnapshot`, `uiAction` and `takeScreenshot` work the screen.
 
@@ -488,6 +503,7 @@ src/core/      request engine (no Electron dependency, unit-tested)
   tunnels.js      SSH (ssh -D) and SOCKS5 tunnels, and which requests go through them
   traffic-report.js  traffic report as CSV, Excel, JSON, Markdown and HTML
   ai-api-spec.js  the AI agents' API (OpenAPI document); ai-server.js serves it, mcp.js bridges MCP
+  send-command.js httpdash send: a curl-like command through the running app
   postman.js      Postman / OpenAPI import and export
   curl.js         cURL parser
   codegen.js      code snippet generators

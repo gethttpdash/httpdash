@@ -178,4 +178,4 @@ function runStdio({ input = process.stdin, output = process.stdout, ...opts } = 
   });
 }
 
-module.exports = { createServer, runStdio, tools, defaultDataDir };
+module.exports = { createServer, runStdio, tools, defaultDataDir, request };

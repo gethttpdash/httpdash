@@ -10,6 +10,7 @@ Key facts:
 - Imports Postman collections (v2.0/v2.1), environments and globals, OpenAPI 3.0/3.1 and Swagger 2 (JSON or YAML), and cURL. Scripts use the Postman-compatible `pm` API in a QuickJS sandbox.
 - Command line: `npm install -g github:gethttpdash/httpdash`, then `httpdash run backup.json -e "Staging" -r cli,junit` (Newman-style options; `--tag`, `--socks5`; JUnit and JSON reports).
 - AI agents: with "AI access" turned on in Settings, the app serves an OpenAPI 3.1 document at `http://127.0.0.1:47823/openapi.json` (local only, bearer token), and `httpdash mcp` exposes the same operations to MCP clients such as Claude Code (`claude mcp add httpdash -- httpdash mcp`).
+- Instead of curl: `httpdash send [METHOD] <url> [-H ...] [-d|--json ...] [-e env] [-c collection --folder path --save]` sends through the running app (its environments, logins, cookies, certificates and tunnels) and can keep a request that works in a collection, with its response as an example. Over MCP, the `sendAdHoc` tool does the same with `collection`, `folder` and `save`.
 - Contact: contact.httpdash@gmail.com. Source: https://github.com/gethttpdash/httpdash
 
 ## Docs

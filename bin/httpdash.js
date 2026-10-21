@@ -25,6 +25,10 @@ const HELP = `HttpDash command-line runner
 Usage:
   httpdash run <file> [options]
   httpdash list <file>
+  httpdash send [METHOD] <url> [options]
+      Like curl, but through the HttpDash app on this computer: its environments, logins, cookies,
+      certificates and tunnels apply, and --save keeps a request that works in a collection.
+      See httpdash send --help.
   httpdash mcp [--port <n> --token <t>] [--data-dir <dir>]
       An MCP server (stdio) for AI agents such as Claude, controlling the HttpDash app on this computer.
       Turn on Settings → AI access in the app; the port and token are found automatically.
@@ -204,6 +208,12 @@ function junit(collectionName, summary) {
 
 async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err: (s) => process.stderr.write(`${s}\n`) }) {
   let tunnelManager = null; // the backup's tunnels, closed when the run ends
+  // A curl-like send through the running app (send-command.js).
+  if (argv[0] === 'send') {
+    const mcp = require('../src/core/mcp');
+    const { runSend, appCaller } = require('../src/core/send-command');
+    return runSend(argv.slice(1), { ...io, write: io.write || ((s) => process.stdout.write(s)) }, { call: appCaller({ dataDir: mcp.defaultDataDir(), request: mcp.request }) });
+  }
   // The MCP server speaks JSON-RPC on stdout until its client closes stdin.
   if (argv[0] === 'mcp') {
     const get = (name) => { const i = argv.indexOf(name); return i !== -1 ? argv[i + 1] : undefined; };

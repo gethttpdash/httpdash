@@ -215,7 +215,7 @@ function readJson(req) {
 function summarize(r) {
   if (!r || typeof r !== 'object') return '';
   if (Buffer.isBuffer(r.png)) return `screenshot ${r.width}×${r.height}`;
-  if (r.response && r.response.status) return `${r.response.status}${r.response.time != null ? ` in ${r.response.time} ms` : ''}`;
+  if (r.response && r.response.status) return `${r.response.status}${r.response.time != null ? ` in ${r.response.time} ms` : ''}${r.saved && r.saved.kept ? `, ${r.saved.created ? 'saved' : 'updated'} in ${r.saved.path}` : ''}`;
   if (r.runId) return `run ${r.state || ''}`.trim();
   if (Array.isArray(r.items)) return `${r.items.length} items`;
   if (Array.isArray(r.collections)) return `${r.collections.length} collections`;

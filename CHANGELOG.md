@@ -4,6 +4,15 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Test an endpoint like curl, and keep it:** for AI agents and the terminal.
+  - **AI API:** `sendAdHoc` can run a request inside a collection and folder (by name or id), so their auth and automatic login apply. With `save`, a request that succeeded is kept there:
+    - with its response as an example and the tag `ai`
+    - updating the request with the same method and URL instead of duplicating it
+    - creating missing folders and the collection
+    - `saveIf: "always"` keeps any answer; saving needs the Edit permission, and the AI access history says where it was saved.
+  - **`httpdash send`:** a curl-like command that sends through the running app, with its environments, logins, cookies, certificates and tunnels: `-X`, `-H`, `-d` / `--json` (with `@file`), `-e`, `-c` / `--folder` / `--save` / `--save-always` / `--name` / `-t`, `-i`, `-v` and `-f`. The body goes to stdout; what was saved goes to stderr.
+
 ## [1.6.0] - 2026-10-21
 
 ### Added
