@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-21
+
 ### Added
 - **Test an endpoint like curl, and keep it:** for AI agents and the terminal.
   - **AI API:** `sendAdHoc` can run a request inside a collection and folder (by name or id), so their auth and automatic login apply. With `save`, a request that succeeded is kept there:
@@ -135,7 +137,8 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.7.0
 [1.6.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.6.0
 [1.5.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.5.0
 [1.4.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.4.0
