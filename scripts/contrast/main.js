@@ -64,6 +64,12 @@ app.on('browser-window-created', (_e, win) => {
       if (!c.items.some((i) => i.name === 'audit-methods')) { c.items.push(...methods.map((m) => HD.newRequestItem(m.toLowerCase() + ' item', { method: m }))); c.items.push(HD.newRequestItem('ws item', HD.newWebSocketDef())); c.items.push({ ...HD.newFolder('audit-methods') }); }
       HD.S.ws.ui.sidebarTab = 'collections'; HD.S.ws.ui.expanded = HD.S.ws.ui.expanded || {}; HD.S.ws.ui.expanded[c.id] = true; HD.renderSidebar();`);
     await run('sidebar environments', `HD.S.ws.ui.sidebarTab = 'environments'; HD.renderSidebar();`);
+    // The top and bottom bars tinted with each environment color, and the environment page's swatches.
+    for (const color of ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray']) {
+      await run(`environment color ${color}`, `const env = HD.S.ws.environments[0]; env.color = '${color}'; HD.S.ws.activeEnvironmentId = env.id;
+        HD.openEnvironment(env.id); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab();`);
+    }
+    await run('environment color off', `const env = HD.S.ws.environments[0]; delete env.color; HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab();`);
     await run('sidebar history', `HD.S.ws.ui.sidebarTab = 'history'; HD.renderSidebar();`);
     await run('console', `HD.log('info', 'info line'); HD.log('warn', 'warn line'); HD.log('error', 'error line'); HD.log('net', 'GET x -> 200'); HD.log('log', 'script output'); HD.S.ws.ui.consoleOpen = false; HD.command('toggle-console');`);
     await run('websocket', `HD.command('toggle-console');

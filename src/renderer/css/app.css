@@ -960,3 +960,27 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 4px 2px 8px; border-radius: 99px; background: var(--bg-3); }
 .chip-x { border: 0; background: transparent; color: var(--text-2); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; }
 .text-ok { color: var(--ok); }
+
+/* Environment color: a faint tint of the active environment's color on the top and bottom bars */
+:root { --env-red: #dc2626; --env-orange: #ea580c; --env-yellow: #ca8a04; --env-green: #16a34a; --env-blue: #2563eb; --env-purple: #9333ea; --env-gray: #6b7280; --env-mix: 12%; }
+:root[data-theme="dark"] { --env-red: #f87171; --env-orange: #fb923c; --env-yellow: #facc15; --env-green: #4ade80; --env-blue: #60a5fa; --env-purple: #c084fc; --env-gray: #9ca3af; --env-mix: 16%; }
+:root[data-env-color="red"] { --env-tint: var(--env-red); }
+:root[data-env-color="orange"] { --env-tint: var(--env-orange); }
+:root[data-env-color="yellow"] { --env-tint: var(--env-yellow); }
+:root[data-env-color="green"] { --env-tint: var(--env-green); }
+:root[data-env-color="blue"] { --env-tint: var(--env-blue); }
+:root[data-env-color="purple"] { --env-tint: var(--env-purple); }
+:root[data-env-color="gray"] { --env-tint: var(--env-gray); }
+:root[data-env-color] #topbar, :root[data-env-color] #statusbar {
+  background: color-mix(in srgb, var(--env-tint) var(--env-mix), var(--bg-2));
+  border-color: color-mix(in srgb, var(--env-tint) 40%, var(--border));
+}
+.env-red { --dot: var(--env-red); } .env-orange { --dot: var(--env-orange); } .env-yellow { --dot: var(--env-yellow); } .env-green { --dot: var(--env-green); }
+.env-blue { --dot: var(--env-blue); } .env-purple { --dot: var(--env-purple); } .env-gray { --dot: var(--env-gray); } .env-none { --dot: transparent; }
+.env-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+#env-select .env-dot { margin-right: 6px; align-self: center; }
+.env-color-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 0; }
+.env-swatches { display: flex; gap: 6px; }
+.env-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--dot); cursor: pointer; padding: 0; }
+.env-swatch.env-none { background: linear-gradient(135deg, transparent 45%, var(--text-3) 45%, var(--text-3) 55%, transparent 55%); }
+.env-swatch.selected { outline: 2px solid var(--accent); outline-offset: 2px; }

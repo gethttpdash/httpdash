@@ -10,6 +10,7 @@
   const expanded = () => (S.ws.ui.expanded = S.ws.ui.expanded || {});
 
   HD.renderSidebar = () => {
+    if (HD.applyEnvColor) HD.applyEnvColor();
     const root = document.getElementById('sidebar');
     HD.clear(root);
     const tab = S.ws.ui.sidebarTab || 'collections';
@@ -243,6 +244,7 @@
         type: 'button', title: isActive ? 'Active environment' : 'Set as active',
         onclick: (e) => { e.stopPropagation(); S.ws.activeEnvironmentId = isActive ? null : env.id; HD.save(); HD.renderSidebar(); HD.renderEnvSelect(); HD.refreshVarHighlights(); },
       }, isActive ? HD.icon('check') : null),
+      HD.envDot(env),
       h('span.tree-name', env.name),
       teamBadge(env),
       h('span.muted.small', String(env.values.filter((v) => v.key).length)),

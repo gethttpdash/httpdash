@@ -109,6 +109,14 @@
           active ? h('span.pill', 'Active') : HD.button('Set active', () => { S.ws.activeEnvironmentId = env.id; touch(); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab(); }, { small: true }),
           HD.button('Export', () => window.api.exportEnvironment(env), { small: true, icon: 'upload' }))),
       HD.discoveryBannerFor(env),
+      h('div.panel-pad.env-color-row',
+        h('span.small', 'Color'),
+        h('div.env-swatches', { role: 'radiogroup', 'aria-label': 'Environment color' }, HD.ENV_COLORS.map(([c, label]) => h(`button.env-swatch.env-${c || 'none'}`, {
+          type: 'button', role: 'radio', title: label, 'aria-label': label, 'aria-checked': String((env.color || '') === c),
+          class: (env.color || '') === c ? 'selected' : '',
+          onclick: () => { if (c) env.color = c; else delete env.color; touch(); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab(); },
+        }))),
+        h('span.muted.small', 'While this environment is active, the top and bottom bars take a faint tint of it. Red for production is a good habit.')),
       h('div.panel-pad', h('div.muted.small', 'Reference variables with {{name}} in URLs, headers, bodies and auth fields. Mark sensitive values as "secret" to mask them.')),
       HD.kvTable({ rows: env.values, secret: true, onChange: () => { touch(); HD.refreshVarHighlights(); } })));
   };

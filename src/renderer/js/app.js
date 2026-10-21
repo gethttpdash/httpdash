@@ -218,9 +218,23 @@
 
   // ---- Top bar ------------------------------------------------------------------------------
 
+  // An environment can have a color: the top bar and the status bar take a faint tint of the active
+  // one's, so it's clear at a glance which environment requests go to (red for production, say).
+  HD.ENV_COLORS = [['', 'None'], ['red', 'Red'], ['orange', 'Orange'], ['yellow', 'Yellow'], ['green', 'Green'], ['blue', 'Blue'], ['purple', 'Purple'], ['gray', 'Gray']];
+  HD.applyEnvColor = () => {
+    const env = HD.activeEnvironment();
+    const color = env && env.color && HD.ENV_COLORS.some(([c]) => c === env.color) ? env.color : '';
+    if (color) document.documentElement.dataset.envColor = color;
+    else delete document.documentElement.dataset.envColor;
+  };
+  HD.envDot = (env) => (env && env.color ? h(`span.env-dot.env-${env.color}`, { title: `${env.name}: ${env.color}` }) : null);
+
   HD.renderEnvSelect = () => {
     const host = document.getElementById('env-select');
     HD.clear(host);
+    HD.applyEnvColor();
+    const dot = HD.envDot(HD.activeEnvironment());
+    if (dot) host.appendChild(dot);
     host.appendChild(HD.select([['', 'No Environment'], ...S.ws.environments.map((e) => [e.id, e.name])], S.ws.activeEnvironmentId || '', (v) => {
       S.ws.activeEnvironmentId = v || null;
       HD.save();

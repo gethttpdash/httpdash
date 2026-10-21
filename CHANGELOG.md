@@ -5,6 +5,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Environment colors:** give an environment a color (red for production is a good habit) and, while it's active, the top and bottom bars take a faint tint of it, with a matching dot by the environment picker and in the list. Every color keeps text at WCAG AA contrast in both themes.
 - **Compare instances:** when a request's URL uses a service from service discovery with two or more healthy instances, **Compare** next to Send sends it to every instance at once and compares their answers: status, headers and every field of a JSON body. The instance that answers differently from the rest is named, with each difference (say, `X-Version` 2.3.0 where the others say 2.4.1, or a missing `qty`), so a pod left on an old release, a stale cache or a config difference shows up in one click. Values that differ on every instance by nature (ids, timestamps, the instance's own name) are set apart, and can be ignored for the request with one click (`items[*].updatedAt` covers every item). Headers that always vary, such as `Date` or request ids, are ignored. Each instance's status, time and test results are listed, and **Show** opens any instance's full answer. The same payload goes to every instance; a POST, PUT, PATCH or DELETE asks first, as it runs once per instance. Variables changed by scripts are not kept, except a token saved by an auth dependency, which logs in once.
 
 ### Changed
