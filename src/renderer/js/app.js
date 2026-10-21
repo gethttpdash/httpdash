@@ -83,8 +83,14 @@
     const def = HD.newRequestDef({ auth: { type: 'none' }, ...(request || {}) });
     // A URL with a query string fills the Params table, as typing it would.
     if (def.url && !(def.params && def.params.length) && !HD.isWebSocket(def)) HD.syncParamsFromUrl(def);
+    // Where it will be saved, suggested: the folder (or collection) of what you were working in.
+    const cur = HD.currentTab();
+    const at = cur && cur.refId ? HD.find(cur.refId) : null;
+    let saveTo = null;
+    if (at && at.node.type === 'request') saveTo = { collectionId: at.collection.id, folderId: at.parents.length ? at.parents[at.parents.length - 1].id : null };
+    else if (at && (at.node.type === 'folder' || at.node.type === 'collection')) saveTo = { collectionId: at.collection.id, folderId: at.node.type === 'folder' ? at.node.id : null };
     // A preview (of a history entry) isn't an unsaved change: history still has it.
-    return addTab({ id: HD.uid(), kind: 'request', refId: null, draft: { name: name || 'Untitled Request', request: def }, dirty: !!request && !opts.preview, ui: {} }, opts);
+    return addTab({ id: HD.uid(), kind: 'request', refId: null, draft: { name: name || 'Untitled Request', request: def }, dirty: !!request && !opts.preview, ui: {}, ...(saveTo ? { saveTo } : {}) }, opts);
   };
 
   HD.openContainer = (id, sub, opts = {}) => {
@@ -170,13 +176,14 @@
     if (!tab || tab.kind !== 'request') return true;
     let found = HD.find(tab.refId);
     if (!found) {
-      const loc = await HD.pickLocation('Save request', tab.draft.name);
+      const loc = await HD.pickLocation('Save request', tab.draft.name, tab.saveTo);
       if (!loc) return false;
       const item = HD.newRequestItem(loc.name, HD.clone(tab.draft.request));
       const parent = HD.find(loc.folderId || loc.collectionId).node;
       parent.items.push(item);
       (S.ws.ui.expanded = S.ws.ui.expanded || {})[parent.id] = true;
       tab.refId = item.id;
+      delete tab.saveTo;
       tab.draft.name = loc.name;
       found = HD.find(item.id);
     } else {

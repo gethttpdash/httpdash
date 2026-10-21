@@ -133,6 +133,15 @@
       oninput: (e) => { draft.name = e.target.value; markDirty(); },
     });
     const examples = ctx.found && ctx.found.node.examples ? ctx.found.node.examples : [];
+    // A request that isn't in a collection yet says so, and where Save will suggest keeping it.
+    const unsavedNote = () => {
+      if (ctx.found) return null;
+      const to = tab.saveTo && HD.find(tab.saveTo.folderId || tab.saveTo.collectionId);
+      const where = to ? [to.collection, ...to.parents, ...(to.node.type === 'folder' ? [to.node] : [])].map((n) => n.name).join(' / ') : '';
+      return h('span.unsaved-note', 'Not saved yet · ',
+        h('a', { href: '#', onclick: (e) => { e.preventDefault(); HD.saveTab(tab); } }, 'Save…'),
+        where ? ` puts it in ${where}` : ' to choose a collection');
+    };
     // Versions: the button (with how many) and which version the editor holds, refreshed after a send.
     const versionChip = h('span.version-chip-host');
     const versionsHost = h('span.versions-host');
@@ -145,7 +154,7 @@
       if (list.length) versionsHost.appendChild(HD.button(`Versions (${list.length})`, (e) => HD.versionsMenu(e, tab), { ghost: true, small: true, icon: 'history', title: 'Switch to another version you sent, with its response' }));
     };
     const header = h('div.req-header',
-      h('div.breadcrumb', crumbs.map((c) => h('span.crumb', c)), nameInput, versionChip),
+      h('div.breadcrumb', crumbs.map((c) => h('span.crumb', c)), nameInput, versionChip, unsavedNote()),
       h('div.req-header-actions',
         versionsHost,
         examples.length ? HD.button(`Examples (${examples.length})`, (e) => HD.menu(e, examples.map((ex) => ({

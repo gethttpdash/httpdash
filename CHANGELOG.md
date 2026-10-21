@@ -9,6 +9,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - an edit, a send or a save
   - a double-click on the tab or on the item in the sidebar
   - **Keep open** in the tab's menu.
+- **Where a new request goes:** a request that isn't in a collection yet says so in its header ("Not saved yet · Save… puts it in Orders API / Orders"). Save suggests the folder you were working in when you opened it, instead of the first collection.
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed

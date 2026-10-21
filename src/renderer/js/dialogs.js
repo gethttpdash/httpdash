@@ -146,7 +146,8 @@
   // ---- Save as ------------------------------------------------------------------------------
 
   // Resolves to { collectionId, folderId, name } or null.
-  HD.pickLocation = (title, name) => new Promise((resolve) => {
+  // preselect: { collectionId, folderId } to suggest (where the request was opened from).
+  HD.pickLocation = (title, name, preselect) => new Promise((resolve) => {
     let done = false;
     let selected = null;
     const nameInput = h('input.input', { value: name || '' });
@@ -164,7 +165,10 @@
       };
       S.ws.collections.forEach((c) => row(c, 0, c.id));
     };
-    if (S.ws.collections[0]) selected = { id: S.ws.collections[0].id, collectionId: S.ws.collections[0].id, folderId: null };
+    const pre = preselect && S.ws.collections.find((c) => c.id === preselect.collectionId);
+    const preFolder = pre && preselect.folderId ? HD.find(preselect.folderId) : null;
+    if (pre) selected = preFolder && preFolder.node.type === 'folder' ? { id: preFolder.node.id, collectionId: pre.id, folderId: preFolder.node.id } : { id: pre.id, collectionId: pre.id, folderId: null };
+    else if (S.ws.collections[0]) selected = { id: S.ws.collections[0].id, collectionId: S.ws.collections[0].id, folderId: null };
     renderTree();
     HD.modal({
       title,

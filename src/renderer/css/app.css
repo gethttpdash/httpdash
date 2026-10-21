@@ -1096,6 +1096,8 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; }
 .tree-tags .tree-tag { flex: none; }
 .tree-unsaved { margin-top: 10px; padding: 8px 12px 4px; }
+.unsaved-note { font-size: 12px; color: var(--text-3); white-space: nowrap; margin-left: 10px; }
+.unsaved-note a { color: var(--accent-text); }
 .tree-row .tree-name { min-width: 48px; }
 .tree-tag { font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-tag.more { background: var(--bg-3); color: var(--text-2); }
