@@ -30,11 +30,11 @@
    */
   // A request as its open tab shows it: unsaved edits (a new tag, a new name) count right away.
   HD.liveItem = (item) => {
-    const tab = item && S.ws.tabs.find((t) => t.kind === 'request' && t.refId === item.id && t.dirty && t.draft);
+    const tab = item && (S.ws.tabs || []).find((t) => t.kind === 'request' && t.refId === item.id && t.dirty && t.draft);
     return tab ? { ...item, name: tab.draft.name, request: tab.draft.request } : item;
   };
   // Open tabs whose request isn't saved anywhere (new ones, history copies), as search sees them.
-  HD.unsavedTabItems = () => S.ws.tabs.filter((t) => t.kind === 'request' && !t.refId && t.draft)
+  HD.unsavedTabItems = () => (S.ws.tabs || []).filter((t) => t.kind === 'request' && !t.refId && t.draft)
     .map((t) => ({ id: t.id, type: 'request', name: t.draft.name, request: t.draft.request, tabId: t.id }));
 
   HD.requestCatalog = () => {

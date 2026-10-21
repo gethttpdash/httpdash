@@ -44,3 +44,23 @@ test('tags are trimmed, comma-free, unique ignoring case, short and few', () => 
   assert.deepStrictEqual(normalizeTags([' smoke ', 'Smoke', 'a,b', '', 'x'.repeat(50)]), ['smoke', 'a b', 'x'.repeat(40)]);
   assert.strictEqual(normalizeTags(Array.from({ length: 30 }, (_, i) => `t${i}`)).length, 20);
 });
+
+test('what is typed in an open tab counts before it is saved', () => {
+  const { liveItem } = global.HD;
+  list.id = 'list';
+  ws.tabs = [
+    // An edited, unsaved tab of a saved request: its new tag is found.
+    { kind: 'request', refId: 'list', dirty: true, draft: { name: 'List orders', request: { method: 'GET', url: '{{orders_url}}/orders', tags: ['orders', 'smoke', 'cli'] } } },
+    // A tab that isn't saved anywhere (a history copy).
+    { id: 't2', kind: 'request', refId: null, draft: { name: 'GET /lots (AI)', request: { method: 'GET', url: '{{mes_url}}/lots', tags: ['erp'] } } },
+  ];
+  try {
+    assert.ok(matchRequest(liveItem(list), { tokens: [{ kind: 'tag', value: 'cli' }] }));
+    assert.ok(!matchRequest(list, { tokens: [{ kind: 'tag', value: 'cli' }] }), 'the saved request itself has no such tag yet');
+    const tags = requestCatalog().tags.map((t) => t.value);
+    assert.ok(tags.includes('cli') && tags.includes('erp'));
+    assert.deepStrictEqual(global.HD.unsavedTabItems().map((x) => x.name), ['GET /lots (AI)']);
+  } finally {
+    delete ws.tabs;
+  }
+});
