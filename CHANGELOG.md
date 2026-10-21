@@ -4,6 +4,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-21
+
 ### Added
 - **Where a request went on the network:** the Timeline has a **Network** section showing:
   - the host's alias chain (CNAME)
@@ -110,7 +112,8 @@ First release.
 - `httpdash --version` in the command-line runner.
 - MIT license, contributing guide, security policy, code of conduct, and issue and pull request templates.
 
-[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/gethttpdash/httpdash/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.5.0
 [1.4.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.4.0
 [1.3.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.3.0
 [1.2.0]: https://github.com/gethttpdash/httpdash/releases/tag/v1.2.0

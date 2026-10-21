@@ -26,6 +26,8 @@
   const own = (a) => (a && a.ownSegment ? h('span.pill.net-own', { title: `On this computer's own segment: ${a.ownSegment.cidr} on ${a.ownSegment.adapter}` }, `your segment · ${a.ownSegment.adapter}`) : null);
   const ttl = (s) => (s == null ? null : h('span.muted.small', { title: 'How long DNS lets this answer be cached' }, `TTL ${s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`}`));
 
+  HD.traceRoute = (args) => window.api.traceRoute(args);
+
   const row = (label, ...content) => h('div.net-row', h('div.net-label', label), h('div.net-value', ...content));
 
   /** net: the `network` of a request's result. */
@@ -71,7 +73,7 @@
       const run = async () => {
         HD.clear(route).appendChild(h('div.runner-progress', h('div.spinner.small'), `Tracing the route to ${host}… (up to a minute)`));
         try {
-          const hops = await window.api.traceRoute({ host });
+          const hops = await HD.traceRoute({ host });
           HD.clear(route).appendChild(hops.length ? h('div.table-wrap.no-pad', h('table.data-table.net-hops',
             h('thead', h('tr', h('th.num', 'Hop'), h('th', 'Address'), h('th', 'Segment'), h('th', 'Kind'), h('th.num', 'Time'))),
             h('tbody', hops.map((x) => h('tr',
