@@ -299,7 +299,7 @@ p { margin: 0; }
   .terminal pre { font-size: 12.5px; padding: 16px; }
   .footer-copy { margin-left: 0; width: 100%; }
   .support { padding: 28px 20px; }
-  .hero-dot { width: 22px; }
+  .hero-dot { width: 20px; }
   .hero-dot[aria-current="true"]::before { width: 16px; }
   .partners, .partners-4, .partners-2 { grid-template-columns: minmax(0, 1fr); }
   .partner-strip ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

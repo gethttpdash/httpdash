@@ -105,8 +105,8 @@
           h('span.field-help', 'One per line: a name with * wildcards, or an address range such as 10.42.0.0/16. Service discovery, OAuth and imports to these hosts go through it too.')),
         h('div.button-row.tunnel-actions',
           HD.button(t.type === 'ssh' ? 'Open' : 'Check', test, { small: true, icon: 'play' }),
-          target, h('span.muted.small', 'optional: a host:port to reach through it'),
-          t.type === 'ssh' ? HD.button('Close', async () => { status = await window.api.stopTunnel({ id: t.id }); results.delete(t.id); drawStatus(); }, { small: true, ghost: true }) : null),
+          t.type === 'ssh' ? HD.button('Close', async () => { status = await window.api.stopTunnel({ id: t.id }); results.delete(t.id); drawStatus(); }, { small: true, ghost: true }) : null,
+          target, h('span.muted.small', 'optional: a host:port to reach through it')),
         statusEl));
       drawStatus();
     }
