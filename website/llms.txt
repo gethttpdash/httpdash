@@ -1,0 +1,43 @@
+# HttpDash
+
+> HttpDash is a free, source-available desktop API client for Windows, macOS and Linux. It sends HTTP requests, runs Postman collections and their scripts, tests, mocks and monitors APIs, and keeps everything on the user's own machine, with no account and no cloud sync. It is built for microservice APIs: it logs in for you when a token is missing or expired, builds environments from service registries, compares every instance of a service, reads a service's health while a request runs, traces where each request went on the network, and tunnels into private networks through SSH or SOCKS5.
+
+Key facts:
+
+- Latest version: 1.6.0. Download: https://github.com/gethttpdash/httpdash/releases/latest (installers for Windows x64/ARM64, macOS Apple Silicon/Intel, Linux AppImage and .deb).
+- Price: free to use. License: Functional Source License 1.1 with an Apache 2.0 future license (FSL-1.1-ALv2); each version also becomes Apache 2.0 two years after release. Versions 1.2.0 and earlier are MIT.
+- Built with Electron and plain JavaScript. Data is stored as JSON on the user's computer. No sign-in.
+- Imports Postman collections (v2.0/v2.1), environments and globals, OpenAPI 3.0/3.1 and Swagger 2 (JSON or YAML), and cURL. Scripts use the Postman-compatible `pm` API in a QuickJS sandbox.
+- Command line: `npm install -g github:gethttpdash/httpdash`, then `httpdash run backup.json -e "Staging" -r cli,junit` (Newman-style options; `--tag`, `--socks5`; JUnit and JSON reports).
+- AI agents: with Settings → AI access turned on, the app serves an OpenAPI 3.1 document at `http://127.0.0.1:47823/openapi.json` (local only, bearer token), and `httpdash mcp` exposes the same operations to MCP clients such as Claude Code (`claude mcp add httpdash -- httpdash mcp`).
+- Contact: contact.httpdash@gmail.com. Source: https://github.com/gethttpdash/httpdash
+
+## Docs
+
+- [README](https://raw.githubusercontent.com/gethttpdash/httpdash/main/README.md): every feature in detail, how to run and build it, the CLI, AI access, team sharing, discovery, health, network trace, tunnels and the source layout
+- [Changelog](https://raw.githubusercontent.com/gethttpdash/httpdash/main/CHANGELOG.md): what changed in each version
+- [Security policy](https://raw.githubusercontent.com/gethttpdash/httpdash/main/SECURITY.md): how scripts are sandboxed and how to report a vulnerability
+- [Contributing](https://raw.githubusercontent.com/gethttpdash/httpdash/main/CONTRIBUTING.md): how to work on HttpDash
+- [License](https://raw.githubusercontent.com/gethttpdash/httpdash/main/LICENSE): FSL-1.1-ALv2
+
+## Features
+
+- [Auth dependencies](https://github.com/gethttpdash/httpdash#auth-dependencies-auto-refresh-tokens): run a login request first when the token is missing or expired, save the token, retry once on 401
+- [Service discovery](https://github.com/gethttpdash/httpdash#service-discovery-auto-create-environments): environments from Consul, Eureka, Kubernetes, custom JSON or an OpenAPI document (with versioned sync); load balancing and traffic by instance, payload and network segment
+- [Compare instances](https://github.com/gethttpdash/httpdash#compare-instances): send one request to every instance of a service (from the registry or DNS) and see which answered differently
+- [Health while it runs](https://github.com/gethttpdash/httpdash#health-while-it-runs-profiling): read a health endpoint before, during and after each request
+- [Network trace](https://github.com/gethttpdash/httpdash#where-a-request-went-on-the-network): resolved addresses, octets and segments, reverse DNS, local adapter, split DNS, traceroute
+- [Tunnels](https://github.com/gethttpdash/httpdash#tunnels-into-internal-networks): SSH jump hosts (the system's ssh -D) and SOCKS5 proxies, per host or per environment
+- [Request versions and spec warnings](https://github.com/gethttpdash/httpdash#request-versions-and-spec-warnings) and [tags and search](https://github.com/gethttpdash/httpdash#tags-and-search)
+- [AI agents](https://github.com/gethttpdash/httpdash#ai-agents-openapi-and-mcp): 30 operations through OpenAPI or MCP, with permissions and an access history
+- [Command-line runner](https://github.com/gethttpdash/httpdash#command-line-runner-ci-and-schedulers), [monitors](https://github.com/gethttpdash/httpdash#monitors), [mock server](https://github.com/gethttpdash/httpdash#mock-server), [team sharing through git](https://github.com/gethttpdash/httpdash#team-sharing-through-git), [WebSocket](https://github.com/gethttpdash/httpdash#websocket-requests), [Server-Sent Events](https://github.com/gethttpdash/httpdash#streaming-responses-server-sent-events), [client certificates](https://github.com/gethttpdash/httpdash#client-certificates-and-custom-cas), [LDAP app lock](https://github.com/gethttpdash/httpdash#app-lock-with-ldap-sign-in)
+
+## Website
+
+- [Home](https://httpdash.com/): what HttpDash does, the benchmark (500 requests with scripts in 0.32 s, about 16 times faster than Postman's Newman), and downloads
+- [Sponsors and partners](https://httpdash.com/sponsors.html): sponsors, partners and how to support HttpDash
+
+## Optional
+
+- [Releases](https://github.com/gethttpdash/httpdash/releases): every version with its installers
+- [Benchmark script](https://github.com/gethttpdash/httpdash/blob/main/bench/run.js): compares HttpDash's runner with Newman and Bruno (`npm run bench`)

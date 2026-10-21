@@ -44,7 +44,20 @@
       for (const el of slides) {
         const on = Number(el.dataset.slide) === current;
         el.classList.toggle('is-active', on);
-        if (on) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden', 'true');
+        // The message shown is real text; the others are drawn from data-text by CSS.
+        el.classList.toggle('gen', !on);
+        if (on) {
+          el.removeAttribute('aria-hidden');
+          if (el.classList.contains('hero-phrase')) {
+            const accent = document.createElement('span');
+            accent.className = 'accent';
+            accent.textContent = el.dataset.text;
+            el.replaceChildren(accent, '.');
+          } else el.textContent = el.dataset.text;
+        } else {
+          el.setAttribute('aria-hidden', 'true');
+          el.textContent = '';
+        }
       }
       dots.forEach((d, n) => { if (n === current) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
     };

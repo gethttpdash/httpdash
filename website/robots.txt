@@ -1,0 +1,6 @@
+# httpdash.com: everyone, including AI crawlers, is welcome.
+User-agent: *
+Allow: /
+Disallow: /oauth/
+
+Sitemap: https://httpdash.com/sitemap.xml

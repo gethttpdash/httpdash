@@ -3,20 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HttpDash: the desktop API client that logs in for you</title>
-  <meta name="description" content="HttpDash is a free, source-available desktop API client for Windows, macOS and Linux. Send requests, write tests, run collections, mock and monitor APIs. Tokens refresh themselves, environments build themselves from your service registry, and your data stays on your machine.">
+  <title>HttpDash: the free API client that logs in for you</title>
+  <meta name="description" content="Free, source-available API client for Windows, macOS and Linux. Logs in for you, compares service instances, traces requests and tunnels into private networks.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#e8590c">
   <link rel="canonical" href="https://httpdash.com/">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://httpdash.com/">
-  <meta property="og:title" content="HttpDash: the desktop API client that logs in for you">
-  <meta property="og:description" content="Send requests, test, mock and monitor APIs from your desktop. Tokens refresh themselves and your data stays on your machine.">
-  <meta property="og:image" content="https://httpdash.com/assets/hero.webp">
+  <meta property="og:title" content="HttpDash: the free API client that logs in for you">
+  <meta property="og:description" content="Free, source-available API client for Windows, macOS and Linux. Logs in for you, compares service instances, traces requests and tunnels into private networks.">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="HttpDash: the API client that logs in for you. Free for Windows, macOS and Linux.">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HttpDash: the free API client that logs in for you">
+  <meta name="twitter:description" content="Free, source-available API client for Windows, macOS and Linux. Logs in for you, compares service instances, traces requests and tunnels into private networks.">
+  <meta name="twitter:image" content="https://httpdash.com/assets/og.jpg">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://httpdash.com/#org","name":"HttpDash","url":"https://httpdash.com/","logo":"https://httpdash.com/assets/logo.png","email":"contact.httpdash@gmail.com","sameAs":["https://github.com/gethttpdash/httpdash"]},{"@type":"WebSite","@id":"https://httpdash.com/#site","name":"HttpDash","url":"https://httpdash.com/","publisher":{"@id":"https://httpdash.com/#org"},"inLanguage":"en"},{"@type":"SoftwareApplication","@id":"https://httpdash.com/#app","name":"HttpDash","url":"https://httpdash.com/","description":"A free, source-available desktop API client: send requests, write tests, run collections, mock and monitor APIs. It refreshes expired tokens on its own, builds environments from service registries, compares service instances, reads health and traces the network path of each request, and tunnels into private networks.","applicationCategory":"DeveloperApplication","applicationSubCategory":"API client","operatingSystem":"Windows 10, Windows 11, macOS, Linux","softwareVersion":"1.6.0","downloadUrl":"https://github.com/gethttpdash/httpdash/releases/latest","license":"https://github.com/gethttpdash/httpdash/blob/main/LICENSE","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"screenshot":["https://httpdash.com/assets/compare.webp","https://httpdash.com/assets/health.webp","https://httpdash.com/assets/network.webp","https://httpdash.com/assets/tunnels.webp"],"featureList":["Auth dependencies that refresh tokens","Service discovery from Consul, Eureka, Kubernetes and OpenAPI","Compare every instance of a service","Health while a request runs","Network trace with segments and traceroute","SSH and SOCKS5 tunnels","Collection runner and CLI","AI agents through OpenAPI and MCP","Mock servers and monitors","Team sharing through git"],"publisher":{"@id":"https://httpdash.com/#org"}}]}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -48,36 +59,36 @@
           <div class="hero-carousel" role="region" aria-roledescription="carousel" aria-label="What HttpDash does">
             <div class="hero-messages" aria-live="off">
               <h1>The API client that <span class="hero-rotator">
-                <span class="hero-slide is-active" data-slide="0"><span class="accent">logs in for you</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="1"><span class="accent">works as one tool instead of four</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="2"><span class="accent">compares instances</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="3"><span class="accent">works with your AI</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="4"><span class="accent">needs no extra AI</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="5"><span class="accent">finds any request</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="6"><span class="accent">runs what you tag</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="7"><span class="accent">finds the slow pod</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="8"><span class="accent">profiles the server</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="9"><span class="accent">traces every hop</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="10"><span class="accent">tunnels in, no VPN</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="11"><span class="accent">makes JSON a table</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="12"><span class="accent">keeps your history</span>.</span>
-                <span class="hero-slide" aria-hidden="true" data-slide="13"><span class="accent">runs 16× faster</span>.</span>
+                <span class="hero-slide hero-phrase is-active" data-slide="0" data-text="logs in for you"><span class="accent">logs in for you</span>.</span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="1" data-text="works as one tool instead of four"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="2" data-text="compares instances"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="3" data-text="works with your AI"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="4" data-text="needs no extra AI"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="5" data-text="finds any request"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="6" data-text="runs what you tag"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="7" data-text="finds the slow pod"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="8" data-text="profiles the server"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="9" data-text="traces every hop"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="10" data-text="tunnels in, no VPN"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="11" data-text="makes JSON a table"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="12" data-text="keeps your history"></span>
+                <span class="hero-slide hero-phrase gen" aria-hidden="true" data-slide="13" data-text="runs 16× faster"></span>
               </span></h1>
               <div class="hero-rotator hero-leads">
-                <p class="lead hero-slide is-active" data-slide="0">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, so you never paste a token again.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="1">An API client, a service-discovery console, a network toolkit and a tunnel into your private network, in one app that shares your requests and environments.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="2">Send one request to every instance behind a service, found in Consul, Eureka, Kubernetes or DNS, and see which one answered differently: an old release, a missing field, a stale cache.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="3">Claude and other AI agents can search, send, edit and run your requests through OpenAPI or MCP, on your own computer, with permissions you set and a history of every call.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="4">Logins, instance comparisons, slow-pod flags and spec warnings all work on their own, on your machine. No AI subscription, and nothing sent to a model.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="5">Type a few letters and pick from every name, URL, method and tag in your workspace, grouped and most used first. No need to remember what you called it.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="6">Give requests as many tags as you like, suggested as you type. Filter by them, pick what a run includes by them, and run only #smoke in CI with --tag.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="7">Spread requests across every instance and payload, and HttpDash counts what each one answers: p50, p95 and errors, with the slow and failing ones flagged as they happen.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="8">Read a service's health endpoint before, during and after each request, and see what moved while it answered: connections, queues, a pool filling up.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="9">Every address a name resolves to, the one it went to split into octets with its segment, the adapter it left from, and each router on the way.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="10">Reach services on a private network through an SSH jump host or a SOCKS5 proxy. Names resolve on the far side, and discovery, runs and monitors go through it too.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="11">Read any JSON array as a sortable table, open nested objects and lists in place, and export what you see to Excel, CSV or an image to share it.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="12">Every request you send is in History, by day, and each one keeps its versions with their responses, so you can switch back in a click. When the API's spec moves on, HttpDash tells you.</p>
-                <p class="lead hero-slide" aria-hidden="true" data-slide="13">500 requests with scripts and tests in 0.32 seconds, 16 times faster than Postman's runner. No account, no cloud sync, nothing between you and your first request.</p>
+                <p class="lead hero-slide is-active" data-slide="0" data-text="Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, so you never paste a token again.">Send requests, write tests, run collections, mock and monitor APIs. HttpDash refreshes expired tokens before your request goes out, so you never paste a token again.</p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="1" data-text="An API client, a service-discovery console, a network toolkit and a tunnel into your private network, in one app that shares your requests and environments."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="2" data-text="Send one request to every instance behind a service, found in Consul, Eureka, Kubernetes or DNS, and see which one answered differently: an old release, a missing field, a stale cache."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="3" data-text="Claude and other AI agents can search, send, edit and run your requests through OpenAPI or MCP, on your own computer, with permissions you set and a history of every call."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="4" data-text="Logins, instance comparisons, slow-pod flags and spec warnings all work on their own, on your machine. No AI subscription, and nothing sent to a model."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="5" data-text="Type a few letters and pick from every name, URL, method and tag in your workspace, grouped and most used first. No need to remember what you called it."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="6" data-text="Give requests as many tags as you like, suggested as you type. Filter by them, pick what a run includes by them, and run only #smoke in CI with --tag."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="7" data-text="Spread requests across every instance and payload, and HttpDash counts what each one answers: p50, p95 and errors, with the slow and failing ones flagged as they happen."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="8" data-text="Read a service&#x27;s health endpoint before, during and after each request, and see what moved while it answered: connections, queues, a pool filling up."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="9" data-text="Every address a name resolves to, the one it went to split into octets with its segment, the adapter it left from, and each router on the way."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="10" data-text="Reach services on a private network through an SSH jump host or a SOCKS5 proxy. Names resolve on the far side, and discovery, runs and monitors go through it too."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="11" data-text="Read any JSON array as a sortable table, open nested objects and lists in place, and export what you see to Excel, CSV or an image to share it."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="12" data-text="Every request you send is in History, by day, and each one keeps its versions with their responses, so you can switch back in a click. When the API&#x27;s spec moves on, HttpDash tells you."></p>
+                <p class="lead hero-slide gen" aria-hidden="true" data-slide="13" data-text="500 requests with scripts and tests in 0.32 seconds, 16 times faster than Postman&#x27;s runner. No account, no cloud sync, nothing between you and your first request."></p>
               </div>
             </div>
             <div class="hero-controls" hidden>
@@ -109,7 +120,7 @@
         <figure class="hero-shot">
           <div class="window">
             <div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div>
-            <img src="assets/hero.webp" width="1140" height="538" alt="HttpDash sending a request. A banner reads: Ran Get access token first (token missing), 200 OK, saved token.">
+            <img src="assets/hero.webp" width="1140" height="538" fetchpriority="high" alt="HttpDash sending a request. A banner reads: Ran Get access token first (token missing), 200 OK, saved token.">
           </div>
           <figcaption>The login ran on its own because the token was missing, then the request went through.</figcaption>
         </figure>
@@ -221,7 +232,7 @@
               <li>Works the same in the runner, monitors and the CLI</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/auth-dependency.webp" width="1440" height="873" loading="lazy" alt="Auth dependency settings: run Get access token first when the token is missing or expired, save the token from data.access_token."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/auth-dependency.webp" width="1440" height="873" loading="lazy" decoding="async" alt="Auth dependency settings: run Get access token first when the token is missing or expired, save the token from data.access_token."></div></figure>
         </article>
 
         <article class="feature">
@@ -236,7 +247,7 @@
               <li>Each new version of the spec is compared with the last: review what changed, then apply it, with your own edits kept</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/discovery.webp" width="1440" height="873" loading="lazy" alt="Service discovery preview listing four services from Consul with their variables and URLs."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/discovery.webp" width="1440" height="873" loading="lazy" decoding="async" alt="Service discovery preview listing four services from Consul with their variables and URLs."></div></figure>
         </article>
 
         <article class="feature">
@@ -251,7 +262,7 @@
               <li>Export the report to Excel, CSV, PDF, an image or Markdown</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/traffic.webp" width="2880" height="1736" loading="lazy" alt="Traffic by instance for a Consul cluster: orders-2 flagged failing, orders-3 flagged slow at 312 ms, and by payload, a large payment flagged slow at 370 ms while other payloads answer in about 20 ms."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/traffic.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="Traffic by instance for a Consul cluster: orders-2 flagged failing, orders-3 flagged slow at 312 ms, and by payload, a large payment flagged slow at 370 ms while other payloads answer in about 20 ms."></div></figure>
         </article>
 
         <article class="feature">
@@ -266,7 +277,7 @@
               <li>In the Runner, the CLI and the AI API too, and it never fails the request itself</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/health.webp" width="2880" height="1736" loading="lazy" alt="The Health tab for a 610 ms request: healthy throughout, with requests in flight rising from 0 to 10 and the database pool filling while it ran, each field charted over time."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/health.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="The Health tab for a 610 ms request: healthy throughout, with requests in flight rising from 0 to 10 and the database pool filling while it ran, each field charted over time."></div></figure>
         </article>
 
         <article class="feature">
@@ -281,7 +292,7 @@
               <li>Ignore the headers and JSON paths that are meant to differ</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/compare.webp" width="2880" height="1736" loading="lazy" alt="Compare for Get order across three instances: orders-3 answered differently from the other two, with version 2.3.0 instead of 2.4.1, no qty field and state planned instead of released."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/compare.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="Compare for Get order across three instances: orders-3 answered differently from the other two, with version 2.3.0 instead of 2.4.1, no qty field and state planned instead of released."></div></figure>
         </article>
 
         <article class="feature">
@@ -296,7 +307,7 @@
               <li>Traffic by network segment, to find a slow data center rather than a slow pod</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/network.webp" width="2880" height="1736" loading="lazy" alt="The Network section for orders.mes.corp: an alias of orders-lb.dc2.mes.corp, resolving to three addresses on two segments, connected to 10.43.1.9 on 10.43.1.0/24, and a route of four hops."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/network.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="The Network section for orders.mes.corp: an alias of orders-lb.dc2.mes.corp, resolving to three addresses on two segments, connected to 10.43.1.9 on 10.43.1.0/24, and a route of four hops."></div></figure>
         </article>
 
         <article class="feature">
@@ -311,7 +322,7 @@
               <li>Discovery, the Runner, Monitors, Compare and the CLI go through it too</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/tunnels.webp" width="2880" height="1736" loading="lazy" alt="Settings, Tunnels: an SSH jump host named Plant network carrying *.mes.corp and 10.42.0.0/16, open, with orders.mes.corp:7001 reached through it in 2 ms."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/tunnels.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="Settings, Tunnels: an SSH jump host named Plant network carrying *.mes.corp and 10.42.0.0/16, open, with orders.mes.corp:7001 reached through it in 2 ms."></div></figure>
         </article>
 
         <article class="feature">
@@ -326,7 +337,7 @@
               <li>A status bar light while an agent works, and a history of every call it made</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/ai-agents.webp" width="2880" height="1736" loading="lazy" alt="The AI access panel while an agent is working: calls from Claude Code to search requests, update a request, send it (200 in 21 ms), start a run and take a screen snapshot."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/ai-agents.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="The AI access panel while an agent is working: calls from Claude Code to search requests, update a request, send it (200 in 21 ms), start a run and take a screen snapshot."></div></figure>
         </article>
 
         <article class="feature">
@@ -341,7 +352,7 @@
               <li>Collection runs don't add versions, so the list stays yours</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/versions.webp" width="2880" height="1736" loading="lazy" alt="A List lots request with a warning that it does not fit Lots API 2.0.0: the required query parameter status is missing and state is not in the spec. The versions menu is open with two earlier versions marked with a warning."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/versions.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="A List lots request with a warning that it does not fit Lots API 2.0.0: the required query parameter status is missing and state is not in the spec. The versions menu is open with two earlier versions marked with a warning."></div></figure>
         </article>
 
         <article class="feature">
@@ -356,7 +367,7 @@
               <li>Run only the tagged requests in CI with <code>httpdash run backup.json --tag smoke</code></li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/search.webp" width="2880" height="1736" loading="lazy" alt="Searching for pay with the smoke tag selected: suggestions grouped as tags, URLs and request names, and the Take payment request with its tags."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/search.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="Searching for pay with the smoke tag selected: suggestions grouped as tags, URLs and request names, and the Take payment request with its tags."></div></figure>
         </article>
 
         <article class="feature">
@@ -371,7 +382,7 @@
               <li>Paste a cURL command into the URL bar to import it</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window window-dark"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/dark.webp" width="1440" height="873" loading="lazy" alt="HttpDash in dark mode showing an environment with masked secret values."></div></figure>
+          <figure class="feature-shot"><div class="window window-dark"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/dark.webp" width="1440" height="873" loading="lazy" decoding="async" alt="HttpDash in dark mode showing an environment with masked secret values."></div></figure>
         </article>
         <article class="feature">
           <div class="feature-copy">
@@ -385,7 +396,7 @@
               <li>Virtual rendering: 100,000 rows open in about a tenth of a second</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/table.webp" width="2880" height="1736" loading="lazy" alt="The Table view: 128 orders sorted by total, with one order's items and shipping address expanded as nested tables."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/table.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="The Table view: 128 orders sorted by total, with one order's items and shipping address expanded as nested tables."></div></figure>
         </article>
         <article class="feature">
           <div class="feature-copy">
@@ -399,7 +410,7 @@
               <li>Client certificates, your proxy and <code>{{variables}}</code> apply</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/websocket.webp" width="2880" height="1736" loading="lazy" alt="A WebSocket connection to a live orders feed: a welcome message, a subscribe message, and three order events, one shown pretty-printed."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/websocket.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="A WebSocket connection to a live orders feed: a welcome message, a subscribe message, and three order events, one shown pretty-printed."></div></figure>
         </article>
         <article class="feature">
           <div class="feature-copy">
@@ -413,7 +424,7 @@
               <li>Parsed exactly the way browsers do</li>
             </ul>
           </div>
-          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/streaming.webp" width="2880" height="1736" loading="lazy" alt="A streaming POST to a messages endpoint: 24 events arriving over 620 ms, one expanded to show its JSON."></div></figure>
+          <figure class="feature-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/streaming.webp" width="2880" height="1736" loading="lazy" decoding="async" alt="A streaming POST to a messages endpoint: 24 events arriving over 620 ms, one expanded to show its JSON."></div></figure>
         </article>
       </div>
     </section>
@@ -466,8 +477,8 @@
           <h2>Know when an API breaks before your users do</h2>
         </header>
         <div class="duo">
-          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/monitor.webp" width="1440" height="873" loading="lazy" alt="A monitor with 80% success over 5 runs, a duration chart and the failed test highlighted."></div><figcaption><strong>Monitors</strong> keep a history of every run with the exact test that failed.</figcaption></figure>
-          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/mock.webp" width="1440" height="873" loading="lazy" alt="Mock server running on port 3999 with its routes and recent requests."></div><figcaption><strong>Mock servers</strong> stand in for an API that's down or not built yet.</figcaption></figure>
+          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/monitor.webp" width="1440" height="873" loading="lazy" decoding="async" alt="A monitor with 80% success over 5 runs, a duration chart and the failed test highlighted."></div><figcaption><strong>Monitors</strong> keep a history of every run with the exact test that failed.</figcaption></figure>
+          <figure class="duo-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/mock.webp" width="1440" height="873" loading="lazy" decoding="async" alt="Mock server running on port 3999 with its routes and recent requests."></div><figcaption><strong>Mock servers</strong> stand in for an API that's down or not built yet.</figcaption></figure>
         </div>
       </div>
     </section>
@@ -512,7 +523,7 @@ Total time 412 ms. <span class="t-green">PASSED</span></code></pre>
           <p class="section-lead">HttpDash has no account and no cloud sync. Collections, environments and history live in a folder on your computer.</p>
         </header>
         <div class="security">
-          <figure class="security-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/lock.webp" width="600" height="470" loading="lazy" alt="The HttpDash lock screen asking for an LDAP username and password."></div></figure>
+          <figure class="security-shot"><div class="window"><div class="window-bar" aria-hidden="true"><span class="lights"><span></span><span></span><span></span></span><span class="window-title">HttpDash</span></div><img src="assets/lock.webp" width="600" height="470" loading="lazy" decoding="async" alt="The HttpDash lock screen asking for an LDAP username and password."></div></figure>
           <ul class="security-list">
             <li><h3>Lock it with your directory</h3><p>Require an LDAP sign-in to open the app, limit it to certain users or a group, and lock it after a period of inactivity. While locked, the app shows no data at all.</p></li>
             <li><h3>Find secrets before they leak</h3><p>The secret scan spots keys, tokens and passwords typed straight into requests and moves them into masked variables with one click.</p></li>
