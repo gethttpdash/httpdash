@@ -102,6 +102,18 @@ httpdash run backup.json -c "CCER SGF1 QA" -e "CCER_SGF1_QA" --env-var password=
 - **What carries over from the app:** auth dependencies and scripts work exactly as in the app.
 - **Exit codes:** `0` all passed, `1` a test or request failed, `2` bad arguments or input.
 
+## AI agents (OpenAPI and MCP)
+
+AI agents such as Claude can use HttpDash the way you do: read your collections and environments, send requests and read the responses, set up the Runner and get the results, compare instances, check service discovery traffic, add and change requests, and see and use the screen (a snapshot of the visible controls they can click, type into, expand and scroll, plus screenshots).
+
+Turn it on in **Settings → AI access** and choose what agents may do: **Read** (always on), **Run**, **Edit**, **Control the screen**, and **Reveal secrets** (off unless you choose it; secret values and credentials are masked otherwise). It listens on `127.0.0.1` only, every call needs the token shown there, and calls from web pages are refused. The status bar shows when an agent is working, and **AI access** lists every call; **Pause** stops them, and a new token locks out the old one.
+
+- **Claude Code:** `claude mcp add httpdash -- httpdash mcp` (with the CLI installed: `npm install -g github:gethttpdash/httpdash`)
+- **Claude Desktop:** add `{"mcpServers": {"httpdash": {"command": "httpdash", "args": ["mcp"]}}}` to `claude_desktop_config.json`
+- **Anything else:** the OpenAPI document is at `http://127.0.0.1:47823/openapi.json`; send `Authorization: Bearer <token>`.
+
+`httpdash mcp` finds the port and token by itself while the app runs. Start with `getStatus`; `sendRequest` sends a saved request; `startRun` then `getRun` runs the Runner; `getUiSnapshot`, `uiAction` and `takeScreenshot` work the screen.
+
 ## Monitors
 
 **Monitors** (sidebar) run a collection or folder on a schedule, from every minute to every 24 hours, against a chosen environment.

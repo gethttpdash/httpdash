@@ -133,7 +133,15 @@
   // ---- Runner -------------------------------------------------------------------------------
 
   const runs = new Map(); // tabId -> { results, summary, running, events }
+  const starters = new Map(); // tabId -> the start function of that Runner tab's view
   let runningTab = null;
+  // For the HttpDash API (ai.js): a Runner tab's run, and starting it as its Run button does.
+  HD.runnerRun = (tabId) => runs.get(tabId) || null;
+  HD.startRunnerTab = (tabId) => {
+    const start = starters.get(tabId);
+    if (!start) throw new Error('The Runner is not open');
+    return start();
+  };
   window.api.onRunnerEvent((evt) => {
     const run = runningTab && runs.get(runningTab);
     if (!run) return;
@@ -341,6 +349,8 @@
       run.summary = null;
       run.error = null;
       run.running = true;
+      run.startedAt = Date.now();
+      run.finishedAt = null;
       runningTab = tab.id;
       rerender();
       try {
@@ -348,7 +358,8 @@
           collection: HD.clone(c),
           excluded: Object.keys(cfg.excluded),
           folderId: cfg.folderId,
-          scopes: HD.clone(before),
+          // The environment's instance pools too, so load balancing and traffic apply to runs.
+          scopes: { ...HD.clone(before), pools: HD.discoveryPools ? HD.discoveryPools(env) : null },
           iterations: cfg.iterations,
           data: cfg.data || null,
           delay: cfg.delay,
@@ -370,9 +381,11 @@
         run.error = e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
       }
       run.running = false;
+      run.finishedAt = Date.now();
       runningTab = null;
       if (HD.currentTab() === tab) rerender();
     };
+    starters.set(tab.id, start);
   };
 
   function previewData(rows) {

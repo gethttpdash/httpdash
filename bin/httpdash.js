@@ -22,6 +22,9 @@ const HELP = `HttpDash command-line runner
 Usage:
   httpdash run <file> [options]
   httpdash list <file>
+  httpdash mcp [--port <n> --token <t>] [--data-dir <dir>]
+      An MCP server (stdio) for AI agents such as Claude, controlling the HttpDash app on this computer.
+      Turn on Settings → AI access in the app; the port and token are found automatically.
 
 <file>: Postman collection (v2.0/v2.1), HttpDash backup, or HttpDash workspace.json
 
@@ -193,6 +196,17 @@ function junit(collectionName, summary) {
 // ---- Main ---------------------------------------------------------------------------------
 
 async function main(argv, io = { out: (s) => process.stdout.write(`${s}\n`), err: (s) => process.stderr.write(`${s}\n`) }) {
+  // The MCP server speaks JSON-RPC on stdout until its client closes stdin.
+  if (argv[0] === 'mcp') {
+    const get = (name) => { const i = argv.indexOf(name); return i !== -1 ? argv[i + 1] : undefined; };
+    const port = get('--port') || process.env.HTTPDASH_AI_PORT;
+    const token = get('--token') || process.env.HTTPDASH_AI_TOKEN;
+    await require('../src/core/mcp').runStdio({
+      version: require('../package.json').version, dataDir: get('--data-dir'),
+      ...(port && token ? { access: () => ({ port: Number(port), token }) } : {}),
+    });
+    return 0;
+  }
   let opts;
   try {
     opts = parseArgs(argv);

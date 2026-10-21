@@ -1032,7 +1032,32 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .tag-box:hover { border-color: var(--border); }
 .tag-box-icon { color: var(--text-2); font-weight: 600; padding: 0 4px; }
 .tag-input { font-size: 12px; }
-.tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: 0 3 auto; min-width: 0; overflow: hidden; }
+.tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: none; }
 .tree-row .tree-name { min-width: 48px; }
 .tree-tag { font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-tag.more { background: var(--bg-3); color: var(--text-2); }
+
+/* AI access: status bar indicator, what an agent touches, the access history, settings */
+.ai-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+.ai-on .ai-dot { background: var(--text-2); }
+.ai-active .ai-dot { background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: ai-pulse 1s ease-out infinite; }
+.ai-active { color: var(--ok); }
+.ai-paused .ai-dot { background: var(--warn); }
+.ai-paused { color: var(--warn); }
+.ai-error .ai-dot { background: var(--err); }
+.ai-error { color: var(--err); }
+@keyframes ai-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+@media (prefers-reduced-motion: reduce) { .ai-active .ai-dot { animation: none; } }
+.ai-flash { position: fixed; pointer-events: none; z-index: 4000; border: 2px solid var(--accent); border-radius: 6px; box-shadow: 0 0 0 3px var(--accent-soft); animation: ai-flash .9s ease-out forwards; }
+@keyframes ai-flash { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+.ai-access-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-log { font-size: 12px; }
+.ai-log td { vertical-align: top; }
+.ai-log .num { text-align: right; white-space: nowrap; }
+.pill.ai-perm-read { background: var(--bg-3); color: var(--text-2); }
+.pill.ai-perm-run, .pill.ai-perm-ui { background: var(--accent-soft); color: var(--accent-text); }
+.pill.ai-perm-edit, .pill.ai-perm-secrets { background: var(--warn-soft); color: var(--warn); }
+.ai-perm { display: flex; align-items: baseline; gap: 8px; margin: 6px 0; }
+.ai-token { display: block; margin: 4px 0; font-size: 12px; word-break: break-all; user-select: all; }
+.ai-snippet { display: block; margin: 4px 0 8px; padding: 6px 8px; background: var(--bg-3); border-radius: 4px; font-size: 12px; word-break: break-all; user-select: all; }

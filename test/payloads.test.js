@@ -85,7 +85,8 @@ test('a run starts from the first payload; results and traffic say which payload
     assert.deepStrictEqual(second.results.map((r) => r.payload.name), ['small order', 'big order']);
     const m = balancer.metrics('s1');
     assert.deepStrictEqual(m.byPayload.map((r) => [r.payload, r.requests]).sort(), [['big order', 2], ['small order', 2]]);
-    assert.strictEqual(m.recent[0].payload, 'big order');
+    // Requests sent within the same millisecond can list either way round.
+    assert.deepStrictEqual([...new Set(m.recent.map((r) => r.payload))].sort(), ['big order', 'small order']);
   } finally { server.close(); }
 });
 

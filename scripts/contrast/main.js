@@ -58,7 +58,8 @@ app.on('browser-window-created', (_e, win) => {
       window.__reqTab.ui.resTab = 'tests'; window.__reqTab.ui.reqTab = 'tests'; HD.renderActiveTab();`);
     await run('toasts', `document.querySelectorAll('#toasts .toast').forEach((t) => t.remove()); for (const t of ['info', 'success', 'warn', 'error']) HD.toast('This is a ' + t + ' message with some detail', t, 60000);`);
     await run('context menu', `document.querySelectorAll('#toasts .toast').forEach((t) => t.remove()); HD.menu(document.querySelector('.btn'), [{ label: 'Rename', hint: 'F2' }, { label: 'Checked', checked: true }, { separator: true }, { label: 'Delete', danger: true }]);`);
-    for (const section of ['general', 'proxy', 'certificates', 'appearance', 'data', 'about']) await run('settings: ' + section, `HD.showSettings('${section}'); await wait(150);`);
+    for (const section of ['general', 'proxy', 'certificates', 'appearance', 'ai', 'data', 'about']) await run('settings: ' + section, `HD.showSettings('${section}'); await wait(150);`);
+    await run('AI access history', `document.querySelectorAll('.modal-overlay').forEach((n) => n.remove()); HD.showAiAccess(); await wait(200);`);
     await run('sidebar collections', `document.querySelectorAll('.modal-overlay').forEach((n) => n.remove());
       const c = HD.S.ws.collections[0]; const methods = ['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'];
       if (!c.items.some((i) => i.name === 'audit-methods')) { c.items.push(...methods.map((m) => HD.newRequestItem(m.toLowerCase() + ' item', { method: m }))); c.items.push(HD.newRequestItem('ws item', HD.newWebSocketDef())); c.items.push({ ...HD.newFolder('audit-methods') }); }

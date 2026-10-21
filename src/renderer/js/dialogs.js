@@ -218,7 +218,7 @@
     const body = h('div.settings');
     const render = () => {
       HD.clear(body);
-      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'certificates', label: 'Certificates' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
+      const nav = HD.tabStrip([{ id: 'general', label: 'General' }, { id: 'proxy', label: 'Proxy' }, { id: 'certificates', label: 'Certificates' }, { id: 'appearance', label: 'Appearance' }, { id: 'security', label: 'Security' }, { id: 'ai', label: 'AI access' }, { id: 'data', label: 'Data' }, { id: 'about', label: 'About' }], section, (id) => { section = id; render(); });
       const panel = h('div.settings-panel');
       if (section === 'general') {
         panel.append(
@@ -249,6 +249,8 @@
           h('div.setting-row', h('div', h('div.setting-label', 'Theme')), HD.select([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], s.theme || 'system', (v) => { s.theme = v; HD.save(); HD.applyTheme(); })),
           h('div.setting-row', h('div', h('div.setting-label', 'Editor font size')), HD.select([11, 12, 13, 14, 15, 16].map((n) => [n, `${n}px`]), s.fontSize || 13, (v) => { s.fontSize = Number(v); HD.save(); HD.applyTheme(); })),
           h('div.setting-row', h('div', h('div.setting-label', 'Request / response layout')), HD.select([['vertical', 'Stacked (response below)'], ['horizontal', 'Side by side']], S.ws.ui.layout || 'vertical', (v) => { S.ws.ui.layout = v; HD.save(); HD.renderActiveTab(); })));
+      } else if (section === 'ai') {
+        HD.aiSettingsPanel(panel, render);
       } else if (section === 'security') {
         HD.renderSecuritySettings(panel);
       } else if (section === 'data') {

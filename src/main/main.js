@@ -1,6 +1,7 @@
 'use strict';
 
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu, nativeTheme, safeStorage, session, net } = require('electron');
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -900,6 +901,55 @@ handle('discovery:sync', async ({ config, values, collection, sourceId, settings
 // Traffic by instance for a discovery source (counted by balancer.js as requests are sent).
 handle('discovery:metrics', (sourceId) => balancer.metrics(sourceId));
 handle('discovery:resetMetrics', (sourceId) => { balancer.reset(sourceId); return true; });
+
+// ---- HttpDash API for AI agents (Settings → AI access) -------------------------------------
+// The server checks the host, token, lock, pause and permission (see ai-server.js); most operations
+// are answered by the window, which holds the workspace and the screen.
+const { AiServer, HttpError } = require('../core/ai-server');
+const aiPending = new Map(); // call id -> { resolve, reject, timer }
+const callWindow = (op, args, ctx) => new Promise((resolve, reject) => {
+  if (!win || win.isDestroyed()) return reject(new HttpError(503, 'The HttpDash window is closed'));
+  const id = crypto.randomUUID();
+  const timer = setTimeout(() => { aiPending.delete(id); reject(new HttpError(504, 'HttpDash did not answer in time')); }, 120000);
+  aiPending.set(id, { resolve, reject, timer });
+  win.webContents.send('ai:call', { id, op, args, ctx });
+});
+ipcMain.on('ai:reply', (_e, { id, ok, result, error, status }) => {
+  const p = aiPending.get(id);
+  if (!p) return;
+  aiPending.delete(id);
+  clearTimeout(p.timer);
+  if (ok) p.resolve(result); else p.reject(new HttpError(status || 400, error || 'Failed'));
+});
+const aiServer = new AiServer({
+  file: path.join(dataDir, 'ai-access.json'),
+  version: app.getVersion(),
+  isLocked: () => appLock.isLocked(),
+  call: callWindow,
+  audit,
+  onActivity: (event) => { if (win && !win.isDestroyed()) win.webContents.send('ai:activity', event); },
+  main: {
+    getAccessLog: ({ limit }) => ({ items: aiServer.log(limit) }),
+    // The whole window, a region of it, or one element (its bounds come from the window).
+    // Screen points by default: half the pixels of a high-resolution capture, which is plenty for an agent.
+    takeScreenshot: async ({ region, ref, scale }) => {
+      if (!win || win.isDestroyed()) throw new HttpError(503, 'The HttpDash window is closed');
+      const rect = (region && region !== 'window') || ref ? await callWindow('uiRect', { region, ref }) : null;
+      let img = await win.webContents.capturePage(rect || undefined);
+      const points = rect ? rect.width : win.getContentSize()[0];
+      const want = Math.round(points * Math.min(2, Math.max(0.25, Number(scale) || 1)));
+      if (want < img.getSize().width) img = img.resize({ width: want, quality: 'good' });
+      const size = img.getSize();
+      return { png: img.toPNG(), width: size.width, height: size.height };
+    },
+  },
+});
+handle('ai:configure', (cfg) => aiServer.configure(cfg || {}));
+handle('ai:status', () => aiServer.status());
+handle('ai:token', () => aiServer.token());
+handle('ai:regenerate', () => { const t = aiServer.regenerateToken(); audit.append('ai.token', { action: 'regenerated' }); return t; });
+handle('ai:log', (limit) => aiServer.log(limit));
+app.on('before-quit', () => { aiServer.stop(); });
 
 handle('shell:openExternal', (url) => { if (/^https?:/.test(url)) shell.openExternal(url); });
 

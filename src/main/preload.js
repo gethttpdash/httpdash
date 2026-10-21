@@ -36,6 +36,17 @@ contextBridge.exposeInMainWorld('api', {
   runCollection: invoke('runner:start'),
   stopRun: invoke('runner:stop'),
   onRunnerEvent: (fn) => ipcRenderer.on('runner:event', (_e, evt) => fn(evt)),
+  // HttpDash API for AI agents: calls to answer, activity for the indicator, and its settings.
+  ai: {
+    onCall: (fn) => ipcRenderer.on('ai:call', (_e, call) => fn(call)),
+    reply: (msg) => ipcRenderer.send('ai:reply', msg),
+    onActivity: (fn) => ipcRenderer.on('ai:activity', (_e, evt) => fn(evt)),
+    configure: invoke('ai:configure'),
+    status: invoke('ai:status'),
+    token: invoke('ai:token'),
+    regenerate: invoke('ai:regenerate'),
+    log: invoke('ai:log'),
+  },
   onRequestStream: (fn) => ipcRenderer.on('request:stream', (_e, msg) => fn(msg)),
   exportTable: invoke('table:export'),
   savePng: invoke('file:savePng'),

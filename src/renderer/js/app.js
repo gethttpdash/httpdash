@@ -72,7 +72,7 @@
     return addTab({ id: HD.uid(), kind: 'runner', runner: { ...cfg, collectionId: collectionId || null, folderId: folderId || null } });
   };
 
-  const tabTitle = (t) => {
+  const tabTitle = HD.tabTitle = (t) => {
     if (t.kind === 'request') return t.draft.name || 'Untitled Request';
     if (t.kind === 'collection' || t.kind === 'folder') { const f = HD.find(t.refId); return f ? f.node.name : 'Deleted'; }
     if (t.kind === 'environment') { const e = S.ws.environments.find((x) => x.id === t.refId); return e ? e.name : 'Deleted'; }
@@ -313,6 +313,7 @@
       HD.button('', () => { S.ws.ui.sidebarHidden = !S.ws.ui.sidebarHidden; HD.save(); applyLayout(); }, { icon: 'sidebar', ghost: true, small: true, title: 'Toggle sidebar (Ctrl+\\)' }),
       HD.button(errors ? `Console (${errors} errors)` : 'Console', () => { S.ws.ui.consoleOpen = !S.ws.ui.consoleOpen; HD.save(); renderConsole(); renderStatusbar(); }, { icon: 'terminal', ghost: true, small: true, class: errors ? 'has-errors' : '' }),
       h('span.spacer'),
+      HD.aiIndicator ? HD.aiIndicator() : null,
       HD.button('Cookies', () => HD.showCookies(), { icon: 'cookie', ghost: true, small: true }),
       HD.button('Runner', () => HD.openRunner(), { icon: 'play', ghost: true, small: true }),
       HD.button('', () => { S.ws.ui.layout = (S.ws.ui.layout || 'vertical') === 'vertical' ? 'horizontal' : 'vertical'; HD.save(); HD.renderActiveTab(); }, { icon: (S.ws.ui.layout || 'vertical') === 'vertical' ? 'columns' : 'rows', ghost: true, small: true, title: 'Toggle request/response layout' }));
@@ -399,6 +400,7 @@
     HD.renderActiveTab();
     renderConsole();
     renderStatusbar();
+    if (HD.aiConfigure) HD.aiConfigure();
 
     const handle = document.getElementById('sidebar-resize');
     let startW;

@@ -122,7 +122,7 @@
       node.type === 'request' ? h(`span.method-tag.${HD.methodClass(node.request.method)}`, node.request.method.slice(0, 6)) : HD.icon(node.type === 'collection' ? 'layers' : 'folder'),
       h('span.tree-name', node.name),
       node.type === 'request' && node.request.tags && node.request.tags.length ? h('span.tree-tags', { title: node.request.tags.map((t) => `#${t}`).join(' ') },
-        node.request.tags.slice(0, 2).map((t) => h('span.tree-tag', t)), node.request.tags.length > 2 ? h('span.tree-tag.more', `+${node.request.tags.length - 2}`) : null) : null,
+        h('span.tree-tag', node.request.tags[0]), node.request.tags.length > 1 ? h('span.tree-tag.more', `+${node.request.tags.length - 1}`) : null) : null,
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);

@@ -17,7 +17,11 @@ HD.h = function h(spec, attrs, ...children) {
     if (k === 'class') String(v).split(/\s+/).filter(Boolean).forEach((c) => el.classList.add(c));
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k === 'dataset') Object.assign(el.dataset, v);
-    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (k.startsWith('on') && typeof v === 'function') {
+      el.addEventListener(k.slice(2), v);
+      // Marks what can be clicked, for the screen snapshot of the HttpDash API (ai.js).
+      if (k === 'onclick' || k === 'onmousedown' || k === 'ondblclick') el.__hdClickable = true;
+    }
     else if (k === 'value') el.value = v;
     else if (k === 'checked' || k === 'disabled' || k === 'selected' || k === 'readOnly') el[k] = !!v;
     else if (k === 'html') el.innerHTML = v;
