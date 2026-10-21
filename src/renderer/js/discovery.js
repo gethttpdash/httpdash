@@ -521,6 +521,8 @@
       const answering = new Set(m.rows.map((r) => `${r.service}|${r.instance}|${r.servedBy}`)).size;
       // Payload rows look like instance rows to the table: the payload's name is the "instance".
       const payloadRows = (m.byPayload || []).map((r) => ({ ...r, instance: '', instanceId: r.payload, servedBy: '' }));
+      // The same for network segments: the segment is the "instance".
+      const segmentRows = (m.bySegment || []).map((r) => ({ ...r, instance: '', instanceId: r.segment, servedBy: '' }));
       // The report every export format is made from: what this page shows.
       const report = () => ({
         source: src.name, registry: PROVIDERS[src.provider].label, strategy, header: src.instanceHeader || '', since: m.since, generatedAt: Date.now(),
@@ -531,6 +533,10 @@
         })),
         byPayload: HD.trafficRows(payloadRows, {}, { relative: true }).map((r) => ({
           service: r.service, payload: r.instanceId, requests: r.requests, share: r.share, p50: r.p50, p95: r.p95, avg: r.avg,
+          ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
+        })),
+        bySegment: HD.trafficRows(segmentRows, {}, { relative: true }).map((r) => ({
+          service: r.service, segment: r.instanceId, requests: r.requests, share: r.share, p50: r.p50, p95: r.p95, avg: r.avg,
           ok: r.status['2xx'] + r.status['3xx'], s4xx: r.status['4xx'], s5xx: r.status['5xx'], errors: r.errors, flags: r.flags.map((f) => f.kind),
         })),
         recent: m.recent || [],
@@ -575,6 +581,11 @@
         if (payloadRows.length) {
           traffic.appendChild(h('div.section-title.traffic-sub', 'By payload', h('span.muted.small', ' · flags compare each payload with the endpoint\'s other payloads')));
           traffic.appendChild(HD.trafficTable(payloadRows, {}, { label: 'Payload', relative: true }));
+        }
+        // Only worth a table when the instances sit on more than one segment.
+        if (new Set(segmentRows.map((r) => `${r.service}|${r.instanceId}`)).size > new Set(segmentRows.map((r) => r.service)).size) {
+          traffic.appendChild(h('div.section-title.traffic-sub', 'By network segment', h('span.muted.small', ' · the address that answered, by segment; flags compare each segment with the service\'s others')));
+          traffic.appendChild(HD.trafficTable(segmentRows, {}, { label: 'Segment', relative: true }));
         }
         if (m.recent && m.recent.length) traffic.appendChild(recentList(m.recent));
         if (!m.rows.length) traffic.appendChild(h('div.muted.small.traffic-hint', `No requests yet. Send or run requests that use ${services.slice(0, 2).map((x) => `{{${x.variable}}}`).join(' or ')}.`));

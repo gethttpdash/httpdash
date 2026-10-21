@@ -5,7 +5,18 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Where a request went on the network:** the Timeline has a **Network** section showing:
+  - the host's alias chain (CNAME)
+  - every address it resolves to, with TTLs, and the one connected to
+  - each address split into octets with its segment highlighted (`10.42.7.0/24`), its kind (private, shared/VPN, loopback, link-local, public) and its reverse-DNS name
+  - whether it is on one of your own segments
+  - your own address and the network adapter the request left from.
+
+  Split DNS (the resolver and DNS servers disagreeing) is flagged, and a proxy is noted. **Trace route** runs the system's traceroute and lists each hop with its segment. Traffic gets a **By network segment** table (and sheet, in every export format) when instances answer from more than one segment. Compare shows each instance's address. The AI API returns the trace with `sendRequest` and the addresses with `compareInstances`. Segment size (/24 and /64 by default) and the trace itself can be changed in **Settings → General**.
 - **Health while it runs:** give a request, folder or collection a health URL (`/healthz`, `/actuator/health`, or a full URL with variables) and HttpDash reads it before the request is sent, every 250 ms while it is in flight (the first reading as it goes out), and after it answers. A path is read on the request's own host, so a request sent to one instance reads that instance's health, also when comparing instances. The response's **Health** tab says whether the service stayed healthy, lists the fields that changed (before, range during, after) with a small chart of each over time, and shows every reading and how long the health endpoint took. Watch only some fields, send the request's Authorization header if the endpoint needs it, and use **Read it now** to see what an endpoint returns and pick fields. The Runner shows one health line per request, the CLI prints it, and the AI API's `sendRequest` returns it. Readings never fail the request: an endpoint that can't be reached is an unhealthy reading. Health settings travel with team sharing.
+
+### Fixed
+- The Timeline's **Remote address** was missing for requests on a kept-alive connection.
 
 ## [1.4.0] - 2026-10-21
 

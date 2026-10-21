@@ -665,6 +665,32 @@ li.CodeMirror-hint-active .hint-scope { color: #fff; }
 .runner-health .icon { width: 14px; height: 14px; color: var(--ok); flex: none; }
 .runner-health.unhealthy, .runner-health.unhealthy .icon { color: var(--err); }
 
+/* Network trace (Timeline) */
+.net { padding: 8px 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); }
+.net .timeline-title { margin-bottom: 8px; }
+.net-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.net-row:first-of-type { border-top: 0; }
+.net-label { color: var(--text-2); font-weight: 600; }
+.net-value { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.net-list { display: flex; flex-direction: column; gap: 4px; }
+.net-addr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.net-addr.used { font-weight: 600; }
+.net-octets { display: inline-flex; align-items: center; font: 12px var(--mono); }
+.net-octet { padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); min-width: 30px; text-align: center; }
+.net-octet.seg { background: var(--accent-soft); border-color: transparent; color: var(--accent-text); }
+.net-octet.part { background: linear-gradient(90deg, var(--accent-soft) 50%, var(--bg) 50%); }
+.net-dot { padding: 0 2px; color: var(--text-3); }
+.pill.net-kind { background: var(--bg-3); color: var(--text-2); }
+.pill.net-public { background: var(--warn-soft); color: var(--warn); }
+.pill.net-shared { background: var(--accent-soft); color: var(--accent-text); }
+.pill.net-loopback { background: var(--ok-soft); color: var(--ok); }
+.pill.net-own { background: var(--bg-3); color: var(--text-2); font-weight: 500; }
+.net-list .net-addr { display: grid; grid-template-columns: max-content max-content repeat(4, max-content); gap: 10px; align-items: center; }
+.net-actions { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.net-route { margin-top: 8px; }
+.net-route .table-wrap { background: var(--bg); }
+.net .discovery-warning, .net .info-box { margin: 4px 0 8px; }
+
 /* Service discovery */
 .side-section { display: flex; align-items: center; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
 .tree-more.visible { opacity: 1; }

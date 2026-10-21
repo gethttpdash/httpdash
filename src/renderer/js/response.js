@@ -225,7 +225,7 @@
       renderCompare(content, result, opts, () => HD.renderResponse(root, result, ui, opts), (i) => {
         // Shows one instance's answer in the other tabs.
         const r = result.compare.results[i];
-        for (const k of ['response', 'tests', 'sentRequest', 'routing', 'error', 'payload', 'dependencyRuns', 'health']) result[k] = r[k];
+        for (const k of ['response', 'tests', 'sentRequest', 'routing', 'error', 'payload', 'dependencyRuns', 'health', 'network']) result[k] = r[k];
         result.compare.shown = i;
         ui.resTab = 'body';
         HD.save();
@@ -400,10 +400,14 @@
     // The instances, with a slow one flagged against the median.
     const times = cmp.instances.map((i) => i.time).filter((t) => t != null).sort((a, b) => a - b);
     const median = times.length ? times[Math.floor(times.length / 2)] : null;
+    // The address each instance answered from, and its segment when they aren't all on one.
+    const nets = cmp.instances.map((_, idx) => { const r = (c.results || [])[idx]; return r && r.network && r.network.connected; });
+    const segs = new Set(nets.filter(Boolean).map((x) => x.segment));
     wrap.appendChild(h('div.table-wrap.no-pad', h('table.data-table.compare-instances',
-      h('thead', h('tr', h('th', 'Instance'), h('th', 'Status'), h('th.num', 'Time'), h('th', 'Tests'), h('th', 'Answer'), h('th', ''))),
+      h('thead', h('tr', h('th', 'Instance'), nets.some(Boolean) ? h('th', 'Address') : null, h('th', 'Status'), h('th.num', 'Time'), h('th', 'Tests'), h('th', 'Answer'), h('th', ''))),
       h('tbody', cmp.instances.map((i, idx) => h('tr', { class: c.shown === idx ? 'shown' : '' },
         h('td', h('div', name(i)), hostOf(i.instance) !== name(i) ? h('div.muted.small.mono', hostOf(i.instance)) : null),
+        nets.some(Boolean) ? h('td', nets[idx] ? [h('div.mono.small', nets[idx].address), segs.size > 1 ? h('div.muted.small.mono', nets[idx].segment) : null] : h('span.muted', '—')) : null,
         h('td', i.error ? h('span.text-error.small', i.error) : h(`span.${HD.statusClass(i.status)}`, String(i.status))),
         h('td.num', i.time == null ? '—' : HD.formatMs(i.time),
           median != null && i.time >= 2 * median && i.time - median >= 50 ? h('span.pill.changed', { title: `median ${HD.formatMs(median)}` }, 'slow') : null),
@@ -481,6 +485,7 @@
         res.clientCertificate ? `Client cert       ${res.clientCertificate}` : null,
       ].filter(Boolean).join('\n')));
     }
+    if (result.network) parts.push(HD.networkSection(result.network));
     content.appendChild(h('div.timeline', parts));
   }
 })();

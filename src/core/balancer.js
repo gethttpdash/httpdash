@@ -18,6 +18,7 @@
  * turn would move in step with the instances (3 payloads, 3 instances: the third payload always on
  * the third instance), and a slow payload could not be told from a slow instance.
  */
+const network = require('./network');
 
 const positions = new Map(); // `${sourceId}|${variable}` -> next round-robin index
 
@@ -85,6 +86,7 @@ function add(rows, e) {
     else r.times[r.next++ % SAMPLES] = e.time;
   }
   r.last = e.at || Date.now();
+  if (e.address) r.address = e.address;
 }
 
 const percentile = (sorted, p) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)] : null);
@@ -108,14 +110,17 @@ const RECENT = 200; // requests kept per source for the Recent requests list
 
 function record(e) {
   if (!e.sourceId) return;
-  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map(), byPayload: new Map(), recent: [] });
+  if (!stats.has(e.sourceId)) stats.set(e.sourceId, { since: Date.now(), rows: new Map(), byPayload: new Map(), bySegment: new Map(), recent: [] });
   const s = stats.get(e.sourceId);
   add(s.rows, e);
   // The same totals by payload, to tell a slow payload from a slow instance.
   if (e.payload) add(s.byPayload, { ...e, instance: e.payload, instanceId: '', servedBy: '' });
+  // And by the network segment of the address that answered, to tell a slow segment (a data
+  // center, a VLAN) from a slow instance.
+  if (e.address) add(s.bySegment, { ...e, instance: network.segment(e.address), instanceId: '', servedBy: '' });
   s.recent.push({
     sentAt: e.at - (e.time || 0), variable: e.variable, service: e.service, instance: e.instance, instanceId: e.instanceId || '',
-    servedBy: e.servedBy, status: e.status, time: e.time, error: e.error, payload: e.payload || '',
+    servedBy: e.servedBy, status: e.status, time: e.time, error: e.error, payload: e.payload || '', address: e.address || '',
   });
   if (s.recent.length > RECENT) s.recent.shift();
 }
@@ -131,6 +136,7 @@ function settle(picks, pools, { response, error, payload } = {}) {
     const entry = {
       ...p, servedBy: headerValue(response, pool.header), at: Date.now(), payload: payload || '',
       status: response ? response.status : null, time: response ? response.time : null, error: error || null,
+      ...(response && response.remoteAddress && !response.viaProxy ? { address: response.remoteAddress } : {}),
     };
     record(entry);
     out.push(entry);
@@ -145,14 +151,15 @@ function settle(picks, pools, { response, error, payload } = {}) {
  */
 function metrics(sourceId) {
   const s = stats.get(sourceId);
-  if (!s) return { since: Date.now(), rows: [], byPayload: [], recent: [] };
+  if (!s) return { since: Date.now(), rows: [], byPayload: [], bySegment: [], recent: [] };
   const sorted = [...s.recent].sort((a, b) => a.sentAt - b.sentAt);
   const recent = sorted.map((r, i) => {
     const prev = sorted[i - 1];
     return { ...r, gap: prev ? Math.max(0, r.sentAt - (prev.sentAt + (prev.time || 0))) : null };
   }).reverse();
   const byPayload = rowsOf(s.byPayload).map(({ instance, instanceId, servedBy, ...r }) => ({ ...r, payload: instance }));
-  return { since: s.since, rows: rowsOf(s.rows), byPayload, recent };
+  const bySegment = rowsOf(s.bySegment).map(({ instance, instanceId, servedBy, address, ...r }) => ({ ...r, segment: instance }));
+  return { since: s.since, rows: rowsOf(s.rows), byPayload, bySegment, recent };
 }
 
 function reset(sourceId) {

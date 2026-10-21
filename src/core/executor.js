@@ -14,6 +14,7 @@ const dependency = require('./dependency');
 const balancer = require('./balancer');
 const payloads = require('./payloads');
 const health = require('./health');
+const network = require('./network');
 
 const MIME = {
   json: 'application/json', xml: 'application/xml', html: 'text/html', text: 'text/plain', javascript: 'application/javascript',
@@ -268,6 +269,8 @@ function buildResponse(raw, maxPreview) {
     url: raw.url,
     redirects: raw.redirects || [],
     remoteAddress: raw.remoteAddress,
+    localAddress: raw.localAddress,
+    ...(raw.viaProxy ? { viaProxy: true } : {}),
     clientCertificate: raw.clientCertificate || null,
   };
 }
@@ -383,6 +386,7 @@ async function executeRequest(opts) {
   // 2. Send (again after refreshing the token if the server answers 401 and retryOn401 is set),
   // reading the service's health endpoint before, during and after when one is set.
   const healthCfg = opts.depth ? null : health.effectiveHealth(request, chain);
+  const traceNet = !opts.depth && settings.traceNetwork !== false;
   let profile = null;
   const finishHealth = async () => {
     if (!profile) return;
@@ -416,6 +420,7 @@ async function executeRequest(opts) {
       profile = health.profiler(healthCfg, { url, base: clientOptions(prepared, settings, jar), headers: auth, connectTo: sameHost ? opts.connectTo : undefined });
       await profile.before();
     }
+    if (traceNet && attempt === 0) network.prefetch(prepared.url);
     if (profile) profile.start();
     raw = await sendPrepared(prepared);
     if (profile) await profile.end();
@@ -478,6 +483,12 @@ async function executeRequest(opts) {
 
   await finishHealth();
   const response = buildResponse(raw, settings.maxPreviewBytes || 20 * 1024 * 1024);
+  // Where it went on the network: the name's addresses, the one connected to, segments and adapter.
+  if (traceNet && response.remoteAddress) {
+    try {
+      result.network = await network.trace({ url: response.url || prepared.url, remoteAddress: response.remoteAddress, localAddress: response.localAddress, viaProxy: response.viaProxy }, { bits4: settings.segmentBits4, bits6: settings.segmentBits6 });
+    } catch (e) { log('warn', `Could not trace the network path: ${e.message}`); }
+  }
   if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
   if (raw.cancelled) response.cancelled = true;
   result.response = response;

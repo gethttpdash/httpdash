@@ -8,6 +8,7 @@ const path = require('path');
 const { JsonStore } = require('./store');
 const { execute, prepare, clientOptions } = require('../core/executor');
 const health = require('../core/health');
+const network = require('../core/network');
 const { mergeScopes } = require('../core/variables');
 const codegen = require('../core/codegen');
 const { parseCurl } = require('../core/curl');
@@ -302,6 +303,9 @@ handle('health:read', async ({ cfg, request, chain, scopes, settings }) => {
   const r = await health.read({ url, base: prepared ? clientOptions(prepared, s, jar) : { verifySSL: s.verifySSL !== false, proxy: s.proxy }, headers });
   return { url, ...r };
 });
+
+// The route to a host, with the system's traceroute: [{ hop, address, ms, segment, kind, ... }].
+handle('network:traceroute', ({ host }) => network.traceRoute(host));
 
 // Whether a plain URL has instances in DNS (several addresses for its host): { host, addresses } or null.
 handle('dns:instances', async ({ request, scopes, settings }) => {

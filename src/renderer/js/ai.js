@@ -149,6 +149,7 @@
       ...(result.sentRequest ? { sent: { method: result.sentRequest.method, url: result.sentRequest.url } } : {}),
       ...(result.routing ? { instances: result.routing.map((x) => ({ variable: x.variable, instance: x.instanceId || x.instance, servedBy: x.servedBy || undefined })) } : {}),
       ...(result.payload ? { payload: result.payload.name } : {}),
+      ...(result.network ? { network: result.network } : {}),
       ...(result.health ? { health: {
         url: result.health.url, healthy: result.health.ok, unhealthyReadings: result.health.unhealthy, readings: result.health.samples.length, slowestMs: result.health.slowest,
         summary: HD.healthLine(result.health, 5),
@@ -521,7 +522,10 @@
       const c = out.comparison;
       return {
         service: out.service, by: out.dns ? 'dns' : 'discovery',
-        instances: c.instances.map((i) => ({ instance: i.instanceId || i.instance, status: i.status, time: i.time, error: i.error || undefined, tests: i.tests, differsIn: i.odd })),
+        instances: c.instances.map((i, idx) => {
+          const net = out.results[idx] && out.results[idx].network && out.results[idx].network.connected;
+          return { instance: i.instanceId || i.instance, ...(net ? { address: net.address, segment: net.segment } : {}), status: i.status, time: i.time, error: i.error || undefined, tests: i.tests, differsIn: i.odd };
+        }),
         differences: c.differences.map((d) => ({ field: d.key, kind: d.kind, mostInstances: d.majority || undefined, values: d.values.map((v) => ({ instance: v.instanceId || v.instance, value: v.value.slice(0, 300) })) })),
       };
     },
@@ -609,7 +613,13 @@
       for (const svc of (src.lastSync && src.lastSync.services) || []) if (svc.instances && svc.instances.some((i) => i.url)) known[svc.name] = svc.instances.filter((i) => i.url);
       const row = (r) => ({ service: r.service, instance: r.servedBy || r.instanceId || r.instance, requests: r.requests, share: Math.round(r.share * 1000) / 1000, p50: r.p50, p95: r.p95, ok: r.status['2xx'] + r.status['3xx'], '4xx': r.status['4xx'], '5xx': r.status['5xx'], errors: r.errors, flags: r.flags.map((x) => x.kind) });
       const payloadRows = (m.byPayload || []).map((r) => ({ ...r, instance: '', instanceId: r.payload, servedBy: '' }));
-      return { since: m.since, byInstance: HD.trafficRows(m.rows, known).map(row), byPayload: HD.trafficRows(payloadRows, {}, { relative: true }).map((r) => ({ ...row(r), payload: r.instanceId, instance: undefined })), recent: (m.recent || []).slice(0, 50) };
+      const segmentRows = (m.bySegment || []).map((r) => ({ ...r, instance: '', instanceId: r.segment, servedBy: '' }));
+      return {
+        since: m.since, byInstance: HD.trafficRows(m.rows, known).map(row),
+        byPayload: HD.trafficRows(payloadRows, {}, { relative: true }).map((r) => ({ ...row(r), payload: r.instanceId, instance: undefined })),
+        bySegment: HD.trafficRows(segmentRows, {}, { relative: true }).map((r) => ({ ...row(r), segment: r.instanceId, instance: undefined })),
+        recent: (m.recent || []).slice(0, 50),
+      };
     },
 
     getUiState: () => {

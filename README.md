@@ -236,6 +236,20 @@ The response gets a **Health** tab:
 
 Health readings never fail the request itself; an endpoint that can't be reached is shown as an unhealthy reading. The Collection Runner shows one line per request (`healthy throughout; db.transactions.waiting 0 → 3 → 0`), the CLI prints it under each request, and the AI API's `sendRequest` returns it.
 
+## Where a request went on the network
+
+The **Timeline** tab has a **Network** section for every request:
+
+- **Host:** the name you called, and the names it is an alias of (CNAME), in order.
+- **Connected to:** the address the request was sent to, split into its octets with the network segment highlighted (`10 . 42 . 7 . 31`, segment `10.42.7.0/24`). It also shows the kind of address (private, shared/VPN `100.64.0.0/10`, loopback, link-local, public), its reverse-DNS name (often the host, rack or data center), and whether it sits on one of your own computer's segments.
+- **From:** your own address and the network adapter the request left from (Ethernet, Wi-Fi, a VPN).
+- **Resolves to:** every address the name resolves to, in the order your resolver gives them, each with its segment, kind and TTL, and the one that was used marked. If DNS servers asked directly give a different answer than your computer's resolver (hosts file, VPN or split DNS), it says so.
+- **Trace route:** runs your system's `traceroute` (`tracert` on Windows) and lists each hop with its address, segment and time. It takes a few seconds, and some networks don't answer.
+
+Through a proxy, the address shown is the proxy's, and the trace says so. Segment size is /24 for IPv4 and /64 for IPv6 by default; change it, or turn tracing off, in **Settings → General**. Lookups are cached for a minute, so a collection run asks once per host.
+
+For services from service discovery, the **Traffic** page adds a **By network segment** table when instances answer from more than one segment, so a slow data center or VLAN stands out from a slow instance. It's in every export format too, and **Compare** shows the address each instance answered from.
+
 ## Service discovery (auto-create environments)
 
 Point HttpDash at a service registry and it builds an environment with one variable per service. For example, `{{orders_url}}` = `http://10.0.1.5:8080`, so requests can use `{{orders_url}}/api/orders`.

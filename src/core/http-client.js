@@ -143,7 +143,9 @@ async function exchangeOnce(opts) {
   }
 
   const proxy = opts.proxy && opts.proxy.enabled && opts.proxy.host ? opts.proxy : null;
+  let viaProxy = false;
   if (proxy && !matchesBypass(url.hostname, proxy.bypass)) {
+    viaProxy = true;
     if (pin) throw new RequestError('A proxy picks the address of the host itself, so one address cannot be chosen', 'EPROXYPIN');
     if (isHttps) {
       const socket = await connectTunnel(proxy, { hostname: reqOpts.hostname, port }, opts.timeout || 0);
@@ -187,6 +189,9 @@ async function exchangeOnce(opts) {
     const req = lib.request(reqOpts, (res) => {
       answered = true;
       timings.firstByte = ms();
+      // Read now: a kept-alive socket goes back to the pool (and off res) once the body has arrived.
+      const remoteAddress = res.socket && res.socket.remoteAddress;
+      const localAddress = res.socket && res.socket.localAddress;
       const chunks = [];
       let rawSize = 0;
       // Streams (text/event-stream) are handed to opts.onData as they arrive, unless compressed.
@@ -227,7 +232,9 @@ async function exchangeOnce(opts) {
             total: timings.end,
             ...(reused ? { reused: true } : {}),
           },
-          remoteAddress: res.socket && res.socket.remoteAddress,
+          remoteAddress,
+          localAddress,
+          ...(viaProxy ? { viaProxy: true } : {}),
           clientCertificate: tlsOpts && tlsOpts.label ? tlsOpts.label : null,
           ...(cancelled ? { cancelled: true } : {}),
         });
