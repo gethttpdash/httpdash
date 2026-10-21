@@ -6,6 +6,8 @@
 
 **A free, source-available API client that runs your Postman collections and scripts, keeps everything on your machine, and logs in for you.** No account, no cloud. For macOS, Windows and Linux.
 
+Built for demanding microservice APIs: it builds environments from your service registry, spreads requests over every instance and counts what each answers, compares instances side by side, reads a service's health while your request runs, shows where each request went on the network, and lets AI agents work alongside you. Its collection runner is about 16 times faster than Postman's.
+
 Website: [httpdash.com](https://httpdash.com) · [Download](https://github.com/gethttpdash/httpdash/releases/latest) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
 Built with Electron and plain JavaScript (no build step).
@@ -87,7 +89,7 @@ Run collections without opening the app, like Postman's Newman. The runner needs
 ```bash
 npm install -g github:gethttpdash/httpdash     # or, in a clone: npm run cli -- run …
 httpdash list backup.json
-httpdash run backup.json -c "CCER SGF1 QA" -e "CCER_SGF1_QA" --env-var password=$CCER_PASSWORD -r cli,junit
+httpdash run backup.json -c "Orders API" -e "Staging" --env-var password=$API_PASSWORD -r cli,junit
 ```
 
 - **Input:** an HttpDash backup (**Export → HttpDash backup**, ideally with "Leave out secrets"), a Postman collection, or a `workspace.json`.
@@ -95,11 +97,11 @@ httpdash run backup.json -c "CCER SGF1 QA" -e "CCER_SGF1_QA" --env-var password=
 - **Secrets in CI:** pass them with `--env-var key=value`.
 - **Other options:**
   - `-n` for iterations and `-d data.csv` for data-driven runs.
-  - `--folder`, `--bail`, `--delay-request`, `--timeout-request`.
+  - `--folder`, `--tag` (repeat it to require several tags), `--bail`, `--delay-request`, `--timeout-request`.
   - `-k` to skip SSL verification.
   - Client certificates with Newman's flags: `--ssl-client-cert`, `--ssl-client-key`, `--ssl-client-passphrase`, `--ssl-client-cert-list` (Newman's JSON format) and `--ssl-extra-ca-certs`.
   - Reporters: `cli`, `json` and `junit` (JUnit XML is read by Jenkins, GitLab, Azure DevOps and GitHub test reporters).
-- **What carries over from the app:** auth dependencies and scripts work exactly as in the app.
+- **What carries over from the app:** auth dependencies and scripts work exactly as in the app, and each request's health line is printed when a health URL is set.
 - **Exit codes:** `0` all passed, `1` a test or request failed, `2` bad arguments or input.
 
 ## AI agents (OpenAPI and MCP)
@@ -217,6 +219,66 @@ Auth dependencies are saved in HttpDash's workspace. Postman's export format has
 
 ![Auth dependency settings](docs/screenshots/10-auth-dependency-setup.png)
 
+## Service discovery (auto-create environments)
+
+Point HttpDash at a service registry and it builds an environment with one variable per service. For example, `{{orders_url}}` = `http://10.0.1.5:8080`, so requests can use `{{orders_url}}/api/orders`.
+
+To add a registry, open **Environments** in the sidebar and click **Service discovery → +**.
+
+| Registry | What it reads |
+| --- | --- |
+| Consul | `/v1/catalog/services` plus each service's healthy instances. Options: ACL token, datacenter, tag filter, http/https. |
+| Eureka (Spring Cloud) | `/eureka/apps`, instances with status UP only. Uses each app's home page URL or its host and port. |
+| Kubernetes | Services in a namespace (or `*` for all), using a service-account bearer token and an optional label selector. The address can be the cluster DNS name, the cluster IP, or the external LoadBalancer address. |
+| Custom JSON | Any endpoint returning a list of services or a `{ "name": "url" }` map. You set the list path, the name field, and a URL field or template such as `http://{host}:{port}`. |
+| OpenAPI document | The document's server becomes a base URL variable, and every operation becomes a request in a collection that follows the document (see below). |
+
+- **Preview services** shows what would be created, without changing anything.
+- **Create environment** makes the environment the first time.
+- **Sync / Re-sync** updates the same environment in place: changed URLs are updated, new services are added, and services that vanished are removed (unless you tick "keep"). Variables you added yourself, such as API keys, are never touched.
+- **Variable names** follow a pattern: `{name}_url` by default, or `{NAME}_BASE` for upper case.
+- **Startup sync:** each source can be set to sync automatically when HttpDash starts.
+- **Settings:** registry requests use your proxy settings, and SSL verification can be turned off per source (useful for Kubernetes API servers with self-signed certificates).
+
+![Service discovery preview](docs/screenshots/14-discovery-preview.png)
+
+### OpenAPI documents, versioned
+
+A source pointed at an OpenAPI (Swagger) document, JSON or YAML, keeps a collection with one request per operation. Each sync records the document's version and a fingerprint, so an unchanged document changes nothing. A new one is compared with the last: added, changed and removed operations are listed before anything is written, and you apply them when you're ready. Your own edits (values, scripts, tests, requests you added) are kept, and the report says where the document changed something you edited too.
+
+Each operation's shape is kept as well, so a request, and each of its versions, is checked against the document. A banner says when the operation is gone or deprecated, a required parameter or field is missing, a value isn't one the spec allows, or it sends something the spec doesn't know.
+
+### Load balancing and traffic by instance
+
+When a service has several instances, requests that use its variable can go to **the first instance**, **each in turn** (round robin) or **a random one**, in Send, the Runner and Monitors. Unhealthy instances are skipped. Behind a load balancer, set the **instance header** (such as `X-Served-By`) and requests are counted by the instance that answered.
+
+The source's **Traffic** page shows, live, what each instance answered: requests, share, p50 and p95 times, status codes and connection errors. Slow and failing instances are flagged, and so are instances that left the pool. The latest requests are listed with the gap between them. Export the report to Excel, CSV, PDF, an image, an HTML page, Markdown or JSON.
+
+### Payloads
+
+Give a request the variations it should be called with (typed in, or imported from CSV or JSON rows) and send them in turn or at random. Each payload has its own rotation over the instances. Traffic is counted per payload too, so a payload that is slow on every instance can be told apart from an instance that is slow for every payload. The same goes for network segments: **By network segment** appears when instances answer from more than one.
+
+### Compare instances
+
+**Compare**, next to Send, sends the request to every healthy instance of the service in its URL (the source is synced again first), or to every address its host resolves to in DNS (round-robin DNS, Kubernetes headless services). It compares the answers (status, headers and every field of a JSON body) and names the instance that answered differently, with each difference: `X-Version` 2.3.0 where the others say 2.4.1, a missing `qty`, a different `state`.
+
+- Values that differ on every instance by nature (ids, timestamps, the instance's own name) are set apart, and can be ignored for the request with one click (`items[*].updatedAt` covers every item).
+- Headers that always vary, such as `Date` and request ids, are ignored.
+- Each instance's status, time, tests and address are listed, and **Show** opens its full answer.
+- A POST, PUT, PATCH or DELETE asks first, since it runs once per instance.
+
+## Request versions and spec warnings
+
+Every distinct version of a request you send by hand (method, URL, params, headers, body, auth) is kept with the response it got. Open **Versions** in the request's header to switch back to one and see its response straight away. Sending the same thing again doesn't make a new version. Name and tag versions in **Manage versions**; named and tagged versions show up in the sidebar search. Runs and monitors don't add versions, and versions stay in your workspace (they aren't exported or shared). Each request keeps 50, the named and tagged ones longest.
+
+When a request comes from an OpenAPI source, it and each of its versions are checked against the document: versions that no longer fit are marked ⚠ in the versions menu.
+
+## Tags and search
+
+Tag requests (`smoke`, `orders`, `admin`, as many as you like) in the field under the request's name, which suggests the tags already in use. The sidebar search becomes a dropdown as you type, built from every request's tags, methods, URLs and names, most used first. Pick one and it becomes a chip; chips combine (every tag, any of the methods, plus the text you add). `tag:`, `method:`, `url:` and `name:` narrow the suggestions.
+
+The Runner's request picker uses the same search, so `#smoke` then **All** runs the smoke tests, and the CLI has `--tag`. Tags travel with team sharing and survive a Postman export and import.
+
 ## Health while it runs (profiling)
 
 Give a request, a folder or a collection a **health URL**, and HttpDash reads it before the request is sent, while it is in flight, and after it answers. You see what the server went through while it handled your request: connections or transactions held, queues, memory, a database that went down.
@@ -249,28 +311,6 @@ The **Timeline** tab has a **Network** section for every request:
 Through a proxy, the address shown is the proxy's, and the trace says so. Segment size is /24 for IPv4 and /64 for IPv6 by default; change it, or turn tracing off, in **Settings → General**. Lookups are cached for a minute, so a collection run asks once per host.
 
 For services from service discovery, the **Traffic** page adds a **By network segment** table when instances answer from more than one segment, so a slow data center or VLAN stands out from a slow instance. It's in every export format too, and **Compare** shows the address each instance answered from.
-
-## Service discovery (auto-create environments)
-
-Point HttpDash at a service registry and it builds an environment with one variable per service. For example, `{{orders_url}}` = `http://10.0.1.5:8080`, so requests can use `{{orders_url}}/api/orders`.
-
-To add a registry, open **Environments** in the sidebar and click **Service discovery → +**.
-
-| Registry | What it reads |
-| --- | --- |
-| Consul | `/v1/catalog/services` plus each service's healthy instances. Options: ACL token, datacenter, tag filter, http/https. |
-| Eureka (Spring Cloud) | `/eureka/apps`, instances with status UP only. Uses each app's home page URL or its host and port. |
-| Kubernetes | Services in a namespace (or `*` for all), using a service-account bearer token and an optional label selector. The address can be the cluster DNS name, the cluster IP, or the external LoadBalancer address. |
-| Custom JSON | Any endpoint returning a list of services or a `{ "name": "url" }` map. You set the list path, the name field, and a URL field or template such as `http://{host}:{port}`. |
-
-- **Preview services** shows what would be created, without changing anything.
-- **Create environment** makes the environment the first time.
-- **Sync / Re-sync** updates the same environment in place: changed URLs are updated, new services are added, and services that vanished are removed (unless you tick "keep"). Variables you added yourself, such as API keys, are never touched.
-- **Variable names** follow a pattern: `{name}_url` by default, or `{NAME}_BASE` for upper case.
-- **Startup sync:** each source can be set to sync automatically when HttpDash starts.
-- **Settings:** registry requests use your proxy settings, and SSL verification can be turned off per source (useful for Kubernetes API servers with self-signed certificates).
-
-![Service discovery preview](docs/screenshots/14-discovery-preview.png)
 
 ## Streaming responses (Server-Sent Events)
 
@@ -334,6 +374,8 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
   - Refresh tokens, expiry display and "Sign Out of Providers". Tokens you get by signing in are never shared through team sync; each person keeps their own.
 - Per-request settings: follow redirects, SSL verification, cookies, timeout
 - Paste a cURL command into the URL bar to import it
+- **Tags** on requests, suggested as you type, and **versions**: every request you send by hand is kept with its response, to switch back to in a click
+- Connections are kept open and reused (keep-alive), so repeat requests skip DNS, TCP and TLS
 
 **Responses**
 - Status, time and size, with a breakdown of DNS / connect / TLS / first byte
@@ -343,6 +385,9 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Search, line wrap, copy, save to file, save as example
 - Large responses (over 2 MB by default) show their first 512 KB until you click **Show all**, so the window never freezes
 - Headers, cookies, test results with filters, and a timeline showing the request actually sent and any redirects
+- **Network** (in the timeline): every address the host resolves to, the one it connected to in octets and segments, your network adapter, and a route trace
+- **Health:** what the service's health endpoint said before, during and after the request, when a health URL is set
+- **Compare:** the same request sent to every instance of a service, and the one that answered differently
 
 **Scripts** (Postman-compatible `pm` API)
 - Pre-request and test scripts on collections, folders and requests, run in Postman's order
@@ -357,11 +402,13 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 **Organisation**
 - Collections and nested folders with drag-and-drop, rename, duplicate, delete and "Copy as cURL"
 - Collection / folder settings: description, auth, scripts, collection variables
-- Environments (with secret values), globals, environment quick look, dynamic variables (`{{$guid}}`, `{{$timestamp}}`, `{{$randomEmail}}`, …)
+- Environments (with secret values and a color that tints the top and bottom bars while active), globals, environment quick look, dynamic variables (`{{$guid}}`, `{{$timestamp}}`, `{{$randomEmail}}`, …)
+- A sidebar search that suggests from every request's name, URL, method and tag, with chips that combine
 - History grouped by day, multiple tabs with unsaved-change tracking, all restored on restart
 
 **Collection Runner**
-- Run a collection or folder, choose which requests to include, environment, iterations and delay
+- Run a collection or folder, and pick its requests from a tree or by tag; environment, iterations and a gap in milliseconds between requests
+- 500 requests with scripts and tests in about a third of a second (`npm run bench` compares it with Newman and Bruno)
 - CSV / JSON data files (one iteration per row), `pm.setNextRequest` flow control, stop on failure
 - Live results with per-request tests, request/response details and exportable JSON results
 - Optionally persists variable changes made during the run
@@ -372,7 +419,7 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 - Export everything as a restorable backup or as Postman files, or export single collections, environments and globals
 - Code generation: cURL, raw HTTP, JavaScript fetch, Node.js Axios, Python requests, Go, PHP cURL, C# HttpClient, Java OkHttp, PowerShell, wget
 - Cookie manager (view / add / edit / delete per domain)
-- Settings: timeout, redirects, SSL verification, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), user agent, response size limit, light / dark / system theme, editor font size, stacked or side-by-side layout
+- Settings: timeout, redirects, SSL verification, connection reuse, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), network tracing and segment size, user agent, response size limit, light / dark / system theme, editor font size, stacked or side-by-side layout
 - Console panel with network and script logs; keyboard shortcuts (Ctrl/Cmd+T, Enter, S, W, O)
 
 ## Screenshots
@@ -383,6 +430,10 @@ Some of these are set automatically if you don't set them (User-Agent, Accept, A
 | ![JSON body](docs/screenshots/04-json-body.png) JSON body with dynamic variables | ![OAuth 2.0](docs/screenshots/05-oauth2.png) OAuth 2.0 token helper |
 | ![Code snippet](docs/screenshots/06-code-snippet.png) Code generation | ![Runner](docs/screenshots/07-runner.png) Collection runner with a data file |
 | ![Environment](docs/screenshots/08-dark-environment.png) Environments (dark theme) | ![Console](docs/screenshots/09-dark-console.png) Console |
+| ![Compare instances](website/assets/compare.webp) Compare instances | ![Traffic by instance](website/assets/traffic.webp) Traffic by instance and payload |
+| ![Health](website/assets/health.webp) Health while the request ran | ![Network](website/assets/network.webp) Where the request went on the network |
+| ![Versions](website/assets/versions.webp) Versions and a spec warning | ![Search](website/assets/search.webp) Tags and the search that suggests |
+| ![AI access](website/assets/ai-agents.webp) AI agents at work | ![Table view](website/assets/table.webp) A JSON response as a table |
 
 ## Not included
 
@@ -404,12 +455,24 @@ rsync -rlvz --delete --exclude .well-known --exclude .htaccess website/ <user>@<
 
 ```
 src/core/      request engine (no Electron dependency, unit-tested)
-  http-client.js  HTTP/HTTPS with timings, redirects, decompression, proxy
-  executor.js     variables, auth, bodies, scripts, cookies -> response
+  http-client.js  HTTP/HTTPS with timings, redirects, decompression, proxy, keep-alive
+  executor.js     variables, auth, bodies, scripts, cookies, health, network -> response
   sandbox.js      runs scripts in a QuickJS (WebAssembly) sandbox
   sandbox-guest.js  the pm.* script API, running inside the sandbox
   vendor/         minified chai for the sandbox (npm run vendor)
   runner.js       collection runner and CSV/JSON data files
+  dependency.js   auth dependencies (run the login first)
+  discovery.js    service registries (Consul, Eureka, Kubernetes, custom JSON, OpenAPI)
+  openapi-sync.js versioned sync of an OpenAPI document into a collection
+  request-shape.js  checks a request against its operation in the spec
+  balancer.js     spreads requests over instances; traffic by instance, payload and segment
+  payloads.js     the variations a request is sent with
+  compare.js      compares the answers of every instance
+  dns-instances.js  a host's addresses in DNS, for Compare
+  health.js       reads a health endpoint around a request
+  network.js      addresses, octets, segments, reverse DNS and traceroute
+  traffic-report.js  traffic report as CSV, Excel, JSON, Markdown and HTML
+  ai-api-spec.js  the AI agents' API (OpenAPI document); ai-server.js serves it, mcp.js bridges MCP
   postman.js      Postman / OpenAPI import and export
   curl.js         cURL parser
   codegen.js      code snippet generators
