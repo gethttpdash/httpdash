@@ -146,6 +146,79 @@
     if (tab && tab.id === runningTab && run.rerender) run.rerender();
   });
 
+  /**
+   * The requests a run includes: the folder being run as a tree, with a checkbox on every request and
+   * folder (a folder's checks or unchecks everything in it), a filter by name, method, URL or folder,
+   * and All / None for what the filter shows. cfg.excluded holds the ids left out.
+   */
+  function requestPicker(cfg, col, runBtn) {
+    const ui = (cfg.pickerUi = cfg.pickerUi || { collapsed: {}, filter: '' });
+    const scope = col && cfg.folderId ? HD.find(cfg.folderId) : null;
+    const items = col ? (scope && scope.node.items ? scope.node.items : col.items) : [];
+    const all = [];
+    HD.walk(items, (it, parents) => { if (it.type === 'request') all.push({ it, path: parents.map((p) => p.name).join(' / ') }); });
+    const count = h('span.muted.small');
+    const tree = h('div.runner-reqs', { role: 'tree' });
+    const label = runBtn.querySelector('span');
+    const q = () => ui.filter.trim().toLowerCase();
+    const matches = (it, path) => !q() || `${it.request.method} ${it.name} ${path} ${it.request.url || ''}`.toLowerCase().includes(q());
+    const included = (it) => !cfg.excluded[it.id];
+    const set = (list, on) => { for (const it of list) { if (on) delete cfg.excluded[it.id]; else cfg.excluded[it.id] = true; } HD.save(); draw(); };
+    // The requests below a folder that the filter shows.
+    const shownIn = (folder, path) => {
+      const out = [];
+      HD.walk(folder.items || [], (it, parents) => {
+        if (it.type === 'request' && matches(it, [path, ...parents.map((p) => p.name)].filter(Boolean).join(' / '))) out.push(it);
+      });
+      return out;
+    };
+    const draw = () => {
+      HD.clear(tree);
+      const rows = [];
+      const walk = (list, path, depth) => {
+        for (const it of list) {
+          if (it.type === 'folder') {
+            const inside = shownIn(it, path ? `${path} / ${it.name}` : it.name);
+            if (!inside.length) continue;
+            const on = inside.filter(included).length;
+            const box = h('input', { type: 'checkbox', checked: on === inside.length, onchange: (e) => set(inside, e.target.checked) });
+            box.indeterminate = on > 0 && on < inside.length;
+            const open = !ui.collapsed[it.id] || !!q();
+            rows.push(h('div.runner-folder', { role: 'treeitem', 'aria-expanded': String(open), style: `padding-left:${depth * 14}px` },
+              h('button.runner-twisty', { type: 'button', title: open ? 'Collapse' : 'Expand', onclick: () => { ui.collapsed[it.id] = open; HD.save(); draw(); } }, HD.icon('chevron')),
+              h('label.check', box, HD.icon('folder'), h('span.runner-req-name', it.name), h('span.muted.small', `${on}/${inside.length}`))));
+            if (open) walk(it.items || [], path ? `${path} / ${it.name}` : it.name, depth + 1);
+          } else if (it.type === 'request' && matches(it, path)) {
+            rows.push(h('label.check.runner-req', { role: 'treeitem', style: `padding-left:${depth * 14 + 22}px`, title: it.request.url || '' },
+              h('input', { type: 'checkbox', checked: included(it), onchange: (e) => set([it], e.target.checked) }),
+              h(`span.method-tag.${HD.methodClass(it.request.method)}`, it.request.method.slice(0, 6)),
+              h('span.runner-req-name', it.name)));
+          }
+        }
+      };
+      walk(items, '', 0);
+      if (!rows.length) rows.push(h('div.muted.small.runner-none', all.length ? 'No request matches the filter.' : 'No requests here.'));
+      tree.append(...rows);
+      const n = all.filter(({ it }) => included(it)).length;
+      count.textContent = `${n} of ${all.length} selected`;
+      if (!runBtn.classList.contains('btn-danger')) {
+        if (label && col) label.textContent = n === all.length ? `Run ${col.name}` : `Run ${n} request${n === 1 ? '' : 's'}`;
+        runBtn.disabled = !col || !n;
+      }
+    };
+    const shown = () => all.filter(({ it, path }) => matches(it, path)).map(({ it }) => it);
+    const section = h('div.runner-picker',
+      h('div.section-title', 'Requests', h('span.spacer'), count),
+      h('div.runner-picker-bar',
+        h('input.input.runner-filter', { type: 'search', placeholder: 'Filter by name, method, URL or folder', value: ui.filter, spellcheck: 'false',
+          oninput: HD.debounce((e) => { ui.filter = e.target.value; HD.save(); draw(); }, 120) }),
+        HD.button('All', () => set(shown(), true), { ghost: true, small: true, title: 'Select the requests shown' }),
+        HD.button('None', () => set(shown(), false), { ghost: true, small: true, title: 'Leave out the requests shown' })),
+      tree);
+    draw();
+    return { section };
+  }
+
   HD.views.runner = (tab, root) => {
     const cfg = (tab.runner = tab.runner || { iterations: 1, delay: 0, persist: true, stopOnFailure: false, useCookies: true, environmentId: S.ws.activeEnvironmentId, excluded: {} });
     cfg.excluded = cfg.excluded || {};
@@ -162,12 +235,11 @@
     // Config.
     const folders = [];
     if (col) HD.walk(col.items, (it, parents) => { if (it.type === 'folder') folders.push([it.id, [...parents.map((p) => p.name), it.name].join(' / ')]); });
-    const reqList = [];
-    if (col) {
-      const scope = cfg.folderId ? HD.find(cfg.folderId) : null;
-      HD.walk(scope && scope.node.items ? scope.node.items : col.items, (it, parents) => { if (it.type === 'request') reqList.push({ it, path: parents.map((p) => p.name).join(' / ') }); });
-    }
     const rerender = () => { HD.clear(root); HD.views.runner(tab, root); };
+    const runBtn = run.running
+      ? HD.button('Stop', () => window.api.stopRun(), { danger: true, icon: 'stop' })
+      : HD.button(`Run ${col ? col.name : ''}`, () => start(), { primary: true, icon: 'play', disabled: !col });
+    const picker = requestPicker(cfg, col, runBtn);
     left.append(
       h('div.section-title', 'Run configuration'),
       h('label.field', h('span', 'Collection'), HD.select([['', '— Select —'], ...S.ws.collections.map((c) => [c.id, c.name])], cfg.collectionId || '', (v) => { cfg.collectionId = v; cfg.folderId = null; cfg.excluded = {}; HD.save(); rerender(); })),
@@ -195,17 +267,8 @@
       h('label.check', h('input', { type: 'checkbox', checked: cfg.persist, onchange: (e) => { cfg.persist = e.target.checked; HD.save(); } }), 'Persist variable changes after the run'),
       h('label.check', h('input', { type: 'checkbox', checked: cfg.useCookies, onchange: (e) => { cfg.useCookies = e.target.checked; HD.save(); } }), 'Use the cookie jar'),
       h('label.check', h('input', { type: 'checkbox', checked: cfg.stopOnFailure, onchange: (e) => { cfg.stopOnFailure = e.target.checked; HD.save(); } }), 'Stop run on first failure'),
-      h('div.section-title', `Requests (${reqList.filter((r) => !cfg.excluded[r.it.id]).length}/${reqList.length})`,
-        h('span.spacer'),
-        HD.button('All', () => { cfg.excluded = {}; HD.save(); rerender(); }, { ghost: true, small: true }),
-        HD.button('None', () => { reqList.forEach((r) => { cfg.excluded[r.it.id] = true; }); HD.save(); rerender(); }, { ghost: true, small: true })),
-      h('div.runner-reqs', reqList.map(({ it, path }) => h('label.check.runner-req',
-        h('input', { type: 'checkbox', checked: !cfg.excluded[it.id], onchange: (e) => { if (e.target.checked) delete cfg.excluded[it.id]; else cfg.excluded[it.id] = true; HD.save(); } }),
-        h(`span.method-tag.${HD.methodClass(it.request.method)}`, it.request.method),
-        h('span.runner-req-name', it.name), path ? h('span.muted.small', path) : null))),
-      h('div.runner-start', run.running
-        ? HD.button('Stop', () => window.api.stopRun(), { danger: true, icon: 'stop' })
-        : HD.button(`Run ${col ? col.name : ''}`, () => start(), { primary: true, icon: 'play', disabled: !col })));
+      picker.section,
+      h('div.runner-start', runBtn));
 
     // Results.
     run.rerender = () => renderResults();

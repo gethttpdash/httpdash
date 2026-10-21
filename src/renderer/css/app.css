@@ -519,10 +519,20 @@ li.CodeMirror-hint-active .hint-scope { color: #fff; }
 .runner-view { flex: 1; display: flex; min-height: 0; }
 .runner-config { width: 360px; flex: none; border-right: 1px solid var(--border); padding: 4px 16px 16px; overflow: auto; display: flex; flex-direction: column; }
 .runner-config .field .select, .runner-config .field .input { width: 100%; }
-.runner-reqs { border: 1px solid var(--border); border-radius: var(--radius); max-height: 300px; overflow: auto; padding: 4px 8px; }
+.runner-picker { display: flex; flex-direction: column; flex: 1 0 auto; min-height: 260px; }
+.runner-picker-bar { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; }
+.runner-filter { flex: 1; min-width: 0; }
+.runner-reqs { border: 1px solid var(--border); border-radius: var(--radius); flex: 1 1 0; min-height: 200px; overflow: auto; padding: 4px 8px; }
 .runner-req { gap: 8px; margin: 3px 0; font-size: 12px; }
+.runner-folder { display: flex; align-items: center; gap: 2px; margin: 3px 0; font-size: 12px; }
+.runner-folder .check { gap: 6px; flex: 1; min-width: 0; }
+.runner-folder .check svg { width: 14px; height: 14px; flex: none; color: var(--text-2); }
+.runner-twisty { border: 0; background: transparent; padding: 0; width: 20px; height: 20px; color: var(--text-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.runner-twisty svg { width: 12px; height: 12px; transition: transform .12s; }
+.runner-folder[aria-expanded="true"] .runner-twisty svg { transform: rotate(90deg); }
+.runner-none { padding: 8px 4px; }
 .runner-req-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.runner-start { margin-top: 16px; }
+.runner-start { margin: 12px -16px -16px; padding: 12px 16px 16px; position: sticky; bottom: -16px; background: var(--bg); border-top: 1px solid var(--border); z-index: 1; }
 .runner-start .btn { width: 100%; height: 36px; }
 .runner-results { flex: 1; min-width: 0; overflow: auto; padding: 16px; }
 .runner-progress { display: flex; align-items: center; gap: 8px; color: var(--text-2); margin-bottom: 8px; }
