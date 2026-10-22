@@ -253,6 +253,10 @@
       if (n.type === 'end') return (n.tabs || []).length ? `${(n.tabs || []).length} result tab${n.tabs.length === 1 ? '' : 's'}` : 'No result tabs';
       return '';
     };
+    // A node folded to its title bar (its ports stay, so its connections do too).
+    const toggleCollapsed = (n) => { n.collapsed = !n.collapsed; touch(); drawNodes(); };
+    const summaryText = (n) => { const s2 = summaryOf(n); return typeof s2 === 'string' ? s2 : [].concat(s2).map((x) => (x && x.textContent != null ? x.textContent : String(x))).join(''); };
+    const setAllCollapsed = (on) => { for (const n of f.nodes) n.collapsed = on; touch(); drawNodes(); };
     const drawNodes = () => {
       for (const el of nodeEls.values()) el.remove();
       nodeEls.clear();
@@ -262,14 +266,17 @@
         const st = run && run.states[n.id];
         const outPorts = n.type === 'condition' ? [['true', 'true'], ['false', 'false']] : n.type === 'end' ? [] : [['out', '']];
         const el = h(`div.flow-node.type-${n.type}`, {
-          class: [selected && selected.kind === 'node' && selected.id === n.id && 'selected', st && `state-${st.replace(' ', '-')}`].filter(Boolean).join(' '),
+          class: [selected && selected.kind === 'node' && selected.id === n.id && 'selected', st && `state-${st.replace(' ', '-')}`, n.collapsed && 'collapsed'].filter(Boolean).join(' '),
           style: { left: `${n.x}px`, top: `${n.y}px`, width: `${NODE_W}px` }, dataset: { id: n.id },
         },
         n.type !== 'start' ? h('span.flow-port.in', { dataset: { port: 'in' }, title: 'Input' }) : null,
-        h('div.flow-node-head', HD.icon(TYPES[n.type].icon), h('span.flow-node-label', n.label || TYPES[n.type].label),
+        h('div.flow-node-head', { ondblclick: (ev) => { if (!ev.target.closest('.flow-port')) toggleCollapsed(n); }, title: n.collapsed ? `${summaryText(n)}\nDouble-click to expand` : 'Drag to move; double-click to collapse' },
+          h('button.flow-collapse', { type: 'button', title: n.collapsed ? 'Expand' : 'Collapse', 'aria-label': n.collapsed ? 'Expand node' : 'Collapse node', 'aria-expanded': String(!n.collapsed),
+            onmousedown: (ev) => ev.stopPropagation(), onclick: (ev) => { ev.stopPropagation(); toggleCollapsed(n); } }, HD.icon('chevron')),
+          HD.icon(TYPES[n.type].icon), h('span.flow-node-label', n.label || TYPES[n.type].label),
           n.type !== 'start' && n.type !== 'end' ? h('span.flow-node-key', k[n.id]) : null,
           st ? h(`span.flow-node-state.state-${st.replace(' ', '-')}`, st === 'done' ? '✓' : st === 'failed' ? '✕' : st === 'running' ? '…' : st === 'skipped' ? '–' : '') : null),
-        h('div.flow-node-body', summaryOf(n)),
+        n.collapsed ? null : h('div.flow-node-body', summaryOf(n)),
         outPorts.length ? h('div.flow-node-outs', outPorts.map(([port, label]) => h('span.flow-out', label ? h('span.flow-out-label', label) : null,
           h(`span.flow-port.out.port-${port}`, { dataset: { port }, title: label ? `Goes on here when ${label}` : 'Output: drag to another node' })))) : null);
         el.addEventListener('mousedown', (ev) => onNodeDown(ev, n));
@@ -540,11 +547,18 @@
 
     // -- Toolbar
     const run = runs.get(f.id);
+    let inspectorBtn = null;
+    let resultsBtn = null;
     const toolbar = h('div.flow-toolbar',
       h('span.flow-title', HD.icon('flow'), f.name),
       h('span.flow-add', h('span.muted.small', 'Add'),
         ...['execute', 'condition', 'end'].map((t) => HD.button(TYPES[t].label, () => addNode(t), { small: true, icon: TYPES[t].icon, title: `Add a ${TYPES[t].label} node${selected ? ' after the selected one' : ''}` }))),
       h('span.spacer'),
+      h('span.flow-panels',
+        HD.button('', () => setAllCollapsed(!f.nodes.every((n) => n.collapsed)), { icon: 'minus', ghost: true, small: true, title: 'Collapse or expand every node' })),
+      h('span.flow-panels',
+        (inspectorBtn = HD.button('', () => togglePanel('hideInspector'), { icon: 'sidebar', ghost: true, small: true, title: 'Show or hide the side panel' })),
+        (resultsBtn = HD.button('', () => togglePanel('hideResults'), { icon: 'rows', ghost: true, small: true, title: 'Show or hide the results' }))),
       h('span.flow-zoom',
         HD.button('', () => setZoom(zoom - 0.1), { icon: 'minus', ghost: true, small: true, title: 'Zoom out' }),
         (zoomLabel = h('span.muted.small.flow-zoom-label', `${Math.round(zoom * 100)}%`)),
@@ -552,7 +566,35 @@
         HD.button('Fit', fit, { ghost: true, small: true, title: 'Zoom to show the whole flow' })),
       run && run.running ? HD.button('Stop', () => window.api.stopFlow(), { danger: true, icon: 'stop' }) : HD.button('Run flow', () => runFlow(f), { primary: true, icon: 'play' }));
 
-    root.appendChild(h('div.flow-view', toolbar, h('div.flow-main', wrap, inspector), results));
+    // The side panel and the results can be hidden, and the results resized, so the canvas can use the whole tab.
+    const main = h('div.flow-main', wrap, inspector);
+    const split = h('div.split-handle.horizontal.flow-split', { title: 'Drag to resize the results' });
+    const applyPanels = () => {
+      inspector.hidden = !!tab.ui.hideInspector;
+      results.hidden = !!tab.ui.hideResults;
+      split.hidden = !!tab.ui.hideResults;
+      if (tab.ui.resultsHeight && !tab.ui.hideResults) { results.style.flex = `0 0 ${tab.ui.resultsHeight}px`; main.style.flex = '1 1 auto'; } else { results.style.flex = ''; main.style.flex = ''; }
+      inspectorBtn.classList.toggle('active', !tab.ui.hideInspector);
+      resultsBtn.classList.toggle('active', !tab.ui.hideResults);
+      inspectorBtn.setAttribute('aria-pressed', String(!tab.ui.hideInspector));
+      resultsBtn.setAttribute('aria-pressed', String(!tab.ui.hideResults));
+      requestAnimationFrame(drawEdges);
+    };
+    const togglePanel = (key) => { tab.ui[key] = !tab.ui[key]; HD.save(); applyPanels(); };
+    let startHeight;
+    split.addEventListener('mousedown', () => { startHeight = results.offsetHeight; });
+    HD.splitter(split, {
+      axis: 'y',
+      onMove: (d) => {
+        const total = root.offsetHeight;
+        tab.ui.resultsHeight = Math.max(120, Math.min(total - 220, startHeight - d));
+        results.style.flex = `0 0 ${tab.ui.resultsHeight}px`;
+        main.style.flex = '1 1 auto';
+      },
+      onEnd: () => HD.save(),
+    });
+    root.appendChild(h('div.flow-view', toolbar, main, split, results));
+    applyPanels();
     drawNodes();
     drawInspector();
     drawResults();
