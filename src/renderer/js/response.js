@@ -66,10 +66,16 @@
   };
   // The parsed body for the table view, or undefined when it isn't JSON. Cached like the pretty text.
   const parsedCache = new WeakMap();
+  const partialJson = new WeakSet(); // responses whose JSON was cut short and closed off
   const parsedJson = (res) => {
     if (!parsedCache.has(res)) {
       let v;
       try { v = JSON.parse(res.bodyText); } catch { v = undefined; }
+      // A version's response keeps only its first 64 KB: its table shows the part that was kept.
+      if (v === undefined && res.truncated && HD.parsePartialJson) {
+        const p = HD.parsePartialJson(res.bodyText);
+        if (p) { v = p.value; partialJson.add(res); }
+      }
       parsedCache.set(res, v);
     }
     return parsedCache.get(res);
@@ -316,6 +322,12 @@
       area.classList.add('sse-area');
       HD.renderEventList(area, events);
       return;
+    }
+    // A version keeps only the first 64 KB of its response; say so wherever that shows.
+    if (res.truncated && view !== 'events') {
+      area.appendChild(h('div.large-banner', h('span', partialJson.has(res)
+        ? 'This version kept the first 64 KB of the response, so the table shows the items in that part only. Send the request again for all of it.'
+        : 'This version kept the first 64 KB of the response. Send the request again for all of it.')));
     }
     if (view === 'table') {
       area.classList.add('jt-area');
