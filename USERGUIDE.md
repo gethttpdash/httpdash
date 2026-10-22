@@ -6,6 +6,7 @@ How every part of HttpDash works, in detail. For what HttpDash is and a quick st
 
 - [Install and update](#install-and-update)
 - [Team sharing through git](#team-sharing-through-git)
+- [Data files (data-driven runs)](#data-files-data-driven-runs)
 - [Command-line runner (CI and schedulers)](#command-line-runner-ci-and-schedulers)
 - [AI agents (OpenAPI and MCP)](#ai-agents-openapi-and-mcp)
 - [Monitors](#monitors)
@@ -81,6 +82,64 @@ environments/staging.json
 | --- | --- |
 | ![Team repository](docs/screenshots/30-team-repo.png) Connecting a repository | ![Conflict](docs/screenshots/32-team-conflict.png) Choosing whose version to keep |
 
+## Data files (data-driven runs)
+
+A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (`-d`) and for AI agents (`startRun`).
+
+1. **Write the file.** CSV starts with a row of column names; JSON is an array of objects, one per iteration.
+
+   ```csv
+   techno,expected_status
+   JAVA,200
+   "C, C++",404
+   ```
+
+   ```json
+   [
+     { "techno": "JAVA", "expected_status": 200 },
+     { "techno": "C, C++", "expected_status": 404 }
+   ]
+   ```
+
+2. **Use the columns** as `{{techno}}` anywhere a variable works (URL, params, headers, body, auth), and in scripts as `pm.iterationData.get("techno")` (or the legacy `data.techno`).
+3. **Pick it in the Runner:** **Data file (CSV or JSON) → Select file**. The button shows the file name and row count, **Preview** shows the rows as they were read, and **×** removes the file.
+
+How it behaves:
+- **Iterations:** choosing a file sets **Iterations** to its number of rows. Set more and the rows start over (with 3 rows, iteration 4 uses row 1); set fewer and only the first rows run.
+- **Precedence:** a column beats a global, collection or environment variable of the same name; only `pm.variables.set` in a script beats it.
+- **CSV:** columns are separated by commas (a file Excel saved with semicolons reads as one column: save it as "CSV UTF-8 (comma delimited)", or use JSON). Quotes work as usual (`"C, C++"`, `""` for a quote), blank lines are skipped and a UTF-8 BOM is fine. Every value is text, so compare with `Number(...)` in tests.
+- **Login requests:** auth dependencies still run when the login request is unticked in the run, so you can tick only the requests that use the data.
+- **Stop run on first failure** stops the whole run, not just that row's iteration.
+
+![A run with a JSON data file of nested objects](docs/screenshots/33-runner-data-file.png)
+
+### Nested JSON in a data file
+
+Only a row's top-level keys become variables. In a JSON row like `{ "id": 7, "user": { "name": "Ada", "roles": ["admin", "dev"] } }`:
+
+| In the request | Is sent as |
+| --- | --- |
+| `{{id}}` | `7` |
+| `{{user}}` | `[object Object]` (not JSON) |
+| `{{user.name}}` | `{{user.name}}`, left as it is (there is no path lookup) |
+
+This is how Postman and Newman behave too, so collections run the same in both. CSV files are always flat: a column named `user.name` is a variable with that whole name.
+
+Scripts get the real objects, so build what the request needs in a pre-request script (on the request, or on its folder to share it):
+
+```js
+const user = pm.iterationData.get("user");
+pm.variables.set("userJson", JSON.stringify(user));   // the whole object, as JSON
+pm.variables.set("userName", user.name);              // a field deep inside
+pm.variables.set("firstRole", user.roles[0]);
+```
+
+```json
+{ "id": {{id}}, "user": {{userJson}}, "role": "{{firstRole}}" }
+```
+
+Leave `{{userJson}}` unquoted, since it is already JSON; numbers and booleans such as `{{id}}` can go unquoted too. To send each row as the whole body, use `pm.variables.set("payload", JSON.stringify(pm.iterationData.toObject()))` and make the body `{{payload}}`. Tests can check against the row the same way: `pm.expect(pm.response.json().user).to.eql(pm.iterationData.get("user"))`.
+
 ## Command-line runner (CI and schedulers)
 
 Run collections without opening the app, like Postman's Newman. The runner needs Node.js 22+:
@@ -96,7 +155,7 @@ httpdash send '{{orders_url}}/orders' -e Staging      # one request through the 
 - **Environments:** pick one by name from the backup with `-e`, or pass a Postman environment file; `-g` takes a Postman globals file.
 - **Secrets in CI:** pass them with `--env-var key=value`.
 - **Other options:**
-  - `-n` for iterations and `-d data.csv` for data-driven runs.
+  - `-n` for iterations and `-d data.csv` (or `.json`) for data-driven runs (see [Data files](#data-files-data-driven-runs)).
   - `-f` / `--folder`, `--tag` (repeat it to require several tags), `--bail`, `--delay-request`, `--timeout-request`, `--no-color`.
   - `--socks5 host:port` to send every request through a SOCKS5 proxy; `--no-tunnels` to ignore the tunnels saved in a `workspace.json`.
   - `-k` to skip SSL verification.
@@ -128,6 +187,13 @@ An agent (or you) can send through HttpDash rather than with curl, and keep what
   ```
 
   `-X`, `-H`, `-d` / `--json` (`@file` reads a file), `-e` for the environment, `-c` / `--folder` / `--save` / `--save-always` / `--name` / `-t` to keep it, `-i` for the status and headers, `-v` for timing, instance, health and network details, and `-f` to exit with 22 on a status of 400 or more (`-f` means `--folder` only for `httpdash run`). `-d` sends form data unless it looks like JSON; `--max-body` caps how much of the body is printed (1 MB by default). The body goes to stdout, so it pipes into `jq`. Exit codes: `0` an answer came back (any status, as curl), `1` the request itself failed (connection, DNS, timeout), `2` bad arguments, `3` HttpDash wasn't reachable or refused (not running, AI access off, a permission off, locked), `22` with `-f`.
+
+### Scripts and data files for agents
+
+- **Scripts:** `createRequest` and `updateRequest` take a request's `preRequestScript` and `testScript`. `createCollection`, `createFolder`, `updateCollection` and `updateFolder` set the scripts that run around every request inside them, and `getCollection` / `getFolder` read them back. This needs the **Edit** permission.
+- **Data files:** `startRun` takes `data`, an array of objects with one per iteration, just like a [data file](#data-files-data-driven-runs). Through MCP, `dataFile` takes the path to a CSV or JSON file on your computer instead: `httpdash mcp` reads it on the agent's side and sends the rows, so the app itself never opens a path an agent names. Iterations default to the number of rows, and the Runner shows "Data from AI agent". Without `data`, a data file you chose in the Runner stays in use and `startRun`'s answer names it; `data: []` removes it. The rows travel in the call, which is capped at 1 MB.
+
+For example, an agent can create a folder whose pre-request script turns the nested `user` of each row into `{{userJson}}` (as in [Nested JSON in a data file](#nested-json-in-a-data-file)), add a request that uses it, then call `startRun` with `dataFile: "technos.json"` and read the results with `getRun`.
 
 `httpdash mcp` finds the port and token by itself while the app runs (`--port` / `--token`, or `HTTPDASH_AI_PORT` / `HTTPDASH_AI_TOKEN`, set them explicitly; `--data-dir` or `HTTPDASH_DATA_DIR` points it at another data folder). Start with `getStatus`; `sendRequest` sends a saved request; `startRun` then `getRun` runs the Runner; `getUiSnapshot`, `uiAction` and `takeScreenshot` work the screen.
 
@@ -465,7 +531,7 @@ Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.
 **Collection Runner**
 - Run a collection or folder, and pick its requests from a tree or by tag; environment, iterations and a gap in milliseconds between requests
 - 500 requests with scripts and tests in about a third of a second (`npm run bench` compares it with Newman and Bruno)
-- CSV / JSON data files (one iteration per row), `pm.setNextRequest` flow control, stop on failure
+- CSV / JSON [data files](#data-files-data-driven-runs) (one iteration per row), `pm.setNextRequest` flow control, stop on failure
 - Live results with per-request tests, request/response details and exportable JSON results
 - Optionally persists variable changes made during the run
 

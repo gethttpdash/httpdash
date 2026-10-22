@@ -79,6 +79,23 @@
     if (!c) throw notFound('collection', id);
     return c;
   };
+  const findFolder = (id) => {
+    const f = HD.find(id);
+    if (!f || f.node.type !== 'folder') throw notFound('folder', id);
+    return f;
+  };
+  // Name, description and scripts of a collection or folder an agent may set.
+  const CONTAINER_FIELDS = ['name', 'description', 'preRequestScript', 'testScript'];
+  function applyContainerFields(node, given) {
+    for (const k of CONTAINER_FIELDS) {
+      if (given[k] == null || (k === 'name' && !given[k])) continue;
+      node[k] = String(given[k]);
+    }
+    const cur = HD.currentTab();
+    if (cur && cur.refId === node.id) HD.renderActiveTab();
+    HD.renderTabBar();
+    return node;
+  }
   const findEnvironment = (id) => {
     const e = S.ws.environments.find((x) => x.id === id);
     if (!e) throw notFound('environment', id);
@@ -484,8 +501,7 @@
       };
     },
     createCollection: ({ body }) => {
-      const c = HD.newCollection(String(body.name));
-      if (body.description) c.description = String(body.description);
+      const c = applyContainerFields(HD.newCollection(String(body.name)), body);
       c.variables = Object.entries(body.variables || {}).map(([key, value]) => ({ key, value: String(value), enabled: true }));
       S.ws.collections.push(c);
       changed();
@@ -495,10 +511,28 @@
       const c = findCollection(collectionId);
       const parent = body.parentFolderId ? HD.find(body.parentFolderId) : null;
       if (body.parentFolderId && (!parent || parent.node.type !== 'folder' || parent.collection.id !== c.id)) throw notFound('folder in this collection', body.parentFolderId);
-      const folder = HD.newFolder(String(body.name));
+      const folder = applyContainerFields(HD.newFolder(String(body.name)), body);
       (parent ? parent.node.items : c.items).push(folder);
       changed();
       return { id: folder.id, name: folder.name };
+    },
+    updateCollection: ({ collectionId, body }) => {
+      const c = applyContainerFields(findCollection(collectionId), body);
+      changed();
+      return { id: c.id, name: c.name };
+    },
+    getFolder: ({ folderId }, ctx) => {
+      const f = findFolder(folderId);
+      return {
+        ...tree(f.node), collectionId: f.collection.id, path: [f.collection, ...f.parents].map((p) => p.name).join(' / '), description: f.node.description || '',
+        auth: ctx.permissions.secrets ? f.node.auth : maskAuth(f.node.auth), preRequestScript: f.node.preRequestScript || '', testScript: f.node.testScript || '',
+      };
+    },
+    updateFolder: ({ folderId, body }) => {
+      const f = findFolder(folderId);
+      applyContainerFields(f.node, body);
+      changed();
+      return { id: f.node.id, name: f.node.name };
     },
     createRequest: ({ body }) => {
       const c = findCollection(body.collectionId);
@@ -634,9 +668,16 @@
       const query = { tokens: (body.tags || []).map((value) => ({ kind: 'tag', value })), text: '' };
       const included = all.filter((it) => (!ids || ids.has(it.id)) && HD.matchRequest(it, query));
       if (!included.length) throw fail(400, 'No request in that collection or folder matches; nothing to run');
+      let data = {};
+      if (body.data != null) {
+        if (!Array.isArray(body.data) || body.data.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) throw fail(400, 'data must be an array of objects, one per iteration');
+        if (body.data.length > 10000) throw fail(400, 'data has more than 10000 rows');
+        data = body.data.length ? { dataFile: 'Data from AI agent', data: HD.clone(body.data) } : { dataFile: null, data: null };
+      }
+      const rows = (data.data !== undefined ? data.data : tab.runner.data) || [];
       tab.runner = {
-        ...tab.runner, collectionId: c.id, folderId: body.folderId || null,
-        environmentId: body.environmentId || S.ws.activeEnvironmentId, iterations: Math.max(1, Number(body.iterations) || 1),
+        ...tab.runner, ...data, collectionId: c.id, folderId: body.folderId || null,
+        environmentId: body.environmentId || S.ws.activeEnvironmentId, iterations: Math.max(1, Number(body.iterations) || rows.length || 1),
         delay: Math.max(0, Number(body.delayMs) || 0), stopOnFailure: !!body.stopOnFailure,
         excluded: Object.fromEntries(all.filter((it) => !included.includes(it)).map((it) => [it.id, true])),
       };
@@ -644,7 +685,10 @@
       HD.renderActiveTab();
       Promise.resolve().then(() => HD.startRunnerTab(tab.id)).catch(() => {});
       await wait(50);
-      return { runId: tab.id, state: 'running', requests: included.length, iterations: tab.runner.iterations };
+      return {
+        runId: tab.id, state: 'running', requests: included.length, iterations: tab.runner.iterations,
+        ...(rows.length ? { dataFile: tab.runner.dataFile, dataRows: rows.length } : {}),
+      };
     },
     getRun: ({ runId, results = 'failed' }) => {
       const run = HD.runnerRun(runId);

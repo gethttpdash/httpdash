@@ -5,6 +5,9 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Data files for AI agents:** `startRun` takes `data` (one object per iteration), and through MCP `dataFile`, the path to a CSV or JSON file that `httpdash mcp` reads and sends. Iterations default to the number of rows.
+- **Collection and folder scripts for AI agents:** `createCollection` and `createFolder` take a pre-request and test script, and the new `updateCollection`, `updateFolder` and `getFolder` change and read them.
+- **User guide:** a [Data files](USERGUIDE.md#data-files-data-driven-runs) section, including how to send nested JSON from a data file.
 - **Preview tabs:** a single click in the sidebar (a request, environment, globals, discovery source, monitor or history entry) opens a preview tab, its title in italics, which the next single click replaces, so looking around doesn't pile up tabs. It stays as soon as you use it:
   - an edit, a send or a save
   - a double-click on the tab or on the item in the sidebar
