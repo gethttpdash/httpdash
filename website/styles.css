@@ -297,7 +297,8 @@ p { margin: 0; }
   body { font-size: 16px; }
   .wrap { padding: 0 16px; }
   .nav-links { display: none; }
-  .nav-toggle { display: inline-flex; }
+  .nav-toggle { display: inline-flex; margin-left: auto; }
+  .nav-cta { display: none; } /* phones: the menu button takes its place; the page's own buttons still download */
   .nav-open .nav-links { display: flex; flex-direction: column; gap: 0; position: absolute; top: 64px; left: 0; right: 0; margin: 0; padding: 8px 16px 16px; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: 0 16px 32px rgba(17, 20, 30, .12); }
   .nav-open .nav-links a { display: block; padding: 13px 4px; font-size: 17px; border-bottom: 1px solid var(--line); }
   .nav-open .nav-links li:last-child a { border-bottom: 0; }
