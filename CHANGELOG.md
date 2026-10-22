@@ -41,6 +41,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - You can drop after the last request in a folder.
 
 ### Fixed
+- **Table view for a version's response:** versions keep the first 64 KB of a response, which cut large JSON short and hid the Table view. It now shows the items in the part that was kept, with a note saying so.
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
 - Ctrl/Cmd+F in the URL bar opened a search box inside the one-line URL; it now searches the response.
