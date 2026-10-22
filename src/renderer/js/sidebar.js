@@ -18,6 +18,7 @@
       ['collections', 'layers', 'Collections'],
       ['environments', 'globe', 'Environments'],
       ['history', 'history', 'History'],
+      ['flows', 'flow', 'Flows'],
       ['monitors', 'pulse', 'Monitors'],
       ['team', 'users', 'Team'],
     ].map(([id, icon, label]) => h('button.side-nav-btn', {
@@ -29,6 +30,7 @@
     if (tab === 'collections') renderCollections(panel);
     else if (tab === 'environments') renderEnvironments(panel);
     else if (tab === 'monitors') HD.renderMonitorsSidebar(panel);
+    else if (tab === 'flows') HD.renderFlowsSidebar(panel);
     else if (tab === 'team') HD.renderTeamSidebar(panel);
     else renderHistory(panel);
   };
