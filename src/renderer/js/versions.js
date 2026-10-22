@@ -140,6 +140,14 @@
     const op = f && f.node.openapi && f.node.openapi.op;
     for (const src of HD.discoverySources ? HD.discoverySources() : []) {
       const ls = src.lastSync;
+      // A registry's service collections: each was made from its service's own document.
+      for (const x of (src.provider !== 'openapi' && ls && ls.specs) || []) {
+        if (!x.shapes) continue;
+        const fromIt = op && f.collection.id === x.collectionId;
+        if (!fromIt && !new RegExp(`^\\{\\{\\s*${x.variable}\\s*\\}\\}`).test(def.url || '')) continue;
+        const res = await window.api.checkShape({ def: HD.clone(def), shapes: x.shapes, op: fromIt ? op : undefined, variable: x.variable });
+        if (res) return { ...res, source: `${src.name}: ${x.service}`, spec: x.spec };
+      }
       if (src.provider !== 'openapi' || !ls || !ls.shapes) continue;
       const fromIt = op && f.collection.id === src.collectionId;
       const variable = ls.services && ls.services[0] && ls.services[0].variable;

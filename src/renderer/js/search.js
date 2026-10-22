@@ -191,24 +191,43 @@
 
   /**
    * opts: { path: names of the folders and collection the request is in, which typed text also
-   * searches; fuzzy: let a word be one typo away (see above) }.
+   * searches; fuzzy: let a word be one typo away (see above); vars: variables to fill the URL in with,
+   * so text and url chips also match the real URL (see searchVars) }.
    */
-  HD.matchRequest = (item, query, { path = [], fuzzy = false } = {}) => {
+  // {{variables}} in a URL filled in from vars (a few levels deep), so a search can find the real host.
+  HD.resolvedUrl = (url, vars) => {
+    let out = String(url || '');
+    if (!vars) return out;
+    for (let i = 0; i < 3 && out.includes('{{'); i++) {
+      out = out.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (m, name) => (Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : m));
+    }
+    return out;
+  };
+  // The variables a search may fill URLs in with: those in scope for the collection, secrets left out.
+  HD.searchVars = (collection) => {
+    const info = HD.variableInfoFor ? HD.variableInfoFor(collection || null) : {};
+    const vars = {};
+    for (const [k, v] of Object.entries(info)) if (!v.secret) vars[k] = v.value;
+    return vars;
+  };
+
+  HD.matchRequest = (item, query, { path = [], fuzzy = false, vars = null } = {}) => {
     if (!item || item.type !== 'request') return false;
     if (((query && query.tokens) || []).some((t) => t.kind === 'version')) return false; // only versions have version names
     const req = item.request || {};
     const tags = (req.tags || []).map((t) => t.toLowerCase());
     const name = (item.name || '').toLowerCase();
     const url = String(req.url || '').toLowerCase();
+    const realUrl = vars ? HD.resolvedUrl(req.url, vars).toLowerCase() : url;
     const method = String(req.method || 'GET').toUpperCase();
-    const anyText = (q) => HD.textFound(q, [name, url, method, ...tags, ...path], fuzzy);
+    const anyText = (q) => HD.textFound(q, [name, url, realUrl, method, ...tags, ...path], fuzzy);
     const tokens = (query && query.tokens) || [];
     const methods = tokens.filter((t) => t.kind === 'method').map((t) => t.value.toUpperCase());
     if (methods.length && !methods.includes(method)) return false;
     for (const t of tokens) {
       const v = String(t.value).toLowerCase();
       if (t.kind === 'tag' && !tags.includes(v)) return false;
-      if (t.kind === 'url' && !url.includes(v)) return false;
+      if (t.kind === 'url' && !url.includes(v) && !realUrl.includes(v)) return false;
       if (t.kind === 'name' && !name.includes(v)) return false;
       if (t.kind === 'text' && !anyText(v)) return false;
     }
@@ -276,13 +295,38 @@
   }
 
   // Menus are placed against the window, so a narrow panel neither clips them nor gains a scrollbar.
-  const place = (menu, box, { min = 300, max = 520 } = {}) => {
+  // beside: a panel (such as the sidebar) to put the menu next to rather than below, so it doesn't
+  // cover the results under the field; below it is when there's no room beside.
+  const place = (menu, box, { min = 300, max = 520, beside = null } = {}) => {
     const r = box.getBoundingClientRect();
+    const panel = beside && beside.getBoundingClientRect();
+    if (panel && window.innerWidth - panel.right - 16 >= min) {
+      const width = Math.min(max, window.innerWidth - panel.right - 16);
+      menu.style.width = `${width}px`;
+      menu.style.left = `${panel.right + 6}px`;
+      menu.style.top = `${r.top}px`;
+      menu.style.maxHeight = `${Math.max(160, Math.min(420, window.innerHeight - r.top - 16))}px`;
+      return;
+    }
     const width = Math.min(Math.max(r.width, min), max, window.innerWidth - 16);
     menu.style.width = `${width}px`;
     menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - width - 8))}px`;
     menu.style.top = `${r.bottom + 4}px`;
     menu.style.maxHeight = `${Math.max(160, Math.min(340, window.innerHeight - r.bottom - 16))}px`;
+  };
+
+  // Each menu and option has an id, so the field can name the highlighted option for screen readers.
+  let menus = 0;
+  const optionId = (menu, i) => `${menu.id}-${i}`;
+  const markActive = (menu, input, active) => {
+    let current = null;
+    menu.querySelectorAll('.search-option').forEach((el) => {
+      const on = Number(el.dataset.i) === active;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', String(on));
+      if (on) current = el;
+    });
+    if (current) { input.setAttribute('aria-activedescendant', current.id); current.scrollIntoView({ block: 'nearest' }); } else input.removeAttribute('aria-activedescendant');
   };
 
   // onClick (optional): the chip's label becomes a button, e.g. a request's tag that filters the sidebar by it.
@@ -299,21 +343,22 @@
    * onChange() is called whenever the query changes. Keys: ↑ ↓ to choose, Enter to add, Esc to close,
    * Backspace in an empty field removes the last chip. "tag:", "method:", "url:", "name:" narrow it.
    */
-  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '', historyKey = null }) => {
+  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '', historyKey = null, menuBeside = null }) => {
     query.tokens = query.tokens || [];
     query.text = query.text || '';
     let items = [];
     let active = 0;
     const chips = h('span.search-chips');
-    const input = h('input.search-input', { type: 'text', value: query.text, placeholder, spellcheck: 'false', 'aria-autocomplete': 'list', role: 'combobox', 'aria-expanded': 'false' });
-    const menu = h('div.search-menu', { role: 'listbox', hidden: true });
+    const menuId = `hd-search-menu-${++menus}`;
+    const input = h('input.search-input', { type: 'text', value: query.text, placeholder, spellcheck: 'false', 'aria-autocomplete': 'list', role: 'combobox', 'aria-expanded': 'false', 'aria-controls': menuId, 'aria-label': placeholder });
+    const menu = h('div.search-menu', { id: menuId, role: 'listbox', hidden: true, 'aria-label': 'Suggestions' });
     const box = h(`div.search-box${className ? `.${className}` : ''}`, { onclick: () => input.focus() }, chips, input, menu);
 
     const drawChips = () => {
       HD.clear(chips).append(...query.tokens.map((t, i) => tokenChip(t, () => { query.tokens.splice(i, 1); drawChips(); onChange(); open(); })));
       input.placeholder = query.tokens.length ? '' : placeholder;
     };
-    const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
     const open = () => {
       items = suggestions(input.value, query, HD.requestCatalog(), historyKey ? historyOf(historyKey) : []);
       active = 0;
@@ -323,7 +368,7 @@
       items.forEach((it, i) => {
         if (it.group && it.group !== group) { group = it.group; menu.appendChild(h('div.search-group', group)); }
         menu.appendChild(h('div.search-option', {
-          role: 'option', class: i === active ? 'active' : '', dataset: { i: String(i) },
+          id: optionId(menu, i), role: 'option', class: i === active ? 'active' : '', 'aria-selected': String(i === active), dataset: { i: String(i) },
           onmousedown: (e) => { e.preventDefault(); choose(i); },
           onmousemove: () => highlight(i),
         },
@@ -336,14 +381,13 @@
         }, '×') : null));
       });
       menu.hidden = false;
-      place(menu, box);
+      place(menu, box, { beside: menuBeside && box.closest(menuBeside) });
       input.setAttribute('aria-expanded', 'true');
+      markActive(menu, input, active);
     };
     const highlight = (i) => {
       active = i;
-      menu.querySelectorAll('.search-option').forEach((el) => el.classList.toggle('active', Number(el.dataset.i) === i));
-      const el = menu.querySelector('.search-option.active');
-      if (el) el.scrollIntoView({ block: 'nearest' });
+      markActive(menu, input, active);
     };
     const choose = (i) => {
       const it = items[i];
@@ -390,12 +434,13 @@
     let items = [];
     let active = 0;
     const chips = h('span.search-chips');
-    const input = h('input.search-input.tag-input', { type: 'text', placeholder: 'Add a tag', spellcheck: 'false', 'aria-label': 'Add a tag', role: 'combobox', 'aria-autocomplete': 'list' });
-    const menu = h('div.search-menu', { role: 'listbox', hidden: true });
+    const menuId = `hd-search-menu-${++menus}`;
+    const input = h('input.search-input.tag-input', { type: 'text', placeholder: 'Add a tag', spellcheck: 'false', 'aria-label': 'Add a tag', role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': menuId });
+    const menu = h('div.search-menu', { id: menuId, role: 'listbox', hidden: true, 'aria-label': 'Tags in use' });
     const box = h('div.search-box.tag-box', { onclick: () => input.focus() }, h('span.tag-box-icon', { title: 'Tags' }, '#'), chips, input, menu);
     const set = (next) => { const n = HD.normalizeTags(next); tags.splice(0, tags.length, ...n); drawChips(); onChange(); };
     const drawChips = () => HD.clear(chips).append(...tags.map((t, i) => tokenChip({ kind: 'tag', value: t }, () => set(tags.filter((_, j) => j !== i)), onTagClick)));
-    const close = () => { menu.hidden = true; };
+    const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
     const open = () => {
       const q = input.value.trim().toLowerCase();
       const mine = new Set(tags.map((t) => t.toLowerCase()));
@@ -406,12 +451,14 @@
       HD.clear(menu);
       if (!items.length) { close(); return; }
       items.forEach((it, i) => menu.appendChild(h('div.search-option', {
-        role: 'option', class: i === active ? 'active' : '', dataset: { i: String(i) },
+        id: optionId(menu, i), role: 'option', class: i === active ? 'active' : '', 'aria-selected': String(i === active), dataset: { i: String(i) },
         onmousedown: (e) => { e.preventDefault(); add(it.value); },
-        onmousemove: () => { active = i; menu.querySelectorAll('.search-option').forEach((el) => el.classList.toggle('active', Number(el.dataset.i) === i)); },
+        onmousemove: () => { active = i; open.highlight(); },
       }, h('span.search-hash', '#'), h('span.search-label', it.value), h('span.search-hint', it.hint))));
       menu.hidden = false;
       place(menu, input, { min: 260, max: 320 });
+      input.setAttribute('aria-expanded', 'true');
+      open.highlight();
     };
     const add = (value) => { input.value = ''; set([...tags, value]); open(); };
     input.addEventListener('focus', open);
@@ -424,7 +471,7 @@
       else if (e.key === 'Escape') { close(); }
       else if (e.key === 'Backspace' && !input.value && tags.length) set(tags.slice(0, -1));
     });
-    open.highlight = () => menu.querySelectorAll('.search-option').forEach((el) => el.classList.toggle('active', Number(el.dataset.i) === active));
+    open.highlight = () => markActive(menu, input, active);
     drawChips();
     return box;
   };

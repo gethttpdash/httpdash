@@ -17,6 +17,7 @@ const runner = require('../core/runner');
 const { makeLookup } = require('../core/dependency');
 const discovery = require('../core/discovery');
 const openapiSync = require('../core/openapi-sync');
+const specCollections = require('../core/spec-collections');
 const balancer = require('../core/balancer');
 const trafficReport = require('../core/traffic-report');
 const payloads = require('../core/payloads');
@@ -945,7 +946,7 @@ handle('oauth2:clearSessions', () => session.fromPartition(OAUTH_PARTITION).clea
 // Service discovery: query a registry and sync its services into environment values. An OpenAPI
 // document also syncs a collection. Both work on copies, so a preview reports what would change
 // without changing anything; `expectHash` makes applying refuse a document that changed since then.
-handle('discovery:sync', async ({ config, values, collection, sourceId, settings, vars, previewOnly, expectHash }) => {
+handle('discovery:sync', async ({ config, values, collection, serviceCollections, sourceId, settings, vars, previewOnly, expectHash, updateSpecs = true }) => {
   const r = (v) => (typeof v === 'string' ? resolveVars(v, vars || {}) : v);
   const cfg = { ...config, url: r(config.url), token: r(config.token), baseUrl: r(config.baseUrl), headers: (config.headers || []).map((h) => ({ ...h, value: r(h.value) })) };
   const found = await discovery.discover(cfg, settings);
@@ -970,6 +971,15 @@ handle('discovery:sync', async ({ config, values, collection, sourceId, settings
     const merged = openapiSync.mergeCollection(collection ? JSON.parse(JSON.stringify(collection)) : null, generated, { sourceId });
     out.requests = merged.diff;
     if (!previewOnly) out.collection = merged.collection;
+  }
+  // A registry can also keep a collection per service, from each service's own OpenAPI document.
+  if (!found.document && cfg.specCollections) {
+    const res = await specCollections.syncServiceCollections({
+      services: out.services, collections: JSON.parse(JSON.stringify(serviceCollections || {})), paths: specCollections.specPaths(cfg.specPaths),
+      sourceId, update: updateSpecs, fetchDoc: (url) => discovery.fetchDocument(url, { verifySSL: cfg.verifySSL !== false }, settings),
+    });
+    out.specs = res.specs.map((x) => (previewOnly ? { ...x, collection: undefined } : x));
+    out.missingSpecs = res.missing;
   }
   if (!previewOnly) out.values = next;
   return out;
