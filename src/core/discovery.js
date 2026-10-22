@@ -26,6 +26,8 @@
  *   serviceName,         // names the variable; default: the document's title
  *   baseUrl,             // instead of the document's server
  *   syncRequests: true,  // keep a collection with a request per operation
+ *   // registries: a collection per service from its own OpenAPI document (spec-collections.js)
+ *   specCollections: false, specPaths: '/v3/api-docs, /openapi.json' (empty: the common paths),
  * }
  */
 const httpClient = require('./http-client');
@@ -49,7 +51,7 @@ async function fetchJson(url, cfg, settings, extraHeaders = [], { parse = JSON.p
       proxy: settings && settings.proxy,
     });
   } catch (e) {
-    throw new DiscoveryError(`Could not reach ${url}: ${e.message}`);
+    throw Object.assign(new DiscoveryError(`Could not reach ${url}: ${e.message}`), { unreachable: true });
   }
   const text = res.body.toString('utf8');
   if (res.status >= 400) throw new DiscoveryError(`${url} returned ${res.status} ${res.statusText}${text ? `: ${text.slice(0, 200)}` : ''}`);
@@ -302,4 +304,13 @@ function syncValues(values, services, { sourceId, variablePattern, keepMissing =
   return diff;
 }
 
-module.exports = { discover, syncValues, variableName, DiscoveryError, PROVIDERS: Object.keys(PROVIDERS) };
+/**
+ * A service's OpenAPI document, JSON or YAML. Only a plain GET: the registry's token and headers
+ * aren't sent to the services. Throws with e.unreachable when the service didn't answer at all.
+ */
+function fetchDocument(url, { verifySSL = true } = {}, settings = {}) {
+  return fetchJson(url, { verifySSL, headers: [] }, { ...settings, timeout: Math.min((settings && settings.timeout) || 8000, 8000) },
+    [], { parse: parseDocument, accept: 'application/json, application/yaml;q=0.9, */*;q=0.8', what: 'JSON or YAML' });
+}
+
+module.exports = { discover, syncValues, variableName, fetchDocument, DiscoveryError, PROVIDERS: Object.keys(PROVIDERS) };

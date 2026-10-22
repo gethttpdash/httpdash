@@ -5,6 +5,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **A collection for every discovered service:** Consul, Eureka, Kubernetes and custom JSON sources can build a collection per service from its own OpenAPI document (looked for at `/v3/api-docs`, `/openapi.json` and other common paths, or yours), with requests on the service's variable so load balancing applies. Each sync keeps the collections in step with their documents and keeps your edits; the results table links each service to its collection or says why it has none.
 - **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.
 - **Search finds the real host:** URLs also match with their variables filled in from the collection, the active environment and globals (secrets left out), so `api.example.com` finds `{{base_url}}/…` requests. The same goes for the Runner's filter and the AI API's `searchRequests`.
 - **Search highlights what matched** in request, folder and collection names and in tags, including close matches; a request shows the tag that matched.

@@ -324,6 +324,17 @@ To add a registry, open **Environments** in the sidebar and click **Service disc
 
 ![Service discovery preview](docs/screenshots/14-discovery-preview.png)
 
+### A collection for every discovered service
+
+A Consul, Eureka, Kubernetes or custom JSON source can also build a collection for each service it finds, from the service's own OpenAPI (Swagger) document. Tick **Also create a collection from each service's API document** on the source, then sync:
+
+- **Where to look:** each service's URL plus a path, tried in order until one returns an OpenAPI document, in JSON or YAML. Leave **Where each service publishes it** empty for the common ones: `/v3/api-docs` and `/v2/api-docs` (Spring), `/openapi.json` (FastAPI), `/swagger/v1/swagger.json` (.NET) and `/api-json` (NestJS). Or list your own, separated by commas. A full URL works too.
+- **What you get:** one collection per service, with a request for every operation. The collection is named after the document's title, or after the service when the title is a framework default such as "OpenAPI definition". Requests use the service's own variable, such as `{{orders_url}}`, so load balancing, traffic by instance and Compare apply, and spec warnings check them against the document.
+- **Keeping up:** each sync brings every collection in step with its service's current document, in the same way as an OpenAPI source: new operations are added, ones that left the document are removed unless you changed them, and your edits, scripts and tests are kept. The results table shows each service's collection, its version and what changed, or why it has none (no document, or the service didn't answer).
+- **At startup**, if the source syncs automatically, only missing collections are created. Existing ones are updated when you sync by hand.
+- **Services that disappear** keep their collection; the report lists them. A collection you delete is created again on the next sync, unless you untick the option.
+- **Safety:** each service only gets a plain GET for its document. The registry's token and extra headers are never sent to the services.
+
 ### OpenAPI documents, versioned
 
 A source pointed at an OpenAPI (Swagger) document, JSON or YAML, keeps a collection with one request per operation. Each sync records the document's version and a fingerprint, so an unchanged document changes nothing. A new one is compared with the last: added, changed and removed operations are listed before anything is written, and you apply them when you're ready. Your own edits (values, scripts, tests, requests you added) are kept, and the report says where the document changed something you edited too.

@@ -41,6 +41,7 @@
     namespace: 'default', addressMode: 'cluster-dns', labelSelector: '',
     listPath: '', nameField: 'name', urlField: 'url', lastSync: null,
     serviceName: '', baseUrl: '', syncRequests: true, collectionId: null, history: [],
+    specCollections: false, specPaths: '', serviceCollectionIds: {},
     balance: 'first', instanceHeader: '',
   });
 
@@ -204,16 +205,53 @@
   const collectionOf = (src) => (src.collectionId && S.ws.collections.find((c) => c.id === src.collectionId)) || null;
   const isOpenApi = (src) => src.provider === 'openapi';
 
+  // The collections a registry source keeps for its services (from their own API documents), by service name.
+  const serviceCollectionsOf = (src) => {
+    const out = {};
+    for (const [service, id] of Object.entries(src.serviceCollectionIds || {})) {
+      const c = S.ws.collections.find((x) => x.id === id);
+      if (c) out[service] = c;
+    }
+    return out;
+  };
+
   // Calls the registry. With previewOnly, nothing is written: the result says what would change.
-  const call = (src, previewOnly, expectHash = null) => {
+  // updateSpecs: false only creates the service collections that are missing (a sync at startup).
+  const call = (src, previewOnly, expectHash = null, { updateSpecs = true } = {}) => {
     const env = S.ws.environments.find((e) => e.id === src.environmentId);
     const col = isOpenApi(src) ? collectionOf(src) : null;
-    const { history, lastSync, available, ...config } = src;
+    const { history, lastSync, available, serviceCollectionIds, ...config } = src;
     return window.api.syncDiscovery({
       config: HD.clone(config), values: env ? HD.clone(env.values) : [], collection: col ? HD.clone(col) : null, sourceId: src.id,
-      settings: S.ws.settings, vars: varsForResolve(), previewOnly, expectHash,
+      serviceCollections: !isOpenApi(src) && src.specCollections ? HD.clone(serviceCollectionsOf(src)) : null,
+      settings: S.ws.settings, vars: varsForResolve(), previewOnly, expectHash, updateSpecs,
     });
   };
+
+  // Writes the service collections a registry sync returned, and sums them up for the report.
+  const applyServiceCollections = (src, res) => {
+    if (!res.specs) return null;
+    src.serviceCollectionIds = src.serviceCollectionIds || {};
+    const count = { created: 0, updated: 0, unchanged: 0, none: 0, unreachable: 0 };
+    for (const x of res.specs) {
+      if (x.collection) {
+        const i = S.ws.collections.findIndex((c) => c.id === x.collection.id);
+        if (i === -1) { S.ws.collections.push(x.collection); count.created++; } else { S.ws.collections[i] = x.collection; count[x.status === 'unchanged' ? 'unchanged' : 'updated']++; }
+        src.serviceCollectionIds[x.service] = x.collection.id;
+      } else if (x.status === 'none' || x.status === 'unreachable') count[x.status]++;
+    }
+    return count;
+  };
+  const specSummary = (count, missing) => [
+    count.created && `${count.created} new`, count.updated && `${count.updated} updated`,
+    count.none && `${count.none} without an API document`, count.unreachable && `${count.unreachable} not reachable`,
+    missing && missing.length && `${missing.length} for services that are gone`,
+  ].filter(Boolean).join(', ') || 'no changes';
+  // What lastSync keeps of each service's collection (not the collection itself).
+  const specRecord = (x) => ({
+    service: x.service, variable: x.variable, status: x.status, error: x.error, docUrl: x.docUrl, spec: x.spec, operations: x.operations,
+    collectionId: x.collection ? x.collection.id : undefined, requests: x.requests ? requestSummary(x.requests) : undefined, shapes: x.shapes,
+  });
 
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
   const versionLabel = (spec) => (spec && spec.version ? `version ${spec.version}` : 'a version without a number');
@@ -231,9 +269,9 @@
   const trimReport = (rq) => rq && ({ ...rq, changes: rq.changes.slice(0, 500) });
 
   /** Syncs a source into its environment, creating the environment the first time. */
-  HD.syncDiscovery = async (src, { silent = false, expectHash = null } = {}) => {
+  HD.syncDiscovery = async (src, { silent = false, expectHash = null, updateSpecs = true } = {}) => {
     try {
-      const res = await call(src, false, expectHash);
+      const res = await call(src, false, expectHash, { updateSpecs });
       let env = S.ws.environments.find((e) => e.id === src.environmentId);
       if (!env) {
         env = HD.newEnvironment(src.name);
@@ -249,12 +287,16 @@
         else S.ws.collections[i] = res.collection;
         src.collectionId = res.collection.id;
       }
+      const specCount = applyServiceCollections(src, res);
+      // Collections whose service was skipped this time keep what the last sync knew of them.
+      const lastSpecs = new Map(((src.lastSync && src.lastSync.specs) || []).map((x) => [x.service, x]));
       const rq = res.requests || null;
       src.lastSync = {
         time: Date.now(), count: res.operations ? res.operations.length : res.services.length, diff: res.diff, warnings: res.warnings, error: null,
         services: res.services.map((s) => ({ name: s.name, variable: s.variable, url: s.url, instances: (s.instances || []).map((i) => ({ id: i.id || '', url: i.url, healthy: i.healthy })) })),
         spec: res.spec || null, requests: trimReport(rq),
         ...(res.shapes ? { shapes: res.shapes } : {}),
+        ...(res.specs ? { specs: res.specs.map((x) => (x.status === 'skipped' && lastSpecs.has(x.service) ? lastSpecs.get(x.service) : specRecord(x))), missingSpecs: res.missingSpecs || [] } : {}),
       };
       // Every version that changed something is kept in the source's history.
       if (res.spec && changeCount(res)) {
@@ -272,9 +314,9 @@
       const d = res.diff;
       const summary = res.spec
         ? `${versionLabel(res.spec)}: ${rq ? requestSummary(rq) : plural(d.added.length + d.updated.length, 'variable') + ' changed'}`
-        : `${plural(res.services.length, 'service')}: ${d.added.length} added, ${d.updated.length} updated, ${d.removed.length} removed`;
+        : `${plural(res.services.length, 'service')}: ${d.added.length} added, ${d.updated.length} updated, ${d.removed.length} removed${specCount ? `; API collections: ${specSummary(specCount, res.missingSpecs)}` : ''}`;
       HD.log('info', `Service discovery "${src.name}" → environment "${env.name}": ${summary}`);
-      if (!silent || changeCount(res)) HD.toast(`${res.spec ? src.name : env.name}: ${summary}`, 'success');
+      if (!silent || changeCount(res) || (specCount && (specCount.created || specCount.updated))) HD.toast(`${res.spec ? src.name : env.name}: ${summary}`, 'success');
       return res;
     } catch (e) {
       const msg = HD.cleanErr(e);
@@ -301,7 +343,8 @@
   // says when a new version is waiting for review, so nothing changes under the user unseen.
   HD.syncDiscoveryOnStartup = async () => {
     for (const src of sources().filter((s) => s.syncOnStartup && s.url)) {
-      if (!isOpenApi(src) || !collectionOf(src)) { await HD.syncDiscovery(src, { silent: true }); continue; }
+      // Service collections that exist already are left alone at startup; "Sync now" brings them up to date.
+      if (!isOpenApi(src) || !collectionOf(src)) { await HD.syncDiscovery(src, { silent: true, updateSpecs: false }); continue; }
       try {
         const res = await HD.checkDiscovery(src);
         if (src.available) HD.toast(`${src.name}: ${versionLabel(res.spec)} has ${plural(src.available.count, 'change')}. Open the source to review them.`, 'info', 8000);
@@ -342,7 +385,7 @@
     { label: 'Sync now', onClick: () => HD.syncDiscovery(src) },
     { label: 'Edit', onClick: () => HD.openDiscovery(src.id, 'config') },
     { label: 'Traffic by instance', onClick: () => HD.openDiscovery(src.id, 'traffic') },
-    { label: 'Duplicate', onClick: () => { const c = { ...HD.clone(src), id: HD.uid(), name: `${src.name} Copy`, environmentId: null, collectionId: null, lastSync: null, history: [], available: undefined }; sources().push(c); HD.save(); HD.renderSidebar(); } },
+    { label: 'Duplicate', onClick: () => { const c = { ...HD.clone(src), id: HD.uid(), name: `${src.name} Copy`, environmentId: null, collectionId: null, serviceCollectionIds: {}, lastSync: null, history: [], available: undefined }; sources().push(c); HD.save(); HD.renderSidebar(); } },
     { separator: true },
     { label: 'Delete source', danger: true, onClick: async () => {
       if (!(await HD.confirm('Delete discovery source', `Delete "${src.name}"? Its environment is kept.`, { danger: true, okLabel: 'Delete' }))) return;
@@ -431,6 +474,11 @@
           h('span.field-help.env-target-help', src.environmentId ? 'Discovered variables in this environment are updated in place.' : `A new environment named "${src.name}" is created on the first sync.`)),
         text('variablePattern', 'Variable name pattern', '{name}_url', '{name} is the service name in lower_snake_case; {NAME} in UPPER_CASE.')),
       check('keepMissing', 'Keep variables for services that disappear from the registry'),
+      !isOpenApi(src) ? h('div.section-title', 'API collections') : null,
+      !isOpenApi(src) ? check('specCollections', 'Also create a collection from each service\'s API document (OpenAPI / Swagger)') : null,
+      !isOpenApi(src) && src.specCollections ? h('div.dep-grid',
+        text('specPaths', 'Where each service publishes it', '/v3/api-docs, /v2/api-docs, /openapi.json, /swagger/v1/swagger.json, /api-json',
+          'Paths under each service\'s URL, tried in order; the first that returns an OpenAPI document is used. Empty: the common ones (Spring, FastAPI, .NET, NestJS). Requests use the service\'s variable, so load balancing applies. Only a plain GET is sent: the registry\'s token and headers stay with the registry.')) : null,
       check('verifySSL', 'Verify the registry\'s SSL certificate'),
       check('syncOnStartup', 'Sync automatically when HttpDash starts'),
       h('div.section-title', 'Load balancing'),
@@ -470,20 +518,42 @@
         }, { primary: true, icon: 'download' }),
         src.environmentId ? HD.button('Open environment', () => HD.openEnvironment(src.environmentId), { ghost: true }) : null));
 
+    // A service's API collection in the results: a link to it, or why there's none.
+    const ver = (spec) => (spec && spec.version ? ` · ${/^v/i.test(spec.version) ? spec.version : `v${spec.version}`}` : '');
+    const specCell = (x) => {
+      if (!x) return h('td.muted', '—');
+      const col = x.collectionId && S.ws.collections.find((c) => c.id === x.collectionId);
+      if (col) {
+        return h('td', h('a', { href: '#', onclick: (e) => { e.preventDefault(); HD.openContainer(col.id); } }, col.name),
+          h('span.muted.small', ` · ${plural(x.operations || 0, 'request')}${ver(x.spec)}`),
+          x.requests && x.status === 'synced' ? h('span.muted.small', { title: x.requests }, ` · ${x.requests}`) : null);
+      }
+      if (x.status === 'synced' || x.status === 'unchanged') return h('td', `${plural(x.operations || 0, 'operation')}`, h('span.muted.small', ver(x.spec)));
+      return h('td.muted.small', { title: x.error || '' }, x.status === 'unreachable' ? 'Not reachable' : 'No API document');
+    };
     const renderResults = (res, diff) => {
       HD.clear(results);
+      // From a sync or preview (with its change report) or from lastSync (already summed up); a preview
+      // links to the collection an earlier sync made.
+      const record = (x) => {
+        const r = x.requests && typeof x.requests === 'object' ? specRecord(x) : x;
+        return r.collectionId ? r : { ...r, collectionId: (src.serviceCollectionIds || {})[x.service] };
+      };
+      const specs = res.specs ? new Map(res.specs.map((x) => [x.service, record(x)])) : null;
       const changed = diff ? new Map([...diff.added.map((k) => [k, 'added']), ...diff.updated.map((k) => [k, 'updated'])]) : new Map();
       results.appendChild(h('div.section-title', `${res.services.length} services found`));
       for (const w of res.warnings || []) results.appendChild(h('div.discovery-warning', w));
       if (diff && diff.removed.length) results.appendChild(h('div.discovery-warning', `Removed: ${diff.removed.join(', ')}`));
+      if (res.missingSpecs && res.missingSpecs.length) results.appendChild(h('div.discovery-warning', `No longer in the registry, so their API collections weren't updated: ${res.missingSpecs.join(', ')}`));
       if (!res.services.length) return;
       results.appendChild(h('div.table-wrap.no-pad', h('table.data-table',
-        h('thead', h('tr', h('th', 'Service'), h('th', 'Variable'), h('th', 'URL'), h('th', 'Instances'), diff ? h('th', '') : null)),
+        h('thead', h('tr', h('th', 'Service'), h('th', 'Variable'), h('th', 'URL'), h('th', 'Instances'), specs ? h('th', 'API collection') : null, diff ? h('th', '') : null)),
         h('tbody', res.services.map((s) => h('tr',
           h('td', s.name),
           h('td.mono', `{{${s.variable}}}`),
           h('td.mono.break', s.url),
           h('td.muted', s.instances && s.instances.length ? `${s.instances.filter((i) => i.healthy).length}/${s.instances.length} healthy` : '—'),
+          specs ? specCell(specs.get(s.name)) : null,
           diff ? h('td', changed.get(s.variable) ? h(`span.pill.${changed.get(s.variable)}`, changed.get(s.variable)) : null) : null))))));
     };
 
@@ -714,7 +784,7 @@
     } else if (ls && !ls.error && ls.diff && tab.ui.showLast !== false) {
       const env = S.ws.environments.find((e) => e.id === src.environmentId);
       if (env && ls.services) {
-        renderResults({ services: ls.services, warnings: ls.warnings }, ls.diff);
+        renderResults({ services: ls.services, warnings: ls.warnings, specs: ls.specs, missingSpecs: ls.missingSpecs }, ls.diff);
         results.querySelector('.section-title').textContent = `Last sync: ${ls.services.length} services in "${env.name}"`;
       }
     } else if (!ls) {
