@@ -50,19 +50,51 @@
 
   // ---- Collections --------------------------------------------------------------------------
 
-  // The collections search: chips (tags, methods, URLs, names) and typed text. A folder is shown when
-  // something inside it matches, or, for plain text, when its own name does.
+  // The collections search: chips (tags, methods, URLs, names) and typed text. Typed text also finds
+  // the requests in a folder or collection by its name. A folder is shown when something inside it
+  // matches, or, for plain text, when its own name does. When typed text matches nothing exactly,
+  // close matches (one typo away) are shown instead, with a note saying so.
   const query = { tokens: [], text: '' };
-  const matches = (node) => {
+  let fuzzy = false;
+  const matches = (node, path = []) => {
     if (!HD.queryActive(query)) return true;
-    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query) || HD.matchingVersions(node, query).length > 0;
+    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query, { path, fuzzy }) || HD.matchingVersions(node, query).length > 0;
     const text = query.text.trim().toLowerCase();
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
-    return (node.items || []).some(matches);
+    return (node.items || []).some((c) => matches(c, [...path, node.name]));
+  };
+  // A tag clicked on a request (or in the tree) is added to the search, which is shown if it was hidden.
+  HD.filterByTag = (tag) => {
+    if (!query.tokens.some((t) => t.kind === 'tag' && t.value.toLowerCase() === String(tag).toLowerCase())) query.tokens.push({ kind: 'tag', value: tag });
+    S.ws.ui.sidebarTab = 'collections';
+    if (S.ws.ui.sidebarHidden) { S.ws.ui.sidebarHidden = false; HD.applyLayout(); }
+    HD.rememberSearch('sidebar', query);
+    HD.save();
+    HD.renderSidebar();
+  };
+  const tagButton = (tag, label = tag) => h('span.tree-tag.clickable', {
+    role: 'button', title: `Show requests tagged #${tag}`,
+    onclick: (e) => { e.stopPropagation(); HD.filterByTag(tag); },
+  }, label);
+  // The tags of a request in the tree: one shown, the one the search matched if any, the rest as "+n".
+  const treeTags = (tags, terms) => {
+    const wanted = new Set(query.tokens.filter((t) => t.kind === 'tag').map((t) => t.value.toLowerCase()));
+    const hit = (t) => wanted.has(t.toLowerCase()) || HD.highlightRanges(t, terms, fuzzy).length > 0;
+    const first = tags.find(hit) || tags[0];
+    return h('span.tree-tags', { title: tags.map((t) => `#${t}`).join(' ') },
+      tagButton(first, HD.highlight(first, terms, fuzzy)), tags.length > 1 ? h('span.tree-tag.more', `+${tags.length - 1}`) : null);
+  };
+  const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy }));
+  // Exact matches first; only when there are none does a typo count.
+  const chooseFuzzy = () => {
+    fuzzy = false;
+    if (!HD.queryHasText(query) || S.ws.collections.some((c) => matches(c)) || unsavedMatches().length) return;
+    fuzzy = true;
+    if (!S.ws.collections.some((c) => matches(c)) && !unsavedMatches().length) fuzzy = false;
   };
 
   function renderCollections(panel) {
-    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box' });
+    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box', historyKey: 'sidebar' });
     panel.appendChild(h('div.side-toolbar',
       HD.button('', async () => {
         const name = await HD.prompt('New collection', 'Name', 'New Collection');
@@ -82,14 +114,21 @@
     const drawTree = () => {
     HD.clear(tree);
     const f = HD.queryActive(query);
+    if (f) chooseFuzzy(); else fuzzy = false;
+    // What the search matched is highlighted in names and tags.
+    const terms = f ? HD.searchTerms(query) : [];
+    if (fuzzy) {
+      const typed = [...query.tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text.trim()].filter(Boolean).join(' ');
+      tree.appendChild(h('div.search-note', `No exact match for “${typed}”. Showing close matches.`));
+    }
     if (!S.ws.collections.length) {
       tree.appendChild(h('div.empty-state.small', h('div', 'No collections yet.'), h('div.muted', 'Create one, or import a Postman collection / OpenAPI file.')));
     }
     const active = HD.currentTab();
     const activeRef = active && active.refId;
     let shown = 0;
-    const renderNode = (node, depth, collection) => {
-      if (!matches(node)) return;
+    const renderNode = (node, depth, collection, path = []) => {
+      if (!matches(node, path)) return;
       if (node.type === 'request') shown++;
       const isContainer = node.type !== 'request';
       const open = f ? true : !!expanded()[node.id];
@@ -142,9 +181,8 @@
       },
       isContainer ? h('span.tree-caret', { class: open ? 'open' : '' }, HD.icon('chevron')) : h('span.tree-caret.empty'),
       node.type === 'request' ? h(`span.method-tag.${HD.methodClass(node.request.method)}`, node.request.method.slice(0, 6)) : HD.icon(node.type === 'collection' ? 'layers' : 'folder'),
-      h('span.tree-name', node.name),
-      node.type === 'request' && node.request.tags && node.request.tags.length ? h('span.tree-tags', { title: node.request.tags.map((t) => `#${t}`).join(' ') },
-        h('span.tree-tag', node.request.tags[0]), node.request.tags.length > 1 ? h('span.tree-tag.more', `+${node.request.tags.length - 1}`) : null) : null,
+      h('span.tree-name', HD.highlight(node.name, terms, fuzzy)),
+      node.type === 'request' && node.request.tags && node.request.tags.length ? treeTags(node.request.tags, terms) : null,
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);
@@ -154,27 +192,27 @@
           tree.appendChild(h('div.tree-row.tree-version', {
             style: { paddingLeft: `${30 + depth * 14}px` }, title: 'Open the request with this version',
             onclick: () => { HD.openRequest(node.id); const t = HD.currentTab(); if (t) HD.useVersion(t, v); },
-          }, HD.icon('history'), h('span.tree-name', v.name || HD.versionLabel(v)),
+          }, HD.icon('history'), h('span.tree-name', HD.highlight(v.name || HD.versionLabel(v), terms)),
           (v.tags || []).length ? h('span.tree-tags', h('span.tree-tag', v.tags[0]), v.tags.length > 1 ? h('span.tree-tag.more', `+${v.tags.length - 1}`) : null) : null,
           v.response && v.response.status ? h(`span.small.${HD.statusClass(v.response.status)}`, String(v.response.status)) : null));
         }
       }
       if (isContainer && open) {
         if (!node.items.length && !f) tree.appendChild(h('div.tree-empty', { style: { paddingLeft: `${34 + depth * 14}px` } }, 'Empty — ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); addRequest(node); } }, 'add a request')));
-        node.items.forEach((c) => renderNode(c, depth + 1, collection));
+        node.items.forEach((c) => renderNode(c, depth + 1, collection, [...path, node.name]));
       }
     };
     S.ws.collections.forEach((c) => renderNode(c, 0, c));
     // Open tabs that aren't saved yet match too, so what was just typed in one is found.
-    const unsaved = f ? HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query)) : [];
+    const unsaved = f ? unsavedMatches() : [];
     if (unsaved.length) {
       shown = true;
       tree.appendChild(h('div.side-section.tree-unsaved', h('span.section-title.flush', 'Open tabs, not saved')));
       for (const it of unsaved) {
         tree.appendChild(h('div.tree-row', { class: S.ws.activeTabId === it.tabId ? 'active' : '', style: { paddingLeft: '20px' }, title: 'Not saved yet: Ctrl+S keeps it in a collection', onclick: () => HD.activateTab(it.tabId) },
           h(`span.method-tag.${HD.methodClass(it.request.method)}`, String(it.request.method).slice(0, 6)),
-          h('span.tree-name', it.name),
-          (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 3).map((t) => h('span.tree-tag', `#${t}`))) : null));
+          h('span.tree-name', HD.highlight(it.name, terms, fuzzy)),
+          (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 3).map((t) => h('span.tree-tag', '#', HD.highlight(t, terms, fuzzy)))) : null));
       }
     }
     if (f && !shown && S.ws.collections.length) tree.appendChild(h('div.empty-state.small', h('div', 'No request matches.'), h('div.muted', 'Remove a filter, or press Esc to clear the text.')));

@@ -13,6 +13,7 @@ const os = require('os');
 const path = require('path');
 const http = require('http');
 const { OPERATIONS } = require('./ai-api-spec');
+const { parseDataFile } = require('./data-file');
 
 const PROTOCOL = '2025-06-18';
 
@@ -23,6 +24,13 @@ function defaultDataDir(env = process.env, platform = process.platform) {
   if (platform === 'win32') return path.join(env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'httpdash');
   return path.join(env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'httpdash');
 }
+
+// Tool inputs only the bridge has: files on this computer, read here and sent to the app as data.
+const LOCAL_FILES = {
+  startRun: {
+    dataFile: { type: 'string', description: 'Path to a CSV or JSON data file on this computer, read and sent as data (instead of data). CSV: a header row, comma-separated; JSON: an array of objects' },
+  },
+};
 
 const NOT_RUNNING = 'HttpDash is not running, or AI access is off. Open HttpDash and turn on Settings → AI access.';
 
@@ -38,6 +46,7 @@ function tools() {
     if (op.id === 'takeScreenshot') delete properties.format;
     for (const [k, v] of Object.entries((op.body && op.body.properties) || {})) properties[k] = v;
     for (const k of (op.body && op.body.required) || []) required.push(k);
+    Object.assign(properties, LOCAL_FILES[op.id] || {});
     return {
       name: op.id,
       title: op.summary,
@@ -90,6 +99,14 @@ function createServer({ dataDir = defaultDataDir(), version = '0.0.0', access } 
     if (!op) return { isError: true, content: [{ type: 'text', text: `Unknown tool ${name}` }] };
     let acc;
     try { acc = readAccess(); } catch { return { isError: true, content: [{ type: 'text', text: NOT_RUNNING }] }; }
+    if (name === 'startRun' && args && args.dataFile) {
+      const { dataFile, ...rest } = args;
+      try {
+        args = { ...rest, data: parseDataFile(fs.readFileSync(path.resolve(String(dataFile)), 'utf8'), String(dataFile)) };
+      } catch (e) {
+        return { isError: true, content: [{ type: 'text', text: `Could not read data file ${dataFile}: ${e.message}` }] };
+      }
+    }
     let p = op.path;
     const query = new URLSearchParams();
     const body = {};

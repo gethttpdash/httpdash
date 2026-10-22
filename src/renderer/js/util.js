@@ -266,11 +266,13 @@ HD.splitter = (handle, { axis = 'x', onMove, onEnd }) => {
     e.preventDefault();
     const start = axis === 'x' ? e.clientX : e.clientY;
     document.body.classList.add(axis === 'x' ? 'resizing-x' : 'resizing-y');
+    handle.classList.add('dragging');
     const move = (ev) => onMove((axis === 'x' ? ev.clientX : ev.clientY) - start, ev);
     const up = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       document.body.classList.remove('resizing-x', 'resizing-y');
+      handle.classList.remove('dragging');
       if (onEnd) onEnd();
     };
     document.addEventListener('mousemove', move);

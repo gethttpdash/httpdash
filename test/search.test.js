@@ -64,3 +64,72 @@ test('what is typed in an open tab counts before it is saved', () => {
     delete ws.tabs;
   }
 });
+
+test('each typed word is found on its own, in any order, in the name, URL, tags, method or folders', () => {
+  assert.deepStrictEqual(names({ tokens: [], text: 'order create' }), ['Create order'], 'words need not be next to each other');
+  assert.deepStrictEqual(names({ tokens: [], text: 'post orders' }), ['Create order'], 'the method counts as text');
+  assert.deepStrictEqual(names({ tokens: [], text: 'post' }), ['Create order', 'Take payment']);
+  assert.deepStrictEqual(names({ tokens: [{ kind: 'text', value: 'smoke get' }] }), ['List orders'], 'a "Search for" chip works the same way');
+  assert.deepStrictEqual(names({ tokens: [], text: 'create invoice' }), [], 'every word must be found');
+  // Folder and collection names, given as the request's path.
+  const inShop = (r, path) => matchRequest(r, { tokens: [], text: path }, { path: r === pay ? ['Shop'] : ['Shop', 'Orders'] });
+  assert.ok(inShop(list, 'shop') && inShop(pay, 'shop'), 'the collection name finds all its requests');
+  assert.ok(inShop(create, 'orders post') && !inShop(pay, 'orders post'));
+  assert.ok(!matchRequest(pay, { tokens: [], text: 'shop' }), 'without a path, folder names are not searched');
+});
+
+test('with fuzzy, a word of 5 letters or more may be one typo away', () => {
+  const { textFound } = global.HD;
+  const fuzzy = (text) => [list, create, pay].filter((r) => matchRequest(r, { tokens: [], text }, { fuzzy: true })).map((r) => r.name);
+  assert.deepStrictEqual(names({ tokens: [], text: 'ordrs' }), [], 'exact search ignores typos');
+  assert.deepStrictEqual(fuzzy('ordrs'), ['List orders', 'Create order'], 'a missing letter');
+  assert.deepStrictEqual(fuzzy('paymnet'), ['Take payment'], 'two letters swapped');
+  assert.deepStrictEqual(fuzzy('creat0'), ['Create order'], 'a wrong letter');
+  assert.deepStrictEqual(fuzzy('ordeers'), ['List orders', 'Create order'], 'an extra letter');
+  assert.deepStrictEqual(fuzzy('pyment take'), ['Take payment'], 'a typo in one word, the rest exact');
+  assert.deepStrictEqual(fuzzy('ordr'), [], 'short words must be exact');
+  assert.deepStrictEqual(fuzzy('odrrs'), [], 'two typos are too many');
+  assert.ok(textFound('custmer', ['Get customer'], true), 'a typo against a longer word');
+  assert.ok(textFound('cutsom', ['customer-api'], true), 'a typo in the start of a longer word');
+});
+
+test('recent searches: newest first, no repeats, a search that grows the last one replaces it, at most 10', () => {
+  const { rememberSearch, forgetSearch } = global.HD;
+  global.HD.save = () => {};
+  ws.ui = {};
+  try {
+    const recent = () => ws.ui.searchHistory.sidebar.map((e) => [...e.tokens.map((t) => `${t.kind}:${t.value}`), e.text].filter(Boolean).join(' '));
+    rememberSearch('sidebar', { tokens: [], text: '' });
+    assert.strictEqual(ws.ui.searchHistory, undefined, 'an empty search is not kept');
+    rememberSearch('sidebar', { tokens: [], text: 'ord' });
+    rememberSearch('sidebar', { tokens: [], text: 'orders' });
+    assert.deepStrictEqual(recent(), ['orders'], '"ord" grew into "orders"');
+    rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: '' });
+    rememberSearch('sidebar', { tokens: [], text: 'ORDERS ' });
+    assert.deepStrictEqual(recent(), ['ORDERS', 'tag:smoke'], 'the same search (ignoring case) moves to the top, as last typed');
+    rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: 'list' });
+    assert.deepStrictEqual(recent(), ['tag:smoke list', 'ORDERS', 'tag:smoke'], 'a chip-only search is kept when text is added to it');
+    forgetSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: 'list' });
+    forgetSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: '' });
+    assert.deepStrictEqual(recent(), ['ORDERS']);
+    for (let i = 0; i < 15; i++) rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: `t${i}` }], text: '' });
+    assert.strictEqual(recent().length, 10);
+    assert.strictEqual(recent()[0], 'tag:t14');
+  } finally {
+    delete ws.ui;
+  }
+});
+
+test('highlighting marks what the typed words and name chips match, merged, and typo matches only with fuzzy', () => {
+  const { searchTerms, highlightRanges, highlight } = global.HD;
+  assert.deepStrictEqual(searchTerms({ tokens: [{ kind: 'text', value: 'post Orders' }, { kind: 'name', value: 'List' }, { kind: 'tag', value: 'smoke' }], text: ' create ' }), ['post', 'orders', 'create', 'list']);
+  const marked = (text, terms, fuzzy) => highlightRanges(text, terms, fuzzy).map(([a, b]) => text.slice(a, b));
+  assert.deepStrictEqual(marked('Create new order', ['order', 'create']), ['Create', 'order'], 'in order, ignoring case');
+  assert.deepStrictEqual(marked('orders and more orders', ['order']), ['order', 'order'], 'every occurrence');
+  assert.deepStrictEqual(marked('Orders API', ['orders', 'ders api']), ['Orders API'], 'overlapping matches merge');
+  assert.deepStrictEqual(marked('List orders', ['ordrs']), [], 'a typo is not marked without fuzzy');
+  assert.deepStrictEqual(marked('List orders', ['ordrs'], true), ['orders'], 'with fuzzy, the near word is marked');
+  assert.deepStrictEqual(marked('Get customer', ['cus'], true), ['cus'], 'exact matches still mark just what was typed');
+  assert.strictEqual(highlight('Get customer', []), 'Get customer', 'nothing to mark gives the plain text');
+  assert.strictEqual(highlight('Get customer', ['zzz']), 'Get customer');
+});
