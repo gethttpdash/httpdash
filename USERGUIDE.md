@@ -214,6 +214,8 @@ A **flow** runs requests as a diagram: each request is a node, connections set t
 - **Removing:** click a node or connection, then press **Delete**. Start can't be removed.
 - **Zooming:** use **−**, **+** and **Fit** (or Ctrl/Cmd+scroll). A flow opens zoomed to fit.
 - **Copying values:** the side panel lists the values the flow makes; click one to copy it.
+- **Collapsing nodes:** a node's chevron, or a double-click on its title, folds it to its title bar. Its connections stay, and hovering shows its summary. The **−** button in the toolbar collapses or expands every node.
+- **Hiding and resizing panels:** the toolbar buttons hide or show the side panel and the results, so the canvas can fill the tab. Drag the bar above the results to resize them.
 
 **Running**
 - **Order:** a node runs once everything before it has run, so a node with two connections in waits for both. The branch a condition doesn't take is skipped, along with everything that only follows from it. Loops aren't allowed.
