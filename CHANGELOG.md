@@ -31,6 +31,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - Ctrl/Cmd+F in the URL bar opened a search box inside the one-line URL; it now searches the response.
 - **A narrow response pane:** the status, time and size line was drawn over the response tabs. It now moves below them, and the tabs wrap instead of being cut off.
 - **The Windows icon** looked smaller than other apps' on the taskbar: it kept the macOS icon's empty border. Windows now gets its own icon that fills the square (`build/icon.ico`, made with `npm run icon:win`).
+- **The request header:** a long version label (`GET /api/…`) ran under **Versions** and **Save** when the header was narrow. It now shortens with an ellipsis, the folder path giving way first.
 - **The sidebar** could be dragged so narrow that the search box was too short to read; its minimum width is now 300px, including a width saved before.
 - Help text that said more than the app does:
   - **Show auto-generated** no longer lists `Cache-Control` when **Send no-cache header** is off.

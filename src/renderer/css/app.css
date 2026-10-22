@@ -308,13 +308,13 @@ textarea.input { height: auto; padding: 8px; resize: vertical; font-family: var(
 .split-handle:hover { background: var(--accent); }
 .req-header { display: flex; align-items: center; gap: 8px; padding: 8px 16px; min-height: 44px; }
 .breadcrumb { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; color: var(--text-2); }
-.crumb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.crumb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; flex-shrink: 4; }  /* the path gives way before the name and version */
 .crumb::after { content: '/'; margin-left: 4px; color: var(--text-3); }
 .kind-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 600; margin-right: 6px; }
 .title-input { flex: 1; min-width: 120px; border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 3px 6px; font-weight: 600; font-size: 14px; color: var(--text); }
 .title-input:hover { border-color: var(--border); }
 .title-static { font-weight: 600; font-size: 14px; color: var(--text); }
-.req-header-actions { display: flex; gap: 6px; align-items: center; }
+.req-header-actions { display: flex; gap: 6px; align-items: center; flex: none; }
 .url-bar { display: flex; gap: 0; padding: 0 16px 10px; align-items: stretch; }
 .method-select {
   height: 36px; border: 1px solid var(--border-strong); border-right: 0; border-radius: var(--radius) 0 0 var(--radius);
@@ -1105,7 +1105,7 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .tree-tags { display: inline-flex; gap: 3px; margin-left: 6px; flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; }
 .tree-tags .tree-tag { flex: none; }
 .tree-unsaved { margin-top: 10px; padding: 8px 12px 4px; }
-.unsaved-note { font-size: 12px; color: var(--text-3); white-space: nowrap; margin-left: 10px; }
+.unsaved-note { font-size: 12px; color: var(--text-3); white-space: nowrap; margin-left: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .unsaved-note a { color: var(--accent-text); }
 .tree-row .tree-name { min-width: 48px; }
 .tree-tag { font-size: 10px; line-height: 15px; padding: 0 5px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1137,7 +1137,11 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .ai-snippet { display: block; margin: 4px 0 8px; padding: 6px 8px; background: var(--bg-3); border-radius: 4px; font-size: 12px; word-break: break-all; user-select: all; }
 
 /* Request versions and spec warnings */
-.version-chip { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--bg-3); color: var(--text-2); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The chip shrinks before the header's buttons do: without a min-width its whole label was its
+   minimum, and in a narrow header it ran under Versions and Save. */
+.version-chip-host { display: flex; min-width: 0; }
+.version-chip { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--bg-3); color: var(--text-2); max-width: 320px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.version-chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .version-chip svg { width: 12px; height: 12px; flex: none; }
 .versions-help { margin-bottom: 12px; }
 .versions-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }

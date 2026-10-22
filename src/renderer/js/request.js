@@ -150,7 +150,7 @@
       const list = HD.versionsOf(HD.versionKey(tab));
       const cur = HD.currentVersion(tab);
       HD.clear(versionChip);
-      if (cur) versionChip.appendChild(h('span.version-chip', { title: `This is a version you sent ${HD.versionAgo(cur.lastSent)}` }, HD.icon('history'), HD.versionLabel(cur, list)));
+      if (cur) versionChip.appendChild(h('span.version-chip', { title: `This is a version you sent ${HD.versionAgo(cur.lastSent)}` }, HD.icon('history'), h('span.version-chip-label', HD.versionLabel(cur, list))));
       HD.clear(versionsHost);
       if (list.length) versionsHost.appendChild(HD.button(`Versions (${list.length})`, (e) => HD.versionsMenu(e, tab), { ghost: true, small: true, icon: 'history', title: 'Switch to another version you sent, with its response' }));
     };
