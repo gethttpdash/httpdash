@@ -133,3 +133,15 @@ test('highlighting marks what the typed words and name chips match, merged, and 
   assert.strictEqual(highlight('Get customer', []), 'Get customer', 'nothing to mark gives the plain text');
   assert.strictEqual(highlight('Get customer', ['zzz']), 'Get customer');
 });
+
+test('URLs are also matched with their variables filled in, so the real host is found', () => {
+  const { resolvedUrl } = global.HD;
+  const vars = { orders_url: '{{scheme}}://orders.internal:8080', scheme: 'https', payments_url: 'https://pay.example.com' };
+  assert.strictEqual(resolvedUrl('{{orders_url}}/orders?state=released', vars), 'https://orders.internal:8080/orders?state=released', 'variables inside variables');
+  assert.strictEqual(resolvedUrl('{{missing}}/x', vars), '{{missing}}/x', 'unknown variables stay as they are');
+  const found = (query) => [list, create, pay].filter((r) => matchRequest(r, query, { vars })).map((r) => r.name);
+  assert.deepStrictEqual(found({ tokens: [], text: 'orders.internal' }), ['List orders', 'Create order']);
+  assert.deepStrictEqual(found({ tokens: [{ kind: 'url', value: 'pay.example.com/payments' }] }), ['Take payment'], 'url chips too');
+  assert.deepStrictEqual(found({ tokens: [], text: 'orders_url' }), ['List orders', 'Create order'], 'the URL as written still counts');
+  assert.deepStrictEqual(names({ tokens: [], text: 'orders.internal' }), [], 'without vars, only the URL as written');
+});

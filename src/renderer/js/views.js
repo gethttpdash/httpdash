@@ -186,7 +186,8 @@
     const label = runBtn.querySelector('span');
     const q = () => HD.queryActive(ui.query);
     // The same search as the sidebar (tags, methods, URLs, names), and typed text also finds folders.
-    const matches = (it, path) => !q() || HD.matchRequest(it, ui.query, { path: [path] });
+    const vars = HD.searchVars(col);
+    const matches = (it, path) => !q() || HD.matchRequest(it, ui.query, { path: [path], vars });
     const included = (it) => !cfg.excluded[it.id];
     const set = (list, on) => { for (const it of list) { if (on) delete cfg.excluded[it.id]; else cfg.excluded[it.id] = true; } HD.save(); draw(); };
     // The requests below a folder that the filter shows.
