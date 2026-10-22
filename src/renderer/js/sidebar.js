@@ -56,12 +56,21 @@
   // close matches (one typo away) are shown instead, with a note saying so.
   const query = { tokens: [], text: '' };
   let fuzzy = false;
-  const matches = (node, path = []) => {
+  // URLs are also searched with their {{variables}} filled in (each collection's own, the active
+  // environment's and globals), worked out once per drawing of the tree.
+  let varCache = new Map();
+  const varsOf = (collection) => {
+    const key = collection ? collection.id : '';
+    if (!varCache.has(key)) varCache.set(key, HD.searchVars(collection));
+    return varCache.get(key);
+  };
+  const matches = (node, path = [], vars = null) => {
     if (!HD.queryActive(query)) return true;
-    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query, { path, fuzzy }) || HD.matchingVersions(node, query).length > 0;
+    if (node.type === 'collection') vars = varsOf(node);
+    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query, { path, fuzzy, vars }) || HD.matchingVersions(node, query).length > 0;
     const text = query.text.trim().toLowerCase();
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
-    return (node.items || []).some((c) => matches(c, [...path, node.name]));
+    return (node.items || []).some((c) => matches(c, [...path, node.name], vars));
   };
   // A tag clicked on a request (or in the tree) is added to the search, which is shown if it was hidden.
   HD.filterByTag = (tag) => {
@@ -84,7 +93,7 @@
     return h('span.tree-tags', { title: tags.map((t) => `#${t}`).join(' ') },
       tagButton(first, HD.highlight(first, terms, fuzzy)), tags.length > 1 ? h('span.tree-tag.more', `+${tags.length - 1}`) : null);
   };
-  const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy }));
+  const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy, vars: varsOf(null) }));
   // Exact matches first; only when there are none does a typo count.
   const chooseFuzzy = () => {
     fuzzy = false;
@@ -94,7 +103,7 @@
   };
 
   function renderCollections(panel) {
-    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box', historyKey: 'sidebar' });
+    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box', historyKey: 'sidebar', menuBeside: '#sidebar-wrap' });
     panel.appendChild(h('div.side-toolbar',
       HD.button('', async () => {
         const name = await HD.prompt('New collection', 'Name', 'New Collection');
@@ -113,6 +122,7 @@
     // Only the tree is drawn again as the search changes, so the search box keeps its focus and menu.
     const drawTree = () => {
     HD.clear(tree);
+    varCache = new Map();
     const f = HD.queryActive(query);
     if (f) chooseFuzzy(); else fuzzy = false;
     // What the search matched is highlighted in names and tags.
@@ -128,7 +138,7 @@
     const activeRef = active && active.refId;
     let shown = 0;
     const renderNode = (node, depth, collection, path = []) => {
-      if (!matches(node, path)) return;
+      if (!matches(node, path, varsOf(collection))) return;
       if (node.type === 'request') shown++;
       const isContainer = node.type !== 'request';
       const open = f ? true : !!expanded()[node.id];
