@@ -71,7 +71,8 @@
   /**
    * Whether a request matches a search: { tokens: [{ kind: 'tag'|'method'|'url'|'name'|'text', value }], text }.
    * Every tag must be on the request; any one of the methods will do (a request has one); URL, name and
-   * text must all match. Text (typed, not yet picked) matches the name, the URL or a tag.
+   * text must all match. Each word of the text (typed, not yet picked) matches the name, the URL, a tag,
+   * the method or a folder or collection the request is in.
    */
   const curatedVersions = (item) => ((S.ws.requestVersions || {})[item.id] || []).filter((v) => v.name || (v.tags || []).length);
 
@@ -79,6 +80,36 @@
    * The named or tagged versions of a request that match a search: a version's own name and tags
    * count, with its request's tags. A "version" chip matches version names only.
    */
+  // ---- Typed text --------------------------------------------------------------------------------
+  // Every word typed has to be found, in any order, in one of the places searched (a request's name,
+  // URL, tags and method, and the folders and collection it sits in). With fuzzy, a word of 5 letters
+  // or more may also be one typo away from a word there: a letter wrong, missing or extra, or two
+  // letters swapped ("ordrs" finds "orders", "cusotmer" finds "customer").
+  const FUZZY_MIN = 5;
+  const words = (text) => String(text || '').toLowerCase().split(/\s+/).filter(Boolean);
+  // Optimal string alignment distance of at most 1 (a substitution, insertion, deletion or swap).
+  const oneTypo = (a, b) => {
+    if (a === b) return true;
+    if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    if (a.length === b.length) {
+      return a.slice(i + 1) === b.slice(i + 1) // one letter wrong
+        || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2)); // two swapped
+    }
+    return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1); // one extra or missing
+  };
+  const nearWord = (word, place) => place.split(/[^a-z0-9]+/).some((w) => w.length >= FUZZY_MIN - 1
+    && (oneTypo(word, w) || (w.length > word.length && oneTypo(word, w.slice(0, word.length)))));
+  const wordFound = (word, places, fuzzy) => places.some((p) => p.includes(word))
+    || (fuzzy && word.length >= FUZZY_MIN && places.some((p) => nearWord(word, p)));
+  HD.textFound = (text, places, fuzzy = false) => {
+    const lower = places.map((p) => String(p || '').toLowerCase());
+    return words(text).every((w) => wordFound(w, lower, fuzzy));
+  };
+  // Whether a search has typed text (in the field or as a "Search for" chip), the only part typos can affect.
+  HD.queryHasText = (query) => !!(query && (String(query.text || '').trim() || (query.tokens || []).some((t) => t.kind === 'text')));
+
   HD.matchingVersions = (item, query) => {
     if (!item || item.type !== 'request' || !HD.queryActive(query)) return [];
     const reqTags = (item.request.tags || []).map((t) => t.toLowerCase());
@@ -96,16 +127,24 @@
         if (t.kind === 'tag') { if (!tags.includes(val)) return false; if ((v.tags || []).some((x) => x.toLowerCase() === val)) ownMatch = true; }
         if (t.kind === 'version') { if (!name.includes(val)) return false; ownMatch = true; }
         if (t.kind === 'url' && !url.includes(val)) return false;
-        if ((t.kind === 'text' || t.kind === 'name') && !own(val) && !item.name.toLowerCase().includes(val)) return false;
-        if ((t.kind === 'text' || t.kind === 'name') && own(val)) ownMatch = true;
+        if (t.kind === 'name' && !own(val) && !item.name.toLowerCase().includes(val)) return false;
+        if (t.kind === 'name' && own(val)) ownMatch = true;
       }
-      const text = String(query.text || '').trim().toLowerCase();
-      if (text) { if (!own(text) && !item.name.toLowerCase().includes(text) && !url.includes(text)) return false; if (own(text)) ownMatch = true; }
+      // Typed text, word by word: each word in the version's own name or tags, or its request's name or URL.
+      const typed = [...tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text || ''].flatMap(words);
+      for (const w of typed) {
+        if (own(w)) ownMatch = true;
+        else if (!item.name.toLowerCase().includes(w) && !url.includes(w)) return false;
+      }
       return ownMatch;
     });
   };
 
-  HD.matchRequest = (item, query) => {
+  /**
+   * opts: { path: names of the folders and collection the request is in, which typed text also
+   * searches; fuzzy: let a word be one typo away (see above) }.
+   */
+  HD.matchRequest = (item, query, { path = [], fuzzy = false } = {}) => {
     if (!item || item.type !== 'request') return false;
     if (((query && query.tokens) || []).some((t) => t.kind === 'version')) return false; // only versions have version names
     const req = item.request || {};
@@ -113,7 +152,7 @@
     const name = (item.name || '').toLowerCase();
     const url = String(req.url || '').toLowerCase();
     const method = String(req.method || 'GET').toUpperCase();
-    const anyText = (q) => name.includes(q) || url.includes(q) || tags.some((t) => t.includes(q));
+    const anyText = (q) => HD.textFound(q, [name, url, method, ...tags, ...path], fuzzy);
     const tokens = (query && query.tokens) || [];
     const methods = tokens.filter((t) => t.kind === 'method').map((t) => t.value.toUpperCase());
     if (methods.length && !methods.includes(method)) return false;
@@ -139,7 +178,7 @@
     const q = (m ? text.slice(m[0].length) : text).trim().toLowerCase();
     const taken = new Set(((query && query.tokens) || []).map((t) => `${t.kind}:${String(t.value).toLowerCase()}`));
     const out = [];
-    if (q && !only) out.push({ kind: 'text', value: text.trim(), label: `Search for “${text.trim()}”`, hint: 'name, URL or tag' });
+    if (q && !only) out.push({ kind: 'text', value: text.trim(), label: `Search for “${text.trim()}”`, hint: 'name, URL, tag, method or folder' });
     const pick = (kind, list, limit) => {
       if (only && only !== kind) return;
       const found = list.filter((e) => !taken.has(`${kind}:${e.value.toLowerCase()}`) && (!q || e.value.toLowerCase().includes(q))).slice(0, only ? 20 : limit);

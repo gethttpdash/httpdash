@@ -64,3 +64,31 @@ test('what is typed in an open tab counts before it is saved', () => {
     delete ws.tabs;
   }
 });
+
+test('each typed word is found on its own, in any order, in the name, URL, tags, method or folders', () => {
+  assert.deepStrictEqual(names({ tokens: [], text: 'order create' }), ['Create order'], 'words need not be next to each other');
+  assert.deepStrictEqual(names({ tokens: [], text: 'post orders' }), ['Create order'], 'the method counts as text');
+  assert.deepStrictEqual(names({ tokens: [], text: 'post' }), ['Create order', 'Take payment']);
+  assert.deepStrictEqual(names({ tokens: [{ kind: 'text', value: 'smoke get' }] }), ['List orders'], 'a "Search for" chip works the same way');
+  assert.deepStrictEqual(names({ tokens: [], text: 'create invoice' }), [], 'every word must be found');
+  // Folder and collection names, given as the request's path.
+  const inShop = (r, path) => matchRequest(r, { tokens: [], text: path }, { path: r === pay ? ['Shop'] : ['Shop', 'Orders'] });
+  assert.ok(inShop(list, 'shop') && inShop(pay, 'shop'), 'the collection name finds all its requests');
+  assert.ok(inShop(create, 'orders post') && !inShop(pay, 'orders post'));
+  assert.ok(!matchRequest(pay, { tokens: [], text: 'shop' }), 'without a path, folder names are not searched');
+});
+
+test('with fuzzy, a word of 5 letters or more may be one typo away', () => {
+  const { textFound } = global.HD;
+  const fuzzy = (text) => [list, create, pay].filter((r) => matchRequest(r, { tokens: [], text }, { fuzzy: true })).map((r) => r.name);
+  assert.deepStrictEqual(names({ tokens: [], text: 'ordrs' }), [], 'exact search ignores typos');
+  assert.deepStrictEqual(fuzzy('ordrs'), ['List orders', 'Create order'], 'a missing letter');
+  assert.deepStrictEqual(fuzzy('paymnet'), ['Take payment'], 'two letters swapped');
+  assert.deepStrictEqual(fuzzy('creat0'), ['Create order'], 'a wrong letter');
+  assert.deepStrictEqual(fuzzy('ordeers'), ['List orders', 'Create order'], 'an extra letter');
+  assert.deepStrictEqual(fuzzy('pyment take'), ['Take payment'], 'a typo in one word, the rest exact');
+  assert.deepStrictEqual(fuzzy('ordr'), [], 'short words must be exact');
+  assert.deepStrictEqual(fuzzy('odrrs'), [], 'two typos are too many');
+  assert.ok(textFound('custmer', ['Get customer'], true), 'a typo against a longer word');
+  assert.ok(textFound('cutsom', ['customer-api'], true), 'a typo in the start of a longer word');
+});

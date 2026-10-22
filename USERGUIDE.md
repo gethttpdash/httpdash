@@ -359,6 +359,8 @@ When a request comes from an OpenAPI source, it and each of its versions are che
 
 Tag requests (`smoke`, `orders`, `admin`, up to 20 of 40 characters each) in the field under the request's name, which suggests the tags already in use. The sidebar search becomes a dropdown, built from every request's tags, methods, URLs and names and from named versions, most used first. What's typed in open tabs counts before it's saved, and open tabs that aren't saved yet are listed under **Open tabs, not saved**. Pick a suggestion and it becomes a chip; chips combine (every tag, any of the methods, plus the text you add). `tag:`, `method:`, `url:`, `name:` and `version:` narrow the suggestions.
 
+Typed text is matched word by word, in any order. Each word can be in the request's name, URL, tags or method, or in the name of its folder or collection. So `create order` finds "Create new order", `post orders` finds the POST requests on `/orders`, and `Admin` lists everything in the Admin folder. When nothing matches exactly, the search allows one typo in words of 5 letters or more: a letter wrong, missing or extra, or two letters swapped, so `ordrs` finds "orders". A note above the results says these are close matches.
+
 The Runner's request picker uses the same search, so picking the `smoke` tag then **All** runs the smoke tests, and the CLI has `-t` / `--tag`. Tags travel with team sharing and survive a Postman export and import.
 
 ## Health while it runs (profiling)
