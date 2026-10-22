@@ -1190,3 +1190,75 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .spec-banner.bad > svg { color: var(--err); }
 .spec-banner-title { font-weight: 600; margin-bottom: 2px; }
 .spec-banner ul { margin: 2px 0 0; padding-left: 18px; }
+
+/* Flow designer */
+.flow-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.flow-toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex: none; }
+.flow-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.flow-title .icon { width: 16px; height: 16px; color: var(--text-2); }
+.flow-add { display: inline-flex; align-items: center; gap: 6px; }
+.flow-main { display: flex; flex: 1 1 55%; min-height: 0; }
+.flow-canvas-wrap { flex: 1; overflow: auto; background: var(--bg-2); min-width: 0; }
+.flow-sizer { position: relative; }
+.flow-zoom { display: inline-flex; align-items: center; gap: 2px; }
+.flow-zoom-label { min-width: 38px; text-align: center; }
+.flow-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; outline: none;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--text-3) 30%, transparent) 1px, transparent 1px); background-size: 20px 20px; }
+.flow-edges { position: absolute; left: 0; top: 0; overflow: visible; }
+.flow-edge { fill: none; stroke: var(--border-strong); stroke-width: 2; pointer-events: none; }
+.flow-edge.is-true { stroke: color-mix(in srgb, var(--ok) 70%, var(--border-strong)); }
+.flow-edge.is-false { stroke: color-mix(in srgb, var(--err) 60%, var(--border-strong)); }
+.flow-edge.live { stroke: var(--accent); stroke-width: 2.5; }
+.flow-edge.selected { stroke: var(--focus); stroke-width: 3; }
+.flow-edge.drafting { stroke: var(--accent); stroke-dasharray: 5 4; }
+.flow-edge-hit { fill: none; stroke: transparent; stroke-width: 12; cursor: pointer; pointer-events: stroke; }
+.flow-node { position: absolute; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); font-size: 12px; user-select: none; }
+.flow-node.selected { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 35%, transparent); }
+.flow-node.drop-target { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.flow-node-head { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: grab; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 13px; }
+.flow-node-head .icon { width: 14px; height: 14px; flex: none; }
+.flow-node-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow-node-key { font: 11px var(--mono); color: var(--text-2); font-weight: 400; }
+.flow-node.type-start .flow-node-head { background: var(--ok-soft); color: var(--ok); }
+.flow-node.type-end .flow-node-head { background: var(--bg-3); }
+.flow-node.type-condition .flow-node-head { background: var(--warn-soft); color: var(--warn); }
+.flow-node.type-execute .flow-node-head { background: var(--accent-soft); color: var(--accent-text); }
+.flow-node-body { padding: 8px 10px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 18px; }
+.flow-node-body .method-tag { font-size: 10px; }
+.flow-node-outs { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 0 0 8px; }
+.flow-out { display: inline-flex; align-items: center; gap: 4px; margin-right: -7px; }
+.flow-out-label { font-size: 10px; color: var(--text-2); }
+.flow-port { width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border-strong); display: inline-block; }
+.flow-port.in { position: absolute; left: -7px; top: 13px; }
+.flow-port.out { cursor: crosshair; }
+.flow-port.out:hover, .flow-port.in:hover { border-color: var(--accent); background: var(--accent-soft); }
+.flow-port.port-true { border-color: var(--ok); }
+.flow-port.port-false { border-color: var(--err); }
+.flow-node-state { font-weight: 700; width: 18px; text-align: center; }
+.flow-node.state-running { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.flow-node.state-done { border-color: var(--ok); }
+.flow-node.state-failed { border-color: var(--err); }
+/* Nodes that didn't run: dashed and grey rather than faded, so their text stays readable. */
+.flow-node.state-skipped, .flow-node.state-not-run, .flow-node.state-stopped { border-style: dashed; background: var(--bg-2); box-shadow: none; }
+.flow-node.state-skipped .flow-node-head, .flow-node.state-not-run .flow-node-head, .flow-node.state-stopped .flow-node-head { background: var(--bg-3); color: var(--text-2); }
+.flow-node-state.state-done { color: var(--ok); }
+.flow-node-state.state-failed { color: var(--err); }
+.flow-inspector { width: 340px; flex: none; border-left: 1px solid var(--border); padding: 12px 14px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.flow-inspector .section-title { margin: 6px 0 0; }
+.flow-help { line-height: 1.5; }
+.flow-rows { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.flow-row { display: flex; gap: 6px; width: 100%; align-items: center; }
+.flow-row > .input, .flow-row > select, .flow-row > .select { flex: 1; min-width: 0; }
+.flow-values { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.flow-value { font: 11px var(--mono); border: 1px solid var(--border); background: var(--bg-2); color: var(--var); border-radius: 4px; padding: 1px 5px; cursor: pointer; }
+.flow-value:hover { border-color: var(--accent); }
+.flow-danger { margin-top: 8px; }
+.flow-results { flex: 1 1 45%; min-height: 160px; border-top: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.flow-results > .empty-state { margin: auto; }
+.flow-results-head { display: flex; align-items: center; gap: 10px; padding: 8px 16px 0; }
+.flow-result-tabs { padding: 0 12px; flex: none; }
+.flow-result-tabs button.state-failed { color: var(--err); }
+.flow-result-area { flex: 1; min-height: 0; overflow: auto; padding: 8px 16px 12px; display: flex; flex-direction: column; }
+.flow-node-result { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 2px 0 8px; font-size: 12px; }
+.flow-raw { font: 12px var(--mono); white-space: pre-wrap; margin: 0; }
+.flow-missing { padding: 12px 0; }

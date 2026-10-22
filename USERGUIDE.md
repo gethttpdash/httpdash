@@ -9,6 +9,7 @@ How every part of HttpDash works, in detail. For what HttpDash is and a quick st
 - [Data files (data-driven runs)](#data-files-data-driven-runs)
 - [Command-line runner (CI and schedulers)](#command-line-runner-ci-and-schedulers)
 - [AI agents (OpenAPI and MCP)](#ai-agents-openapi-and-mcp)
+- [Flows (request orchestration)](#flows-request-orchestration)
 - [Monitors](#monitors)
 - [Mock server](#mock-server)
 - [Secret scan and audit log](#secret-scan-and-audit-log)
@@ -196,6 +197,31 @@ An agent (or you) can send through HttpDash rather than with curl, and keep what
 For example, an agent can create a folder whose pre-request script turns the nested `user` of each row into `{{userJson}}` (as in [Nested JSON in a data file](#nested-json-in-a-data-file)), add a request that uses it, then call `startRun` with `dataFile: "technos.json"` and read the results with `getRun`.
 
 `httpdash mcp` finds the port and token by itself while the app runs (`--port` / `--token`, or `HTTPDASH_AI_PORT` / `HTTPDASH_AI_TOKEN`, set them explicitly; `--data-dir` or `HTTPDASH_DATA_DIR` points it at another data folder). Start with `getStatus`; `sendRequest` sends a saved request; `startRun` then `getRun` runs the Runner; `getUiSnapshot`, `uiAction` and `takeScreenshot` work the screen.
+
+## Flows (request orchestration)
+
+A **flow** runs requests as a diagram: each request is a node, connections set the order, values pass from one request to the next, and conditions choose which way to go. Open **Flows** in the sidebar and click **+**. A new flow starts as Start → Request → End.
+
+**Nodes**
+- **Start:** where the flow begins. Its **inputs** become values such as `{{user}}`. Variables are allowed.
+- **Execute:** sends a saved request. Its auth, scripts and auth dependency (automatic login) work as when you send it yourself. **Outputs** take values from the response for later nodes: name `token`, path `data.access_token`. A path is `status`, `time`, `headers.Name`, or a path in the JSON body (`items[0].id`). Later nodes use it as `{{login.token}}`, where `login` is the node's key from its label, shown on the node. `{{login.status}}` and `{{login.time}}` are always there. A failed request stops the flow unless **Carry on when the request fails** is ticked.
+- **Condition:** compares values with rules, such as `{{login.status}}` *equals* `200` or `{{orders.total}}` *greater than* `0`. It goes on through its green **true** port when all rules match, or when any one does, as you choose; otherwise through its red **false** port. The rules can be *equals*, *not equals*, *contains*, *not contains*, *greater than*, *less than*, *exists*, *not exists* or *matches* (a regular expression).
+- **End:** where the flow ends. **Result tabs** pick what to show. For each tab, choose a node and the path to the part of its response to show, such as `data.items`. It's shown as a table that can be filtered, sorted and exported, the same as the response Table view. **Outputs** are named results built from values.
+
+**Designing**
+- **Moving and connecting:** drag a node by its title. Drag from a node's right-hand dot to another node to connect them. A condition has one connection per port.
+- **Adding nodes:** **Add Execute / Condition / End** puts the new node after the selected one and connects it.
+- **Removing:** click a node or connection, then press **Delete**. Start can't be removed.
+- **Zooming:** use **−**, **+** and **Fit** (or Ctrl/Cmd+scroll). A flow opens zoomed to fit.
+- **Copying values:** the side panel lists the values the flow makes; click one to copy it.
+
+**Running**
+- **Order:** a node runs once everything before it has run, so a node with two connections in waits for both. The branch a condition doesn't take is skipped, along with everything that only follows from it. Loops aren't allowed.
+- **During a run:** each node shows its state as it goes (✓ done, ✕ failed, faded when skipped), and the connections taken are highlighted.
+- **Results:** the End node's result tabs come first, then **Outputs**, then **Values** (every value the flow made), then one tab per request with its status, time, tests and response as a table.
+- **Environment and variables:** a flow uses the active environment or the one chosen in its settings. Like the Runner, it can keep variable changes made during the run, such as refreshed tokens. Requests can come from different collections; each uses its own collection's variables.
+
+Flows are saved in your workspace.
 
 ## Monitors
 

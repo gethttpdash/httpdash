@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld('api', {
   runCollection: invoke('runner:start'),
   stopRun: invoke('runner:stop'),
   onRunnerEvent: (fn) => ipcRenderer.on('runner:event', (_e, evt) => fn(evt)),
+  runFlow: invoke('flow:run'),
+  stopFlow: invoke('flow:stop'),
+  onFlowEvent: (fn) => ipcRenderer.on('flow:event', (_e, evt) => fn(evt)),
   // HttpDash API for AI agents: calls to answer, activity for the indicator, and its settings.
   ai: {
     onCall: (fn) => ipcRenderer.on('ai:call', (_e, call) => fn(call)),
