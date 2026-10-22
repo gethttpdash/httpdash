@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flows (request orchestration) · HttpDash docs</title>
+  <meta name="description" content="A flow runs requests as a diagram: each request is a node, connections set the order, values pass from one request to the next, and conditions choose which way…">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/flows-request-orchestration.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/flows-request-orchestration.html">
+  <meta property="og:title" content="Flows (request orchestration) · HttpDash docs">
+  <meta property="og:description" content="A flow runs requests as a diagram: each request is a node, connections set the order, values pass from one request to the next, and conditions choose which way…">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running" class="current" aria-current="page">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Automation</p>
+      <article class="docs-article">
+        <h1>Flows (request orchestration)</h1>
+<p>A <strong>flow</strong> runs requests as a diagram: each request is a node, connections set the order, values pass from one request to the next, and conditions choose which way to go. Open <strong>Flows</strong> in the sidebar and click <strong>+</strong>. A new flow starts as Start → Request → End.</p>
+<h3 id="nodes"><a class="anchor" href="#nodes" aria-hidden="true" tabindex="-1">#</a>Nodes</h3>
+<ul>
+<li><strong>Start:</strong> where the flow begins. Its <strong>inputs</strong> become values such as <code>{{user}}</code>. Variables are allowed.</li>
+<li><strong>Execute:</strong> sends a saved request. Its auth, scripts and auth dependency (automatic login) work as when you send it yourself. <strong>Outputs</strong> take values from the response for later nodes: name <code>token</code>, path <code>data.access_token</code>. A path is <code>status</code>, <code>time</code>, <code>headers.Name</code>, or a path in the JSON body (<code>items[0].id</code>). Later nodes use it as <code>{{login.token}}</code>, where <code>login</code> is the node&#39;s key from its label, shown on the node. <code>{{login.status}}</code> and <code>{{login.time}}</code> are always there. A failed request stops the flow unless <strong>Carry on when the request fails</strong> is ticked.</li>
+<li><strong>Condition:</strong> compares values with rules, such as <code>{{login.status}}</code> <em>equals</em> <code>200</code> or <code>{{orders.total}}</code> <em>greater than</em> <code>0</code>. It goes on through its green <strong>true</strong> port when all rules match, or when any one does, as you choose; otherwise through its red <strong>false</strong> port. The rules can be <em>equals</em>, <em>not equals</em>, <em>contains</em>, <em>not contains</em>, <em>greater than</em>, <em>less than</em>, <em>exists</em>, <em>not exists</em> or <em>matches</em> (a regular expression).</li>
+<li><strong>End:</strong> where the flow ends. <strong>Result tabs</strong> pick what to show. For each tab, choose a node and the path to the part of its response to show, such as <code>data.items</code>. It&#39;s shown as a table that can be filtered, sorted and exported, the same as the response Table view. <strong>Outputs</strong> are named results built from values.</li>
+</ul>
+<h3 id="designing"><a class="anchor" href="#designing" aria-hidden="true" tabindex="-1">#</a>Designing</h3>
+<ul>
+<li><strong>Moving and connecting:</strong> drag a node by its title. Drag from a node&#39;s right-hand dot to another node to connect them. A condition has one connection per port.</li>
+<li><strong>Adding nodes:</strong> <strong>Add Execute / Condition / End</strong> puts the new node after the selected one and connects it.</li>
+<li><strong>Removing:</strong> click a node or connection, then press <strong>Delete</strong>. Start can&#39;t be removed.</li>
+<li><strong>Zooming:</strong> use <strong>−</strong>, <strong>+</strong> and <strong>Fit</strong> (or Ctrl/Cmd+scroll). A flow opens zoomed to fit.</li>
+<li><strong>Copying values:</strong> the side panel lists the values the flow makes; click one to copy it.</li>
+<li><strong>Collapsing nodes:</strong> a node&#39;s chevron, or a double-click on its title, folds it to its title bar. Its connections stay, and hovering shows its summary. The <strong>−</strong> button in the toolbar collapses or expands every node.</li>
+<li><strong>Hiding and resizing panels:</strong> the toolbar buttons hide or show the side panel and the results, so the canvas can fill the tab. Drag the bar above the results to resize them.</li>
+</ul>
+<h3 id="running"><a class="anchor" href="#running" aria-hidden="true" tabindex="-1">#</a>Running</h3>
+<ul>
+<li><strong>Order:</strong> a node runs once everything before it has run, so a node with two connections in waits for both. The branch a condition doesn&#39;t take is skipped, along with everything that only follows from it. Loops aren&#39;t allowed.</li>
+<li><strong>During a run:</strong> each node shows its state as it goes (✓ done, ✕ failed, faded when skipped), and the connections taken are highlighted.</li>
+<li><strong>Results:</strong> the End node&#39;s result tabs come first, then <strong>Outputs</strong>, then <strong>Values</strong> (every value the flow made), then one tab per request with its status, time, tests and response as a table.</li>
+<li><strong>Environment and variables:</strong> a flow uses the active environment or the one chosen in its settings. Like the Runner, it can keep variable changes made during the run, such as refreshed tokens. Requests can come from different collections; each uses its own collection&#39;s variables.</li>
+</ul>
+<p>Flows are saved in your workspace.</p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="script-sandbox.html"><span>Previous</span>Script sandbox</a>
+        <a class="docs-next" href="command-line-runner-ci-and-schedulers.html"><span>Next</span>Command-line runner (CI and schedulers)</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+      <nav class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul>
+          <li><a href="#nodes">Nodes</a></li>
+          <li><a href="#designing">Designing</a></li>
+          <li><a href="#running">Running</a></li>
+        </ul>
+        <a class="docs-top" href="#main">Back to top</a>
+      </nav>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>

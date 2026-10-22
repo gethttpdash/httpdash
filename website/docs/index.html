@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentation · HttpDash</title>
+  <meta name="description" content="How every part of HttpDash works: sending and testing requests, flows, the command-line runner, service discovery, AI agents, team sharing and security.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/">
+  <meta property="og:title" content="Documentation · HttpDash">
+  <meta property="og:description" content="How every part of HttpDash works: sending and testing requests, flows, the command-line runner, service discovery, AI agents, team sharing and security.">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout docs-layout-index">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home current" href="index.html" aria-current="page">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <article class="docs-article">
+        <h1>HttpDash documentation</h1>
+        <div class="docs-intro"><p>How every part of HttpDash works, in detail. For what HttpDash is and a quick start, see the <a href="https://github.com/gethttpdash/httpdash/blob/main/README.md" rel="noopener">README</a>; for what changed in each version, the <a href="https://github.com/gethttpdash/httpdash/blob/main/CHANGELOG.md" rel="noopener">changelog</a>.</p>
+</div>
+        <section class="docs-overview-group">
+          <h2 id="getting-started">Getting started</h2>
+          <ul class="docs-cards">
+            <li><a href="install-and-update.html"><strong>Install and update</strong><span>Download the latest version from the releases page.</span></a></li>
+            <li><a href="import-and-export-everything.html"><strong>Import and export everything</strong><span>Export (top bar) offers two formats.</span></a></li>
+            <li><a href="keyboard-shortcuts.html"><strong>Keyboard shortcuts</strong><span>Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.</span></a></li>
+            <li><a href="features-at-a-glance.html"><strong>Features at a glance</strong><span>Everything HttpDash does, in one list: requests, responses, scripts, organisation, the runner, import and export, and the tools.</span></a></li>
+          </ul>
+        </section>
+        <section class="docs-overview-group">
+          <h2 id="sending-and-testing">Sending and testing</h2>
+          <ul class="docs-cards">
+            <li><a href="auth-dependencies-auto-refresh-tokens.html"><strong>Auth dependencies (auto-refresh tokens)</strong><span>A collection, folder or request can name another request, such as Login, to run first when the token it needs is missing or expired. Set it…</span></a></li>
+            <li><a href="data-files-data-driven-runs.html"><strong>Data files (data-driven runs)</strong><span>A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (-d) and for AI agents…</span></a></li>
+            <li><a href="request-versions-and-spec-warnings.html"><strong>Request versions and spec warnings</strong><span>Every distinct version of a request you send by hand (method, URL, params, headers, body, auth) is kept with the response it got. Open…</span></a></li>
+            <li><a href="tags-and-search.html"><strong>Tags and search</strong><span>Tag requests (smoke, orders, admin, up to 20 of 40 characters each) in the field under the request's name, which suggests the tags already…</span></a></li>
+            <li><a href="streaming-responses-server-sent-events.html"><strong>Streaming responses (Server-Sent Events)</strong><span>When a response is text/event-stream, as with AI APIs that stream their answers, HttpDash shows each event the moment it arrives instead of…</span></a></li>
+            <li><a href="websocket-requests.html"><strong>WebSocket requests</strong><span>Create one with New → WebSocket Request, or Add WebSocket request on a collection or folder. It's saved like any request (shown as WS), so…</span></a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html"><strong>Spoofing Referer, Origin, User-Agent and other headers</strong><span>Requests are sent from Node's HTTP stack, not a browser, so none of the browser's &quot;forbidden header&quot; rules apply. Whatever you put in the…</span></a></li>
+            <li><a href="script-sandbox.html"><strong>Script sandbox</strong><span>Scripts run in a sandbox: QuickJS, a separate JavaScript engine compiled to WebAssembly. Each request (with its collection and folder…</span></a></li>
+          </ul>
+        </section>
+        <section class="docs-overview-group">
+          <h2 id="automation">Automation</h2>
+          <ul class="docs-cards">
+            <li><a href="flows-request-orchestration.html"><strong>Flows (request orchestration)</strong><span>A flow runs requests as a diagram: each request is a node, connections set the order, values pass from one request to the next, and…</span></a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html"><strong>Command-line runner (CI and schedulers)</strong><span>Run collections without opening the app, like Postman's Newman. The runner needs Node.js 22+.</span></a></li>
+            <li><a href="monitors.html"><strong>Monitors</strong><span>Monitors (sidebar) run a collection or folder on a schedule, from every minute to every 24 hours, against a chosen environment.</span></a></li>
+            <li><a href="mock-server.html"><strong>Mock server</strong><span>Each collection has a Mock server tab that serves the examples saved on its requests. To save one, send a request, then use the response's…</span></a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html"><strong>AI agents (OpenAPI and MCP)</strong><span>AI agents such as Claude can use HttpDash the way you do: read your collections and environments, send requests and read the responses, set…</span></a></li>
+          </ul>
+        </section>
+        <section class="docs-overview-group">
+          <h2 id="services-and-networks">Services and networks</h2>
+          <ul class="docs-cards">
+            <li><a href="service-discovery-auto-create-environments.html"><strong>Service discovery (auto-create environments)</strong><span>Point HttpDash at a service registry and it builds an environment with one variable per service. For example, {{orders_url}} =…</span></a></li>
+            <li><a href="health-while-it-runs-profiling.html"><strong>Health while it runs (profiling)</strong><span>Give a request, a folder or a collection a health URL, and HttpDash reads it before the request is sent, while it is in flight, and after…</span></a></li>
+            <li><a href="where-a-request-went-on-the-network.html"><strong>Where a request went on the network</strong><span>The Timeline tab has a Network section for every request.</span></a></li>
+            <li><a href="tunnels-into-internal-networks.html"><strong>Tunnels into internal networks</strong><span>Reach services on a private network (a plant, a data center, a Kubernetes cluster) without a VPN. Add tunnels in Settings → Tunnels.</span></a></li>
+            <li><a href="client-certificates-and-custom-cas.html"><strong>Client certificates and custom CAs</strong><span>For APIs that use mutual TLS, add a client certificate in Settings → Certificates.</span></a></li>
+          </ul>
+        </section>
+        <section class="docs-overview-group">
+          <h2 id="teams-and-security">Teams and security</h2>
+          <ul class="docs-cards">
+            <li><a href="team-sharing-through-git.html"><strong>Team sharing through git</strong><span>Share collections and environments with your team through any git repository: GitHub, GitLab, Bitbucket, Azure DevOps, Gitea or your own…</span></a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html"><strong>App lock with LDAP sign-in</strong><span>HttpDash can require a directory (LDAP) sign-in before it opens. Set it up in Settings → Security.</span></a></li>
+            <li><a href="secret-scan-and-audit-log.html"><strong>Secret scan and audit log</strong><span>Tools → Scan for Secrets (also in Settings → Security and the Export dialog) looks for credentials typed directly into requests.</span></a></li>
+          </ul>
+        </section>
+      </article>
+    </main>
+
+    <aside class="docs-right">
+      <nav class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul>
+          <li><a href="#getting-started">Getting started</a></li>
+          <li><a href="#sending-and-testing">Sending and testing</a></li>
+          <li><a href="#automation">Automation</a></li>
+          <li><a href="#services-and-networks">Services and networks</a></li>
+          <li><a href="#teams-and-security">Teams and security</a></li>
+        </ul>
+      </nav>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>

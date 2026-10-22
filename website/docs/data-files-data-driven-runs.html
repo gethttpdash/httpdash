@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data files (data-driven runs) · HttpDash docs</title>
+  <meta name="description" content="A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (-d) and for AI agents (startRun).">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/data-files-data-driven-runs.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/data-files-data-driven-runs.html">
+  <meta property="og:title" content="Data files (data-driven runs) · HttpDash docs">
+  <meta property="og:description" content="A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (-d) and for AI agents (startRun).">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file" class="current" aria-current="page">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Sending and testing</p>
+      <article class="docs-article">
+        <h1>Data files (data-driven runs)</h1>
+<p>A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (<code>-d</code>) and for AI agents (<code>startRun</code>).</p>
+<ol>
+<li><p><strong>Write the file.</strong> CSV starts with a row of column names; JSON is an array of objects, one per iteration.</p>
+<pre><code class="language-csv">techno,expected_status
+JAVA,200
+&quot;C, C++&quot;,404
+</code></pre>
+<pre><code class="language-json">[
+  { &quot;techno&quot;: &quot;JAVA&quot;, &quot;expected_status&quot;: 200 },
+  { &quot;techno&quot;: &quot;C, C++&quot;, &quot;expected_status&quot;: 404 }
+]
+</code></pre>
+</li>
+<li><p><strong>Use the columns</strong> as <code>{{techno}}</code> anywhere a variable works (URL, params, headers, body, auth), and in scripts as <code>pm.iterationData.get(&quot;techno&quot;)</code> (or the legacy <code>data.techno</code>).</p>
+</li>
+<li><p><strong>Pick it in the Runner:</strong> <strong>Data file (CSV or JSON) → Select file</strong>. The button shows the file name and row count, <strong>Preview</strong> shows the rows as they were read, and <strong>×</strong> removes the file.</p>
+</li>
+</ol>
+<p>How it behaves:</p>
+<ul>
+<li><strong>Iterations:</strong> choosing a file sets <strong>Iterations</strong> to its number of rows. Set more and the rows start over (with 3 rows, iteration 4 uses row 1); set fewer and only the first rows run.</li>
+<li><strong>Precedence:</strong> a column beats a global, collection or environment variable of the same name; only <code>pm.variables.set</code> in a script beats it.</li>
+<li><strong>CSV:</strong> columns are separated by commas (a file Excel saved with semicolons reads as one column: save it as &quot;CSV UTF-8 (comma delimited)&quot;, or use JSON). Quotes work as usual (<code>&quot;C, C++&quot;</code>, <code>&quot;&quot;</code> for a quote), blank lines are skipped and a UTF-8 BOM is fine. Every value is text, so compare with <code>Number(...)</code> in tests.</li>
+<li><strong>Login requests:</strong> auth dependencies still run when the login request is unticked in the run, so you can tick only the requests that use the data.</li>
+<li><strong>Stop run on first failure</strong> stops the whole run, not just that row&#39;s iteration.</li>
+</ul>
+<p><img src="img/33-runner-data-file.png" alt="A run with a JSON data file of nested objects" loading="lazy"></p>
+<h3 id="nested-json-in-a-data-file"><a class="anchor" href="#nested-json-in-a-data-file" aria-hidden="true" tabindex="-1">#</a>Nested JSON in a data file</h3>
+<p>Only a row&#39;s top-level keys become variables. In a JSON row like <code>{ &quot;id&quot;: 7, &quot;user&quot;: { &quot;name&quot;: &quot;Ada&quot;, &quot;roles&quot;: [&quot;admin&quot;, &quot;dev&quot;] } }</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>In the request</th>
+<th>Is sent as</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>{{id}}</code></td>
+<td><code>7</code></td>
+</tr>
+<tr>
+<td><code>{{user}}</code></td>
+<td><code>[object Object]</code> (not JSON)</td>
+</tr>
+<tr>
+<td><code>{{user.name}}</code></td>
+<td><code>{{user.name}}</code>, left as it is (there is no path lookup)</td>
+</tr>
+</tbody></table></div>
+<p>This is how Postman and Newman behave too, so collections run the same in both. CSV files are always flat: a column named <code>user.name</code> is a variable with that whole name.</p>
+<p>Scripts get the real objects, so build what the request needs in a pre-request script (on the request, or on its folder to share it):</p>
+<pre><code class="language-js">const user = pm.iterationData.get(&quot;user&quot;);
+pm.variables.set(&quot;userJson&quot;, JSON.stringify(user));   // the whole object, as JSON
+pm.variables.set(&quot;userName&quot;, user.name);              // a field deep inside
+pm.variables.set(&quot;firstRole&quot;, user.roles[0]);
+</code></pre>
+<pre><code class="language-json">{ &quot;id&quot;: {{id}}, &quot;user&quot;: {{userJson}}, &quot;role&quot;: &quot;{{firstRole}}&quot; }
+</code></pre>
+<p>Leave <code>{{userJson}}</code> unquoted, since it is already JSON; numbers and booleans such as <code>{{id}}</code> can go unquoted too. To send each row as the whole body, use <code>pm.variables.set(&quot;payload&quot;, JSON.stringify(pm.iterationData.toObject()))</code> and make the body <code>{{payload}}</code>. Tests can check against the row the same way: <code>pm.expect(pm.response.json().user).to.eql(pm.iterationData.get(&quot;user&quot;))</code>.</p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="auth-dependencies-auto-refresh-tokens.html"><span>Previous</span>Auth dependencies (auto-refresh tokens)</a>
+        <a class="docs-next" href="request-versions-and-spec-warnings.html"><span>Next</span>Request versions and spec warnings</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+      <nav class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul>
+          <li><a href="#nested-json-in-a-data-file">Nested JSON in a data file</a></li>
+        </ul>
+        <a class="docs-top" href="#main">Back to top</a>
+      </nav>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>
