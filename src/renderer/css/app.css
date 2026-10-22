@@ -1223,6 +1223,19 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .flow-node.type-end .flow-node-head { background: var(--bg-3); }
 .flow-node.type-condition .flow-node-head { background: var(--warn-soft); color: var(--warn); }
 .flow-node.type-execute .flow-node-head { background: var(--accent-soft); color: var(--accent-text); }
+.flow-collapse { border: 0; background: transparent; padding: 0; margin: 0 -2px 0 -4px; width: 16px; height: 16px; display: inline-grid; place-items: center; color: inherit; cursor: pointer; border-radius: 3px; flex: none; }
+.flow-collapse .icon { width: 12px; height: 12px; transform: rotate(90deg); transition: transform .12s; }
+.flow-collapse:hover { background: color-mix(in srgb, currentColor 15%, transparent); }
+.flow-node.collapsed .flow-collapse .icon { transform: none; }
+/* A collapsed node is its title bar; its output ports sit on its right edge so connections stay. */
+.flow-node.collapsed .flow-node-head { border-bottom: 0; border-radius: 8px; padding-right: 14px; }
+.flow-node.collapsed .flow-node-outs { position: absolute; right: 0; top: 0; bottom: 0; padding: 0; justify-content: center; gap: 2px; }
+.flow-node.collapsed .flow-out-label { display: none; }
+.flow-node.collapsed .flow-port.out { width: 10px; height: 10px; }
+.flow-panels { display: inline-flex; gap: 2px; }
+.flow-panels .btn.active { background: var(--bg-active); color: var(--text); }
+.flow-split { flex: none; }
+.flow-inspector[hidden], .flow-results[hidden], .flow-split[hidden] { display: none; }
 .flow-node-body { padding: 8px 10px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 18px; }
 .flow-node-body .method-tag { font-size: 10px; }
 .flow-node-outs { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 0 0 8px; }
