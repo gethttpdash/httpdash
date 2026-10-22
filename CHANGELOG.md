@@ -5,6 +5,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.
+- **Click a tag to filter by it:** a tag on the request screen or in the sidebar tree adds itself to the sidebar search.
 - **Data files for AI agents:** `startRun` takes `data` (one object per iteration), and through MCP `dataFile`, the path to a CSV or JSON file that `httpdash mcp` reads and sends. Iterations default to the number of rows.
 - **Collection and folder scripts for AI agents:** `createCollection` and `createFolder` take a pre-request and test script, and the new `updateCollection`, `updateFolder` and `getFolder` change and read them.
 - **User guide:** a [Data files](USERGUIDE.md#data-files-data-driven-runs) section, including how to send nested JSON from a data file.

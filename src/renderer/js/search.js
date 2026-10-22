@@ -168,16 +168,48 @@
   };
   HD.queryActive = (query) => !!(query && ((query.tokens && query.tokens.length) || String(query.text || '').trim()));
 
-  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names', version: 'Versions' };
+  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names', version: 'Versions', recent: 'Recent searches' };
+
+  // ---- Search history ----------------------------------------------------------------------------
+  // The last searches of a search box (its chips and typed text), newest first, kept in the workspace.
+  const HISTORY_MAX = 10;
+  const historyOf = (key) => {
+    const all = (S.ws.ui.searchHistory = S.ws.ui.searchHistory || {});
+    return (all[key] = all[key] || []);
+  };
+  const queryLabel = (q) => [...(q.tokens || []).map((t) => (t.kind === 'tag' ? `#${t.value}` : t.kind === 'text' ? t.value : `${t.kind}:${t.value}`)), String(q.text || '').trim()].filter(Boolean).join(' ');
+  const sameQuery = (a, b) => queryLabel(a).toLowerCase() === queryLabel(b).toLowerCase();
+  // A search that only grows the last one ("ord", then "orders") replaces it rather than adding another.
+  HD.rememberSearch = (key, query) => {
+    if (!HD.queryActive(query)) return;
+    const entry = { tokens: (query.tokens || []).map((t) => ({ kind: t.kind, value: t.value })), text: String(query.text || '').trim() };
+    const list = historyOf(key);
+    const last = list[0];
+    if (last && last.text && sameQuery({ ...last, text: '' }, { ...entry, text: '' }) && entry.text.toLowerCase().startsWith(last.text.toLowerCase())) list.shift();
+    const i = list.findIndex((e) => sameQuery(e, entry));
+    if (i !== -1) list.splice(i, 1);
+    list.unshift(entry);
+    list.splice(HISTORY_MAX);
+    HD.save();
+  };
+  HD.forgetSearch = (key, entry) => {
+    const list = historyOf(key);
+    const i = list.findIndex((e) => sameQuery(e, entry));
+    if (i !== -1) { list.splice(i, 1); HD.save(); }
+  };
   const PREFIX = /^(tag|method|url|name|version):\s*/i;
 
   // The suggestions for what was typed: grouped, a few of each, the most used first.
-  function suggestions(text, query, catalog) {
+  function suggestions(text, query, catalog, recent = []) {
     const m = PREFIX.exec(text);
     const only = m ? m[1].toLowerCase() : null;
     const q = (m ? text.slice(m[0].length) : text).trim().toLowerCase();
     const taken = new Set(((query && query.tokens) || []).map((t) => `${t.kind}:${String(t.value).toLowerCase()}`));
     const out = [];
+    // An empty field offers the recent searches first (not the one already showing).
+    if (!text.trim()) {
+      for (const e of recent.filter((r) => !sameQuery(r, query)).slice(0, 5)) out.push({ kind: 'recent', value: e, label: queryLabel(e), group: KIND_LABEL.recent });
+    }
     if (q && !only) out.push({ kind: 'text', value: text.trim(), label: `Search for “${text.trim()}”`, hint: 'name, URL, tag, method or folder' });
     const pick = (kind, list, limit) => {
       if (only && only !== kind) return;
@@ -204,9 +236,12 @@
     menu.style.maxHeight = `${Math.max(160, Math.min(340, window.innerHeight - r.bottom - 16))}px`;
   };
 
-  const tokenChip = (t, onRemove) => h(`span.search-chip.search-${t.kind}`,
+  // onClick (optional): the chip's label becomes a button, e.g. a request's tag that filters the sidebar by it.
+  const tokenChip = (t, onRemove, onClick) => h(`span.search-chip.search-${t.kind}${onClick ? '.clickable' : ''}`,
     t.kind === 'tag' ? h('span.search-chip-kind', '#') : t.kind === 'text' ? null : h('span.search-chip-kind', `${t.kind}:`),
-    h('span', t.value),
+    onClick ? h('span', { role: 'button', tabindex: '0', title: `Show requests tagged #${t.value}`,
+      onclick: (e) => { e.stopPropagation(); onClick(t.value); },
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClick(t.value); } } }, t.value) : h('span', t.value),
     h('button', { type: 'button', title: 'Remove', 'aria-label': `Remove ${t.kind} ${t.value}`, onclick: (e) => { e.stopPropagation(); onRemove(); } }, '×'));
 
   /**
@@ -215,7 +250,7 @@
    * onChange() is called whenever the query changes. Keys: ↑ ↓ to choose, Enter to add, Esc to close,
    * Backspace in an empty field removes the last chip. "tag:", "method:", "url:", "name:" narrow it.
    */
-  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '' }) => {
+  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '', historyKey = null }) => {
     query.tokens = query.tokens || [];
     query.text = query.text || '';
     let items = [];
@@ -231,7 +266,7 @@
     };
     const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
     const open = () => {
-      items = suggestions(input.value, query, HD.requestCatalog());
+      items = suggestions(input.value, query, HD.requestCatalog(), historyKey ? historyOf(historyKey) : []);
       active = 0;
       HD.clear(menu);
       if (!items.length) { close(); return; }
@@ -243,9 +278,13 @@
           onmousedown: (e) => { e.preventDefault(); choose(i); },
           onmousemove: () => highlight(i),
         },
-        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : it.kind === 'version' ? HD.icon('history') : null,
+        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : it.kind === 'version' || it.kind === 'recent' ? HD.icon('history') : null,
         h('span.search-label', it.kind === 'method' ? '' : it.label),
-        it.hint ? h('span.search-hint', it.kind === 'text' ? it.hint : `${it.hint} request${it.hint === '1' ? '' : 's'}`) : null));
+        it.hint ? h('span.search-hint', it.kind === 'text' ? it.hint : `${it.hint} request${it.hint === '1' ? '' : 's'}`) : null,
+        it.kind === 'recent' ? h('button.search-forget', {
+          type: 'button', title: 'Remove from recent searches', 'aria-label': `Remove ${it.label} from recent searches`,
+          onmousedown: (e) => { e.preventDefault(); e.stopPropagation(); HD.forgetSearch(historyKey, it.value); open(); },
+        }, '×') : null));
       });
       menu.hidden = false;
       place(menu, box);
@@ -260,6 +299,17 @@
     const choose = (i) => {
       const it = items[i];
       if (!it) return;
+      if (it.kind === 'recent') {
+        // A recent search replaces what's there, chips and text.
+        query.tokens = it.value.tokens.map((t) => ({ ...t }));
+        query.text = it.value.text || '';
+        input.value = query.text;
+        drawChips();
+        onChange();
+        HD.rememberSearch(historyKey, query);
+        close();
+        return;
+      }
       query.tokens.push({ kind: it.kind, value: it.value });
       input.value = '';
       query.text = '';
@@ -269,7 +319,8 @@
     };
 
     input.addEventListener('focus', open);
-    input.addEventListener('blur', () => setTimeout(close, 100));
+    // A search counts as done when the field is left with something in it (e.g. to open a result).
+    input.addEventListener('blur', () => { setTimeout(close, 100); if (historyKey) HD.rememberSearch(historyKey, query); });
     input.addEventListener('input', () => { query.text = PREFIX.test(input.value) ? '' : input.value; onChange(); open(); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); if (menu.hidden) open(); else highlight((active + 1) % items.length); }
@@ -286,7 +337,7 @@
    * The tags of a request: chips, and a field that suggests the tags already used elsewhere.
    * Enter or a comma adds what was typed; Backspace in an empty field removes the last tag.
    */
-  HD.tagInput = ({ tags, onChange }) => {
+  HD.tagInput = ({ tags, onChange, onTagClick = null }) => {
     let items = [];
     let active = 0;
     const chips = h('span.search-chips');
@@ -294,7 +345,7 @@
     const menu = h('div.search-menu', { role: 'listbox', hidden: true });
     const box = h('div.search-box.tag-box', { onclick: () => input.focus() }, h('span.tag-box-icon', { title: 'Tags' }, '#'), chips, input, menu);
     const set = (next) => { const n = HD.normalizeTags(next); tags.splice(0, tags.length, ...n); drawChips(); onChange(); };
-    const drawChips = () => HD.clear(chips).append(...tags.map((t, i) => tokenChip({ kind: 'tag', value: t }, () => set(tags.filter((_, j) => j !== i)))));
+    const drawChips = () => HD.clear(chips).append(...tags.map((t, i) => tokenChip({ kind: 'tag', value: t }, () => set(tags.filter((_, j) => j !== i)), onTagClick)));
     const close = () => { menu.hidden = true; };
     const open = () => {
       const q = input.value.trim().toLowerCase();
