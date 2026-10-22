@@ -119,3 +119,17 @@ test('recent searches: newest first, no repeats, a search that grows the last on
     delete ws.ui;
   }
 });
+
+test('highlighting marks what the typed words and name chips match, merged, and typo matches only with fuzzy', () => {
+  const { searchTerms, highlightRanges, highlight } = global.HD;
+  assert.deepStrictEqual(searchTerms({ tokens: [{ kind: 'text', value: 'post Orders' }, { kind: 'name', value: 'List' }, { kind: 'tag', value: 'smoke' }], text: ' create ' }), ['post', 'orders', 'create', 'list']);
+  const marked = (text, terms, fuzzy) => highlightRanges(text, terms, fuzzy).map(([a, b]) => text.slice(a, b));
+  assert.deepStrictEqual(marked('Create new order', ['order', 'create']), ['Create', 'order'], 'in order, ignoring case');
+  assert.deepStrictEqual(marked('orders and more orders', ['order']), ['order', 'order'], 'every occurrence');
+  assert.deepStrictEqual(marked('Orders API', ['orders', 'ders api']), ['Orders API'], 'overlapping matches merge');
+  assert.deepStrictEqual(marked('List orders', ['ordrs']), [], 'a typo is not marked without fuzzy');
+  assert.deepStrictEqual(marked('List orders', ['ordrs'], true), ['orders'], 'with fuzzy, the near word is marked');
+  assert.deepStrictEqual(marked('Get customer', ['cus'], true), ['cus'], 'exact matches still mark just what was typed');
+  assert.strictEqual(highlight('Get customer', []), 'Get customer', 'nothing to mark gives the plain text');
+  assert.strictEqual(highlight('Get customer', ['zzz']), 'Get customer');
+});

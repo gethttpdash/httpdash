@@ -99,14 +99,63 @@
     }
     return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1); // one extra or missing
   };
-  const nearWord = (word, place) => place.split(/[^a-z0-9]+/).some((w) => w.length >= FUZZY_MIN - 1
-    && (oneTypo(word, w) || (w.length > word.length && oneTypo(word, w.slice(0, word.length)))));
+  const nearOne = (word, w) => w.length >= FUZZY_MIN - 1 && (oneTypo(word, w) || (w.length > word.length && oneTypo(word, w.slice(0, word.length))));
+  const nearWord = (word, place) => place.split(/[^a-z0-9]+/).some((w) => nearOne(word, w));
   const wordFound = (word, places, fuzzy) => places.some((p) => p.includes(word))
     || (fuzzy && word.length >= FUZZY_MIN && places.some((p) => nearWord(word, p)));
   HD.textFound = (text, places, fuzzy = false) => {
     const lower = places.map((p) => String(p || '').toLowerCase());
     return words(text).every((w) => wordFound(w, lower, fuzzy));
   };
+  // ---- Highlighting --------------------------------------------------------------------------------
+  // What to highlight for a search: the typed words (in the field and in "Search for" chips) and the
+  // text of name chips.
+  HD.searchTerms = (query) => {
+    if (!query) return [];
+    const tokens = query.tokens || [];
+    return [...new Set([
+      ...[...tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text || ''].flatMap(words),
+      ...tokens.filter((t) => t.kind === 'name').map((t) => String(t.value).toLowerCase().trim()).filter(Boolean),
+    ])];
+  };
+  /**
+   * The [start, end) ranges of text that terms match, merged and in order. With fuzzy, a term of 5
+   * letters or more that isn't found as typed marks the words one typo away from it.
+   */
+  HD.highlightRanges = (text, terms, fuzzy = false) => {
+    const lower = String(text || '').toLowerCase();
+    const ranges = [];
+    for (const term of terms) {
+      let found = false;
+      for (let i = lower.indexOf(term); term && i !== -1; i = lower.indexOf(term, i + term.length)) { ranges.push([i, i + term.length]); found = true; }
+      if (!found && fuzzy && term.length >= FUZZY_MIN) {
+        for (const m of lower.matchAll(/[a-z0-9]+/g)) if (nearOne(term, m[0])) ranges.push([m.index, m.index + m[0].length]);
+      }
+    }
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const r of ranges) {
+      const last = merged[merged.length - 1];
+      if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]); else merged.push([...r]);
+    }
+    return merged;
+  };
+  /** The text with what the terms match wrapped in <mark>, ready to append (the plain text when nothing matches). */
+  HD.highlight = (text, terms, fuzzy = false) => {
+    const str = String(text == null ? '' : text);
+    const ranges = terms && terms.length ? HD.highlightRanges(str, terms, fuzzy) : [];
+    if (!ranges.length) return str;
+    const out = [];
+    let at = 0;
+    for (const [a, b] of ranges) {
+      if (a > at) out.push(str.slice(at, a));
+      out.push(h('mark.search-hit', str.slice(a, b)));
+      at = b;
+    }
+    if (at < str.length) out.push(str.slice(at));
+    return out;
+  };
+
   // Whether a search has typed text (in the field or as a "Search for" chip), the only part typos can affect.
   HD.queryHasText = (query) => !!(query && (String(query.text || '').trim() || (query.tokens || []).some((t) => t.kind === 'text')));
 
