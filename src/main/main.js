@@ -7,6 +7,7 @@ const http = require('http');
 const path = require('path');
 const { JsonStore } = require('./store');
 const { execute, prepare, clientOptions } = require('../core/executor');
+const { ScriptSession } = require('../core/sandbox');
 const health = require('../core/health');
 const network = require('../core/network');
 const { mergeScopes } = require('../core/variables');
@@ -18,6 +19,7 @@ const { makeLookup } = require('../core/dependency');
 const discovery = require('../core/discovery');
 const openapiSync = require('../core/openapi-sync');
 const specCollections = require('../core/spec-collections');
+const flowEngine = require('../core/flow');
 const balancer = require('../core/balancer');
 const trafficReport = require('../core/traffic-report');
 const payloads = require('../core/payloads');
@@ -942,6 +944,30 @@ handle('oauth2:refresh', async ({ config, scopes, settings }) => {
 handle('oauth2:cancel', () => { if (cancelSignIn) cancelSignIn(); });
 // Signs out of every provider used in the sign-in window.
 handle('oauth2:clearSessions', () => session.fromPartition(OAUTH_PARTITION).clearStorageData());
+
+// Flows: requests orchestrated as a graph (flow.js). The renderer sends each execute node's request
+// with its folder chain and collection, so auth, scripts and auth dependencies work as in the Runner.
+let activeFlow = null;
+handle('flow:run', async ({ flow: def, requests, collections, scopes, settings, useCookies }) => {
+  if (activeFlow) throw new Error('A flow is already running');
+  const controller = new AbortController();
+  activeFlow = controller;
+  try {
+    const lookups = Object.fromEntries(Object.entries(collections || {}).map(([id, c]) => [id, makeLookup(c)]));
+    for (const r of Object.values(requests || {})) if (r.collectionId) r.lookup = lookups[r.collectionId];
+    const summary = await flowEngine.run({
+      flow: def, requests, scopes, settings, jar: useCookies === false ? [] : jar, signal: controller.signal,
+      makeScriptSession: () => new ScriptSession(),
+      onEvent: (evt) => win && !win.isDestroyed() && win.webContents.send('flow:event', evt),
+    });
+    audit.append('flow.run', { flow: def.name, status: summary.status, nodes: summary.order.length });
+    return summary;
+  } finally {
+    activeFlow = null;
+    saveJar();
+  }
+});
+handle('flow:stop', () => { if (activeFlow) activeFlow.abort(); return true; });
 
 // Service discovery: query a registry and sync its services into environment values. An OpenAPI
 // document also syncs a collection. Both work on copies, so a preview reports what would change
