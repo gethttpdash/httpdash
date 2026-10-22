@@ -491,6 +491,7 @@
     side.style.display = S.ws.ui.sidebarHidden ? 'none' : '';
     side.style.width = `${Math.max(SIDEBAR_MIN, S.ws.ui.sidebarWidth || SIDEBAR_MIN)}px`;
   };
+  HD.applyLayout = applyLayout;
 
   // ---- Theme --------------------------------------------------------------------------------
 

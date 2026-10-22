@@ -5,6 +5,12 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.
+- **Search highlights what matched** in request, folder and collection names and in tags, including close matches; a request shows the tag that matched.
+- **Click a tag to filter by it:** a tag on the request screen or in the sidebar tree adds itself to the sidebar search.
+- **Data files for AI agents:** `startRun` takes `data` (one object per iteration), and through MCP `dataFile`, the path to a CSV or JSON file that `httpdash mcp` reads and sends. Iterations default to the number of rows.
+- **Collection and folder scripts for AI agents:** `createCollection` and `createFolder` take a pre-request and test script, and the new `updateCollection`, `updateFolder` and `getFolder` change and read them.
+- **User guide:** a [Data files](USERGUIDE.md#data-files-data-driven-runs) section, including how to send nested JSON from a data file.
 - **Preview tabs:** a single click in the sidebar (a request, environment, globals, discovery source, monitor or history entry) opens a preview tab, its title in italics, which the next single click replaces, so looking around doesn't pile up tabs. It stays as soon as you use it:
   - an edit, a send or a save
   - a double-click on the tab or on the item in the sidebar
@@ -20,6 +26,9 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Search finds more of what you type:** each word is matched on its own, in any order (`create order`, `post orders`), the method and folder and collection names count, and when nothing matches exactly, close matches one typo away are shown with a note (`ordrs` finds "orders"). The Runner's request filter and the AI API's `searchRequests` match words and folders the same way.
+- **README:** a sharper summary (service-heavy backends and AI agents) and a **How it compares** table against Postman, Insomnia, Bruno, Hoppscotch and Yaak, listing only what their documentation shows.
+- **Resizers are easier to find:** the bar between the request and the response is 6 px with a grip in the middle, and the sidebar and console edges show a grip too; all turn the accent color on hover and while dragging.
 - **Documentation:** the README is now what HttpDash is, a quick guide and its sponsors; how every feature works moved to [USERGUIDE.md](USERGUIDE.md), which **Help → Documentation** opens. Building, the website and the source layout moved to [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Dragging in the sidebar:**
   - It shows exactly where an item will land: a thin line with a dot, at the right indentation, above or below a request (by which half of the row you're over); the middle of a folder highlights it to drop into, and its edges place the item before or after it.

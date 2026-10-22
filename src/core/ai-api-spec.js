@@ -36,6 +36,12 @@ const requestDef = obj({
   }),
 });
 
+// Scripts on a collection or folder run before (pre-request) or after (test) every request inside it.
+const containerScripts = {
+  preRequestScript: str('Pre-request script (pm API) run before every request inside it'),
+  testScript: str('Test script (pm API, chai) run after every request inside it'),
+};
+
 const OPERATIONS = [
   // ---- About the app --------------------------------------------------------------------------
   { id: 'getStatus', method: 'get', path: '/status', permission: 'read', target: 'renderer', tag: 'App',
@@ -52,16 +58,24 @@ const OPERATIONS = [
     summary: 'One collection: its tree, variables, auth and scripts', parameters: [id('collectionId', 'Collection id')] },
   { id: 'searchRequests', method: 'get', path: '/requests', permission: 'read', target: 'renderer', tag: 'Requests',
     summary: 'Find requests by text, tag, method or URL',
-    description: 'The same search as the sidebar: every tag given must be on the request, any one of the methods will do, url and text must match.',
-    parameters: [q('text', 'string', 'Matches the name, URL or a tag'), q('tag', 'string', 'A tag; comma-separate several'), q('method', 'string', 'GET, POST... comma-separate several'), q('url', 'string', 'Part of the URL'), q('limit', 'integer', 'At most this many (default 100)')] },
+    description: 'The same search as the sidebar: every tag given must be on the request, any one of the methods will do, url and text must match. Each word of text must be found, in any order, in the name, URL, a tag, the method, or a folder or collection the request is in.',
+    parameters: [q('text', 'string', 'Words to find in the name, URL, tags, method or folder names'), q('tag', 'string', 'A tag; comma-separate several'), q('method', 'string', 'GET, POST... comma-separate several'), q('url', 'string', 'Part of the URL'), q('limit', 'integer', 'At most this many (default 100)')] },
   { id: 'getRequest', method: 'get', path: '/requests/{requestId}', permission: 'read', target: 'renderer', tag: 'Requests',
     summary: 'A request\'s full definition', description: 'Method, URL, params, headers, body, auth, scripts, tags, payloads and where it sits. Secret values are masked unless the secrets permission is on.',
     parameters: [id('requestId', 'Request id')] },
   { id: 'createCollection', method: 'post', path: '/collections', permission: 'edit', target: 'renderer', tag: 'Requests',
-    summary: 'Create a collection', body: obj({ name: str('Name'), description: str('Description'), variables: { type: 'object', additionalProperties: { type: 'string' }, description: 'Collection variables: { name: value }' } }, ['name']) },
+    summary: 'Create a collection', body: obj({ name: str('Name'), description: str('Description'), variables: { type: 'object', additionalProperties: { type: 'string' }, description: 'Collection variables: { name: value }' }, ...containerScripts }, ['name']) },
+  { id: 'updateCollection', method: 'patch', path: '/collections/{collectionId}', permission: 'edit', target: 'renderer', tag: 'Requests',
+    summary: 'Change a collection\'s name, description or scripts (only the fields given)', parameters: [id('collectionId', 'Collection id')],
+    body: obj({ name: str('New name'), description: str('Description'), ...containerScripts }) },
   { id: 'createFolder', method: 'post', path: '/collections/{collectionId}/folders', permission: 'edit', target: 'renderer', tag: 'Requests',
     summary: 'Create a folder in a collection (or inside another folder)', parameters: [id('collectionId', 'Collection id')],
-    body: obj({ name: str('Name'), parentFolderId: str('Folder to create it in (optional)') }, ['name']) },
+    body: obj({ name: str('Name'), parentFolderId: str('Folder to create it in (optional)'), description: str('Description'), ...containerScripts }, ['name']) },
+  { id: 'getFolder', method: 'get', path: '/folders/{folderId}', permission: 'read', target: 'renderer', tag: 'Requests',
+    summary: 'One folder: its tree, auth and scripts', parameters: [id('folderId', 'Folder id')] },
+  { id: 'updateFolder', method: 'patch', path: '/folders/{folderId}', permission: 'edit', target: 'renderer', tag: 'Requests',
+    summary: 'Change a folder\'s name, description or scripts (only the fields given)', parameters: [id('folderId', 'Folder id')],
+    body: obj({ name: str('New name'), description: str('Description'), ...containerScripts }) },
   { id: 'createRequest', method: 'post', path: '/requests', permission: 'edit', target: 'renderer', tag: 'Requests',
     summary: 'Add a request to a collection or folder',
     body: obj({ collectionId: str('Collection to add it to'), folderId: str('Folder inside that collection (optional)'), name: str('Name'), request: requestDef }, ['collectionId', 'name']) },
@@ -112,8 +126,11 @@ const OPERATIONS = [
   // ---- Runner ---------------------------------------------------------------------------------
   { id: 'startRun', method: 'post', path: '/runs', permission: 'run', target: 'renderer', tag: 'Runner',
     summary: 'Set up the Runner and start a run',
-    description: 'Opens the Runner in the app on a collection (or folder), picks the requests (all, these ids, or those with every tag given), and starts. Returns at once with the run id; follow it with getRun. One run at a time.',
-    body: obj({ collectionId: str('Collection to run'), folderId: str('Only this folder'), requestIds: strings('Only these requests'), tags: strings('Only requests with every one of these tags'), environmentId: str('Environment (default: the active one)'), iterations: int('Iterations (default 1)', { minimum: 1, maximum: 1000 }), delayMs: int('Gap between requests in milliseconds', { minimum: 0 }), stopOnFailure: bool('Stop at the first failure') }, ['collectionId']) },
+    description: 'Opens the Runner in the app on a collection (or folder), picks the requests (all, these ids, or those with every tag given), and starts. Returns at once with the run id; follow it with getRun. One run at a time. '
+      + 'With data, each row is one iteration (iterations defaults to the number of rows; more iterations start the rows over): its keys are {{variables}} in the requests and pm.iterationData in scripts. '
+      + 'Only top-level keys become variables, and objects or arrays are not turned into JSON: build nested values in a pre-request script, e.g. pm.variables.set("user", JSON.stringify(pm.iterationData.get("user"))). '
+      + 'Without data, a data file the user chose in the Runner stays in use (the answer says so); data: [] removes it.',
+    body: obj({ collectionId: str('Collection to run'), folderId: str('Only this folder'), requestIds: strings('Only these requests'), tags: strings('Only requests with every one of these tags'), environmentId: str('Environment (default: the active one)'), iterations: int('Iterations (default 1)', { minimum: 1, maximum: 1000 }), delayMs: int('Gap between requests in milliseconds', { minimum: 0 }), stopOnFailure: bool('Stop at the first failure'), data: { type: 'array', items: { type: 'object' }, maxItems: 10000, description: 'Data rows, one object per iteration, like a CSV or JSON data file in the Runner' } }, ['collectionId']) },
   { id: 'getRun', method: 'get', path: '/runs/{runId}', permission: 'read', target: 'renderer', tag: 'Runner',
     summary: 'A run\'s progress and results', parameters: [id('runId', 'Run id from startRun'), q('results', 'string', 'none, failed (default) or all')] },
   { id: 'stopRun', method: 'post', path: '/runs/{runId}/stop', permission: 'run', target: 'renderer', tag: 'Runner',

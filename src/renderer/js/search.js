@@ -71,7 +71,8 @@
   /**
    * Whether a request matches a search: { tokens: [{ kind: 'tag'|'method'|'url'|'name'|'text', value }], text }.
    * Every tag must be on the request; any one of the methods will do (a request has one); URL, name and
-   * text must all match. Text (typed, not yet picked) matches the name, the URL or a tag.
+   * text must all match. Each word of the text (typed, not yet picked) matches the name, the URL, a tag,
+   * the method or a folder or collection the request is in.
    */
   const curatedVersions = (item) => ((S.ws.requestVersions || {})[item.id] || []).filter((v) => v.name || (v.tags || []).length);
 
@@ -79,6 +80,85 @@
    * The named or tagged versions of a request that match a search: a version's own name and tags
    * count, with its request's tags. A "version" chip matches version names only.
    */
+  // ---- Typed text --------------------------------------------------------------------------------
+  // Every word typed has to be found, in any order, in one of the places searched (a request's name,
+  // URL, tags and method, and the folders and collection it sits in). With fuzzy, a word of 5 letters
+  // or more may also be one typo away from a word there: a letter wrong, missing or extra, or two
+  // letters swapped ("ordrs" finds "orders", "cusotmer" finds "customer").
+  const FUZZY_MIN = 5;
+  const words = (text) => String(text || '').toLowerCase().split(/\s+/).filter(Boolean);
+  // Optimal string alignment distance of at most 1 (a substitution, insertion, deletion or swap).
+  const oneTypo = (a, b) => {
+    if (a === b) return true;
+    if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    if (a.length === b.length) {
+      return a.slice(i + 1) === b.slice(i + 1) // one letter wrong
+        || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2)); // two swapped
+    }
+    return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1); // one extra or missing
+  };
+  const nearOne = (word, w) => w.length >= FUZZY_MIN - 1 && (oneTypo(word, w) || (w.length > word.length && oneTypo(word, w.slice(0, word.length))));
+  const nearWord = (word, place) => place.split(/[^a-z0-9]+/).some((w) => nearOne(word, w));
+  const wordFound = (word, places, fuzzy) => places.some((p) => p.includes(word))
+    || (fuzzy && word.length >= FUZZY_MIN && places.some((p) => nearWord(word, p)));
+  HD.textFound = (text, places, fuzzy = false) => {
+    const lower = places.map((p) => String(p || '').toLowerCase());
+    return words(text).every((w) => wordFound(w, lower, fuzzy));
+  };
+  // ---- Highlighting --------------------------------------------------------------------------------
+  // What to highlight for a search: the typed words (in the field and in "Search for" chips) and the
+  // text of name chips.
+  HD.searchTerms = (query) => {
+    if (!query) return [];
+    const tokens = query.tokens || [];
+    return [...new Set([
+      ...[...tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text || ''].flatMap(words),
+      ...tokens.filter((t) => t.kind === 'name').map((t) => String(t.value).toLowerCase().trim()).filter(Boolean),
+    ])];
+  };
+  /**
+   * The [start, end) ranges of text that terms match, merged and in order. With fuzzy, a term of 5
+   * letters or more that isn't found as typed marks the words one typo away from it.
+   */
+  HD.highlightRanges = (text, terms, fuzzy = false) => {
+    const lower = String(text || '').toLowerCase();
+    const ranges = [];
+    for (const term of terms) {
+      let found = false;
+      for (let i = lower.indexOf(term); term && i !== -1; i = lower.indexOf(term, i + term.length)) { ranges.push([i, i + term.length]); found = true; }
+      if (!found && fuzzy && term.length >= FUZZY_MIN) {
+        for (const m of lower.matchAll(/[a-z0-9]+/g)) if (nearOne(term, m[0])) ranges.push([m.index, m.index + m[0].length]);
+      }
+    }
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const r of ranges) {
+      const last = merged[merged.length - 1];
+      if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]); else merged.push([...r]);
+    }
+    return merged;
+  };
+  /** The text with what the terms match wrapped in <mark>, ready to append (the plain text when nothing matches). */
+  HD.highlight = (text, terms, fuzzy = false) => {
+    const str = String(text == null ? '' : text);
+    const ranges = terms && terms.length ? HD.highlightRanges(str, terms, fuzzy) : [];
+    if (!ranges.length) return str;
+    const out = [];
+    let at = 0;
+    for (const [a, b] of ranges) {
+      if (a > at) out.push(str.slice(at, a));
+      out.push(h('mark.search-hit', str.slice(a, b)));
+      at = b;
+    }
+    if (at < str.length) out.push(str.slice(at));
+    return out;
+  };
+
+  // Whether a search has typed text (in the field or as a "Search for" chip), the only part typos can affect.
+  HD.queryHasText = (query) => !!(query && (String(query.text || '').trim() || (query.tokens || []).some((t) => t.kind === 'text')));
+
   HD.matchingVersions = (item, query) => {
     if (!item || item.type !== 'request' || !HD.queryActive(query)) return [];
     const reqTags = (item.request.tags || []).map((t) => t.toLowerCase());
@@ -96,16 +176,24 @@
         if (t.kind === 'tag') { if (!tags.includes(val)) return false; if ((v.tags || []).some((x) => x.toLowerCase() === val)) ownMatch = true; }
         if (t.kind === 'version') { if (!name.includes(val)) return false; ownMatch = true; }
         if (t.kind === 'url' && !url.includes(val)) return false;
-        if ((t.kind === 'text' || t.kind === 'name') && !own(val) && !item.name.toLowerCase().includes(val)) return false;
-        if ((t.kind === 'text' || t.kind === 'name') && own(val)) ownMatch = true;
+        if (t.kind === 'name' && !own(val) && !item.name.toLowerCase().includes(val)) return false;
+        if (t.kind === 'name' && own(val)) ownMatch = true;
       }
-      const text = String(query.text || '').trim().toLowerCase();
-      if (text) { if (!own(text) && !item.name.toLowerCase().includes(text) && !url.includes(text)) return false; if (own(text)) ownMatch = true; }
+      // Typed text, word by word: each word in the version's own name or tags, or its request's name or URL.
+      const typed = [...tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text || ''].flatMap(words);
+      for (const w of typed) {
+        if (own(w)) ownMatch = true;
+        else if (!item.name.toLowerCase().includes(w) && !url.includes(w)) return false;
+      }
       return ownMatch;
     });
   };
 
-  HD.matchRequest = (item, query) => {
+  /**
+   * opts: { path: names of the folders and collection the request is in, which typed text also
+   * searches; fuzzy: let a word be one typo away (see above) }.
+   */
+  HD.matchRequest = (item, query, { path = [], fuzzy = false } = {}) => {
     if (!item || item.type !== 'request') return false;
     if (((query && query.tokens) || []).some((t) => t.kind === 'version')) return false; // only versions have version names
     const req = item.request || {};
@@ -113,7 +201,7 @@
     const name = (item.name || '').toLowerCase();
     const url = String(req.url || '').toLowerCase();
     const method = String(req.method || 'GET').toUpperCase();
-    const anyText = (q) => name.includes(q) || url.includes(q) || tags.some((t) => t.includes(q));
+    const anyText = (q) => HD.textFound(q, [name, url, method, ...tags, ...path], fuzzy);
     const tokens = (query && query.tokens) || [];
     const methods = tokens.filter((t) => t.kind === 'method').map((t) => t.value.toUpperCase());
     if (methods.length && !methods.includes(method)) return false;
@@ -129,17 +217,49 @@
   };
   HD.queryActive = (query) => !!(query && ((query.tokens && query.tokens.length) || String(query.text || '').trim()));
 
-  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names', version: 'Versions' };
+  const KIND_LABEL = { tag: 'Tags', method: 'Methods', url: 'URLs', name: 'Names', version: 'Versions', recent: 'Recent searches' };
+
+  // ---- Search history ----------------------------------------------------------------------------
+  // The last searches of a search box (its chips and typed text), newest first, kept in the workspace.
+  const HISTORY_MAX = 10;
+  const historyOf = (key) => {
+    const all = (S.ws.ui.searchHistory = S.ws.ui.searchHistory || {});
+    return (all[key] = all[key] || []);
+  };
+  const queryLabel = (q) => [...(q.tokens || []).map((t) => (t.kind === 'tag' ? `#${t.value}` : t.kind === 'text' ? t.value : `${t.kind}:${t.value}`)), String(q.text || '').trim()].filter(Boolean).join(' ');
+  const sameQuery = (a, b) => queryLabel(a).toLowerCase() === queryLabel(b).toLowerCase();
+  // A search that only grows the last one ("ord", then "orders") replaces it rather than adding another.
+  HD.rememberSearch = (key, query) => {
+    if (!HD.queryActive(query)) return;
+    const entry = { tokens: (query.tokens || []).map((t) => ({ kind: t.kind, value: t.value })), text: String(query.text || '').trim() };
+    const list = historyOf(key);
+    const last = list[0];
+    if (last && last.text && sameQuery({ ...last, text: '' }, { ...entry, text: '' }) && entry.text.toLowerCase().startsWith(last.text.toLowerCase())) list.shift();
+    const i = list.findIndex((e) => sameQuery(e, entry));
+    if (i !== -1) list.splice(i, 1);
+    list.unshift(entry);
+    list.splice(HISTORY_MAX);
+    HD.save();
+  };
+  HD.forgetSearch = (key, entry) => {
+    const list = historyOf(key);
+    const i = list.findIndex((e) => sameQuery(e, entry));
+    if (i !== -1) { list.splice(i, 1); HD.save(); }
+  };
   const PREFIX = /^(tag|method|url|name|version):\s*/i;
 
   // The suggestions for what was typed: grouped, a few of each, the most used first.
-  function suggestions(text, query, catalog) {
+  function suggestions(text, query, catalog, recent = []) {
     const m = PREFIX.exec(text);
     const only = m ? m[1].toLowerCase() : null;
     const q = (m ? text.slice(m[0].length) : text).trim().toLowerCase();
     const taken = new Set(((query && query.tokens) || []).map((t) => `${t.kind}:${String(t.value).toLowerCase()}`));
     const out = [];
-    if (q && !only) out.push({ kind: 'text', value: text.trim(), label: `Search for “${text.trim()}”`, hint: 'name, URL or tag' });
+    // An empty field offers the recent searches first (not the one already showing).
+    if (!text.trim()) {
+      for (const e of recent.filter((r) => !sameQuery(r, query)).slice(0, 5)) out.push({ kind: 'recent', value: e, label: queryLabel(e), group: KIND_LABEL.recent });
+    }
+    if (q && !only) out.push({ kind: 'text', value: text.trim(), label: `Search for “${text.trim()}”`, hint: 'name, URL, tag, method or folder' });
     const pick = (kind, list, limit) => {
       if (only && only !== kind) return;
       const found = list.filter((e) => !taken.has(`${kind}:${e.value.toLowerCase()}`) && (!q || e.value.toLowerCase().includes(q))).slice(0, only ? 20 : limit);
@@ -165,9 +285,12 @@
     menu.style.maxHeight = `${Math.max(160, Math.min(340, window.innerHeight - r.bottom - 16))}px`;
   };
 
-  const tokenChip = (t, onRemove) => h(`span.search-chip.search-${t.kind}`,
+  // onClick (optional): the chip's label becomes a button, e.g. a request's tag that filters the sidebar by it.
+  const tokenChip = (t, onRemove, onClick) => h(`span.search-chip.search-${t.kind}${onClick ? '.clickable' : ''}`,
     t.kind === 'tag' ? h('span.search-chip-kind', '#') : t.kind === 'text' ? null : h('span.search-chip-kind', `${t.kind}:`),
-    h('span', t.value),
+    onClick ? h('span', { role: 'button', tabindex: '0', title: `Show requests tagged #${t.value}`,
+      onclick: (e) => { e.stopPropagation(); onClick(t.value); },
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClick(t.value); } } }, t.value) : h('span', t.value),
     h('button', { type: 'button', title: 'Remove', 'aria-label': `Remove ${t.kind} ${t.value}`, onclick: (e) => { e.stopPropagation(); onRemove(); } }, '×'));
 
   /**
@@ -176,7 +299,7 @@
    * onChange() is called whenever the query changes. Keys: ↑ ↓ to choose, Enter to add, Esc to close,
    * Backspace in an empty field removes the last chip. "tag:", "method:", "url:", "name:" narrow it.
    */
-  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '' }) => {
+  HD.searchBox = ({ query, onChange, placeholder = 'Search names, URLs and tags', className = '', historyKey = null }) => {
     query.tokens = query.tokens || [];
     query.text = query.text || '';
     let items = [];
@@ -192,7 +315,7 @@
     };
     const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
     const open = () => {
-      items = suggestions(input.value, query, HD.requestCatalog());
+      items = suggestions(input.value, query, HD.requestCatalog(), historyKey ? historyOf(historyKey) : []);
       active = 0;
       HD.clear(menu);
       if (!items.length) { close(); return; }
@@ -204,9 +327,13 @@
           onmousedown: (e) => { e.preventDefault(); choose(i); },
           onmousemove: () => highlight(i),
         },
-        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : it.kind === 'version' ? HD.icon('history') : null,
+        it.kind === 'method' ? h(`span.method-tag.${HD.methodClass(it.value)}`, it.value) : it.kind === 'tag' ? h('span.search-hash', '#') : it.kind === 'text' ? HD.icon('search') : it.kind === 'version' || it.kind === 'recent' ? HD.icon('history') : null,
         h('span.search-label', it.kind === 'method' ? '' : it.label),
-        it.hint ? h('span.search-hint', it.kind === 'text' ? it.hint : `${it.hint} request${it.hint === '1' ? '' : 's'}`) : null));
+        it.hint ? h('span.search-hint', it.kind === 'text' ? it.hint : `${it.hint} request${it.hint === '1' ? '' : 's'}`) : null,
+        it.kind === 'recent' ? h('button.search-forget', {
+          type: 'button', title: 'Remove from recent searches', 'aria-label': `Remove ${it.label} from recent searches`,
+          onmousedown: (e) => { e.preventDefault(); e.stopPropagation(); HD.forgetSearch(historyKey, it.value); open(); },
+        }, '×') : null));
       });
       menu.hidden = false;
       place(menu, box);
@@ -221,6 +348,17 @@
     const choose = (i) => {
       const it = items[i];
       if (!it) return;
+      if (it.kind === 'recent') {
+        // A recent search replaces what's there, chips and text.
+        query.tokens = it.value.tokens.map((t) => ({ ...t }));
+        query.text = it.value.text || '';
+        input.value = query.text;
+        drawChips();
+        onChange();
+        HD.rememberSearch(historyKey, query);
+        close();
+        return;
+      }
       query.tokens.push({ kind: it.kind, value: it.value });
       input.value = '';
       query.text = '';
@@ -230,7 +368,8 @@
     };
 
     input.addEventListener('focus', open);
-    input.addEventListener('blur', () => setTimeout(close, 100));
+    // A search counts as done when the field is left with something in it (e.g. to open a result).
+    input.addEventListener('blur', () => { setTimeout(close, 100); if (historyKey) HD.rememberSearch(historyKey, query); });
     input.addEventListener('input', () => { query.text = PREFIX.test(input.value) ? '' : input.value; onChange(); open(); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); if (menu.hidden) open(); else highlight((active + 1) % items.length); }
@@ -247,7 +386,7 @@
    * The tags of a request: chips, and a field that suggests the tags already used elsewhere.
    * Enter or a comma adds what was typed; Backspace in an empty field removes the last tag.
    */
-  HD.tagInput = ({ tags, onChange }) => {
+  HD.tagInput = ({ tags, onChange, onTagClick = null }) => {
     let items = [];
     let active = 0;
     const chips = h('span.search-chips');
@@ -255,7 +394,7 @@
     const menu = h('div.search-menu', { role: 'listbox', hidden: true });
     const box = h('div.search-box.tag-box', { onclick: () => input.focus() }, h('span.tag-box-icon', { title: 'Tags' }, '#'), chips, input, menu);
     const set = (next) => { const n = HD.normalizeTags(next); tags.splice(0, tags.length, ...n); drawChips(); onChange(); };
-    const drawChips = () => HD.clear(chips).append(...tags.map((t, i) => tokenChip({ kind: 'tag', value: t }, () => set(tags.filter((_, j) => j !== i)))));
+    const drawChips = () => HD.clear(chips).append(...tags.map((t, i) => tokenChip({ kind: 'tag', value: t }, () => set(tags.filter((_, j) => j !== i)), onTagClick)));
     const close = () => { menu.hidden = true; };
     const open = () => {
       const q = input.value.trim().toLowerCase();
