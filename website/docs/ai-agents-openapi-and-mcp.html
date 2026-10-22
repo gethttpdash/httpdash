@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI agents (OpenAPI and MCP) · HttpDash docs</title>
+  <meta name="description" content="AI agents such as Claude can use HttpDash the way you do: read your collections and environments, send requests and read the responses, set up the Runner and…">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/ai-agents-openapi-and-mcp.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/ai-agents-openapi-and-mcp.html">
+  <meta property="og:title" content="AI agents (OpenAPI and MCP) · HttpDash docs">
+  <meta property="og:description" content="AI agents such as Claude can use HttpDash the way you do: read your collections and environments, send requests and read the responses, set up the Runner and…">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents" class="current" aria-current="page">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Automation</p>
+      <article class="docs-article">
+        <h1>AI agents (OpenAPI and MCP)</h1>
+<p>AI agents such as Claude can use HttpDash the way you do: read your collections and environments, send requests and read the responses, set up the Runner and get the results, compare instances, check service discovery traffic, add and change requests, and see and use the screen (a snapshot of the visible controls they can click, type into, expand and scroll, plus screenshots).</p>
+<p>Turn it on in <strong>Settings → AI access</strong> and choose what agents may do: <strong>Read</strong> (always on), <strong>Run</strong>, <strong>Edit</strong>, <strong>Control the screen</strong>, and <strong>Reveal secrets</strong> (off unless you choose it; secret values and credentials are masked otherwise). It listens on <code>127.0.0.1</code> only (port 47823 unless you change it there), every call needs the token shown there (only the OpenAPI document itself is open), and calls from web pages are refused. The status bar shows when an agent is working, and <strong>AI access</strong> lists the last 500 calls (refused ones also go to the audit log); <strong>Pause</strong> stops them, and a new token locks out the old one.</p>
+<ul>
+<li><strong>Claude Code:</strong> <code>claude mcp add httpdash -- httpdash mcp</code> (with the CLI installed: <code>npm install -g github:gethttpdash/httpdash</code>)</li>
+<li><strong>Claude Desktop:</strong> add <code>{&quot;mcpServers&quot;: {&quot;httpdash&quot;: {&quot;command&quot;: &quot;httpdash&quot;, &quot;args&quot;: [&quot;mcp&quot;]}}}</code> to <code>claude_desktop_config.json</code></li>
+<li><strong>Anything else:</strong> the OpenAPI document is at <code>http://127.0.0.1:47823/openapi.json</code> (or your port); send <code>Authorization: Bearer &lt;token&gt;</code>.</li>
+</ul>
+<h3 id="instead-of-curl-test-an-endpoint-and-keep-it"><a class="anchor" href="#instead-of-curl-test-an-endpoint-and-keep-it" aria-hidden="true" tabindex="-1">#</a>Instead of curl: test an endpoint and keep it</h3>
+<p>An agent (or you) can send through HttpDash rather than with curl, and keep what works:</p>
+<ul>
+<li><p><strong>MCP / OpenAPI:</strong> <code>sendAdHoc</code> with <code>collection</code> (and <code>folder</code>) runs the request inside that collection, so its auth and automatic login apply: leave <code>auth</code> out and it inherits them. With <code>save</code>, a request that succeeded (a status below 400, no failed tests; <code>saveIf: &quot;always&quot;</code> keeps any) is kept there, with its response as an example (one per status, the newest kept) and the tag <code>ai</code>. A request with the same method and URL in that folder is updated instead of duplicated; missing folders and the collection are created, and without a <code>collection</code> it goes into one called &quot;AI requests&quot;. Saving needs the <strong>Edit</strong> permission, and the answer says what was saved.</p>
+</li>
+<li><p><strong>Terminal:</strong> <code>httpdash send</code> works like curl, through the running app:</p>
+<pre><code class="language-bash">httpdash send &#39;{{orders_url}}/orders/ORD-1001&#39; -c &quot;Orders API&quot; --folder Orders --save -t smoke
+httpdash send POST https://api.example.com/orders --json &#39;{&quot;qty&quot;:3}&#39; -e Staging -i
+</code></pre>
+<p><code>-X</code>, <code>-H</code>, <code>-d</code> / <code>--json</code> (<code>@file</code> reads a file), <code>-e</code> for the environment, <code>-c</code> / <code>--folder</code> / <code>--save</code> / <code>--save-always</code> / <code>--name</code> / <code>-t</code> to keep it, <code>-i</code> for the status and headers, <code>-v</code> for timing, instance, health and network details, and <code>-f</code> to exit with 22 on a status of 400 or more (<code>-f</code> means <code>--folder</code> only for <code>httpdash run</code>). <code>-d</code> sends form data unless it looks like JSON; <code>--max-body</code> caps how much of the body is printed (1 MB by default). The body goes to stdout, so it pipes into <code>jq</code>. Exit codes: <code>0</code> an answer came back (any status, as curl), <code>1</code> the request itself failed (connection, DNS, timeout), <code>2</code> bad arguments, <code>3</code> HttpDash wasn&#39;t reachable or refused (not running, AI access off, a permission off, locked), <code>22</code> with <code>-f</code>.</p>
+</li>
+</ul>
+<h3 id="scripts-and-data-files-for-agents"><a class="anchor" href="#scripts-and-data-files-for-agents" aria-hidden="true" tabindex="-1">#</a>Scripts and data files for agents</h3>
+<ul>
+<li><strong>Scripts:</strong> <code>createRequest</code> and <code>updateRequest</code> take a request&#39;s <code>preRequestScript</code> and <code>testScript</code>. <code>createCollection</code>, <code>createFolder</code>, <code>updateCollection</code> and <code>updateFolder</code> set the scripts that run around every request inside them, and <code>getCollection</code> / <code>getFolder</code> read them back. This needs the <strong>Edit</strong> permission.</li>
+<li><strong>Data files:</strong> <code>startRun</code> takes <code>data</code>, an array of objects with one per iteration, just like a <a href="data-files-data-driven-runs.html">data file</a>. Through MCP, <code>dataFile</code> takes the path to a CSV or JSON file on your computer instead: <code>httpdash mcp</code> reads it on the agent&#39;s side and sends the rows, so the app itself never opens a path an agent names. Iterations default to the number of rows, and the Runner shows &quot;Data from AI agent&quot;. Without <code>data</code>, a data file you chose in the Runner stays in use and <code>startRun</code>&#39;s answer names it; <code>data: []</code> removes it. The rows travel in the call, which is capped at 1 MB.</li>
+</ul>
+<p>For example, an agent can create a folder whose pre-request script turns the nested <code>user</code> of each row into <code>{{userJson}}</code> (as in <a href="data-files-data-driven-runs.html#nested-json-in-a-data-file">Nested JSON in a data file</a>), add a request that uses it, then call <code>startRun</code> with <code>dataFile: &quot;technos.json&quot;</code> and read the results with <code>getRun</code>.</p>
+<p><code>httpdash mcp</code> finds the port and token by itself while the app runs (<code>--port</code> / <code>--token</code>, or <code>HTTPDASH_AI_PORT</code> / <code>HTTPDASH_AI_TOKEN</code>, set them explicitly; <code>--data-dir</code> or <code>HTTPDASH_DATA_DIR</code> points it at another data folder). Start with <code>getStatus</code>; <code>sendRequest</code> sends a saved request; <code>startRun</code> then <code>getRun</code> runs the Runner; <code>getUiSnapshot</code>, <code>uiAction</code> and <code>takeScreenshot</code> work the screen.</p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="mock-server.html"><span>Previous</span>Mock server</a>
+        <a class="docs-next" href="service-discovery-auto-create-environments.html"><span>Next</span>Service discovery (auto-create environments)</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+      <nav class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul>
+          <li><a href="#instead-of-curl-test-an-endpoint-and-keep-it">Instead of curl: test an endpoint and keep it</a></li>
+          <li><a href="#scripts-and-data-files-for-agents">Scripts and data files for agents</a></li>
+        </ul>
+        <a class="docs-top" href="#main">Back to top</a>
+      </nav>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Documentation pages on httpdash.com:** the user guide as one page per topic at `/docs/`, with the topics on the left (grouped, with a filter), the page's sections on the right (highlighting the one being read), previous and next links, and a Topics menu on phones. `npm run docs` builds them from `USERGUIDE.md`.
 - **Flows (request orchestration):** a designer where requests are nodes you drag and connect, with Start, Execute, Condition and End nodes. Execute nodes pass values from their responses to later nodes (`{{login.token}}`), conditions branch on rules, and the End node's result tabs show the parts of responses you pick (`data.items`) as tables. Runs show each node's state live; nodes wait for everything before them, and the branch not taken is skipped. Nodes collapse to their title bar, and the side panel and results can be hidden or resized.
 - **A collection for every discovered service:** Consul, Eureka, Kubernetes and custom JSON sources can build a collection per service from its own OpenAPI document (looked for at `/v3/api-docs`, `/openapi.json` and other common paths, or yours), with requests on the service's variable so load balancing applies. Each sync keeps the collections in step with their documents and keeps your edits; the results table links each service to its collection or says why it has none.
 - **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.

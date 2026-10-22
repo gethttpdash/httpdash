@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service discovery (auto-create environments) · HttpDash docs</title>
+  <meta name="description" content="Point HttpDash at a service registry and it builds an environment with one variable per service. For example, {{orders_url}} = http://10.0.1.5:8080, so…">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/service-discovery-auto-create-environments.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/service-discovery-auto-create-environments.html">
+  <meta property="og:title" content="Service discovery (auto-create environments) · HttpDash docs">
+  <meta property="og:description" content="Point HttpDash at a service registry and it builds an environment with one variable per service. For example, {{orders_url}} = http://10.0.1.5:8080, so…">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances" class="current" aria-current="page">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Services and networks</p>
+      <article class="docs-article">
+        <h1>Service discovery (auto-create environments)</h1>
+<p>Point HttpDash at a service registry and it builds an environment with one variable per service. For example, <code>{{orders_url}}</code> = <code>http://10.0.1.5:8080</code>, so requests can use <code>{{orders_url}}/api/orders</code>.</p>
+<p>To add a registry, open <strong>Environments</strong> in the sidebar and click <strong>Service discovery → +</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Registry</th>
+<th>What it reads</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Consul</td>
+<td><code>/v1/catalog/services</code> plus each service&#39;s instances, only those passing health checks unless you untick it. Options: ACL token, datacenter, tag filter, http/https.</td>
+</tr>
+<tr>
+<td>Eureka (Spring Cloud)</td>
+<td><code>/eureka/apps</code>, instances with status UP only unless you untick it. Uses each app&#39;s home page URL or its host and port.</td>
+</tr>
+<tr>
+<td>Kubernetes</td>
+<td>Services in a namespace (or <code>*</code> for all, named <code>namespace_service</code>), using a service-account bearer token and an optional label selector. The address can be the cluster DNS name, the cluster IP, the external LoadBalancer address, or <strong>Pods</strong>: every ready pod behind the Service, so requests can be spread over them and counted per pod (the other modes give one instance per service).</td>
+</tr>
+<tr>
+<td>Custom JSON</td>
+<td>Any endpoint returning a list of services or a <code>{ &quot;name&quot;: &quot;url&quot; }</code> map. You set the list path, the name field, and a URL field or template such as <code>http://{host}:{port}</code>.</td>
+</tr>
+<tr>
+<td>OpenAPI document</td>
+<td>The document&#39;s server becomes a base URL variable, and every operation becomes a request in a collection that follows the document (see below).</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>Preview services</strong> shows what would be created, without changing anything.</li>
+<li><strong>Create environment</strong> makes the environment the first time.</li>
+<li><strong>Sync to environment</strong> (or <strong>Re-sync</strong> on the environment, <strong>Sync now</strong> in the sidebar) updates the same environment in place: changed URLs are updated, new services are added, and services that vanished are removed (unless you tick &quot;keep&quot;). Variables you added yourself, such as API keys, are never touched, unless one has the same name as a discovered service.</li>
+<li><strong>Variable names</strong> follow a pattern, <code>{name}_url</code> by default: <code>{name}</code> is the service name in lower_snake_case and <code>{NAME}</code> in UPPER_CASE, so <code>{NAME}_BASE</code> gives <code>ORDERS_BASE</code>.</li>
+<li><strong>Startup sync:</strong> each source can be set to sync automatically when HttpDash starts. An OpenAPI source only checks, and tells you when a new version is waiting.</li>
+<li><strong>Settings:</strong> registry requests use your proxy settings, and SSL verification can be turned off per source. It starts off for Kubernetes, whose API servers often have self-signed certificates.</li>
+</ul>
+<p><img src="img/14-discovery-preview.png" alt="Service discovery preview" loading="lazy"></p>
+<h3 id="a-collection-for-every-discovered-service"><a class="anchor" href="#a-collection-for-every-discovered-service" aria-hidden="true" tabindex="-1">#</a>A collection for every discovered service</h3>
+<p>A Consul, Eureka, Kubernetes or custom JSON source can also build a collection for each service it finds, from the service&#39;s own OpenAPI (Swagger) document. Tick <strong>Also create a collection from each service&#39;s API document</strong> on the source, then sync:</p>
+<ul>
+<li><strong>Where to look:</strong> each service&#39;s URL plus a path, tried in order until one returns an OpenAPI document, in JSON or YAML. Leave <strong>Where each service publishes it</strong> empty for the common ones: <code>/v3/api-docs</code> and <code>/v2/api-docs</code> (Spring), <code>/openapi.json</code> (FastAPI), <code>/swagger/v1/swagger.json</code> (.NET) and <code>/api-json</code> (NestJS). Or list your own, separated by commas. A full URL works too.</li>
+<li><strong>What you get:</strong> one collection per service, with a request for every operation. The collection is named after the document&#39;s title, or after the service when the title is a framework default such as &quot;OpenAPI definition&quot;. Requests use the service&#39;s own variable, such as <code>{{orders_url}}</code>, so load balancing, traffic by instance and Compare apply, and spec warnings check them against the document.</li>
+<li><strong>Keeping up:</strong> each sync brings every collection in step with its service&#39;s current document, in the same way as an OpenAPI source: new operations are added, ones that left the document are removed unless you changed them, and your edits, scripts and tests are kept. The results table shows each service&#39;s collection, its version and what changed, or why it has none (no document, or the service didn&#39;t answer).</li>
+<li><strong>At startup</strong>, if the source syncs automatically, only missing collections are created. Existing ones are updated when you sync by hand.</li>
+<li><strong>Services that disappear</strong> keep their collection; the report lists them. A collection you delete is created again on the next sync, unless you untick the option.</li>
+<li><strong>Safety:</strong> each service only gets a plain GET for its document. The registry&#39;s token and extra headers are never sent to the services.</li>
+</ul>
+<h3 id="openapi-documents-versioned"><a class="anchor" href="#openapi-documents-versioned" aria-hidden="true" tabindex="-1">#</a>OpenAPI documents, versioned</h3>
+<p>A source pointed at an OpenAPI (Swagger) document, JSON or YAML, keeps a collection with one request per operation. Each sync records the document&#39;s version and a fingerprint, so an unchanged document changes nothing. A new one is compared with the last: added, changed and removed operations are listed before anything is written, and you apply them when you&#39;re ready. Your own edits (values, scripts, tests, requests you added) are kept, and the report says where the document changed something you edited too.</p>
+<p>Each operation&#39;s shape is kept as well, so a request, and each of its versions, is checked against the document. A banner says when the operation is gone or deprecated, a required parameter or field is missing, a value isn&#39;t one the spec allows, or it sends something the spec doesn&#39;t know.</p>
+<h3 id="load-balancing-and-traffic-by-instance"><a class="anchor" href="#load-balancing-and-traffic-by-instance" aria-hidden="true" tabindex="-1">#</a>Load balancing and traffic by instance</h3>
+<p>When a service has several instances, requests that use its variable can go to <strong>the first instance</strong>, <strong>each in turn</strong> (round robin) or <strong>a random one</strong>, in Send, the Runner and Monitors. Unhealthy instances are skipped. Behind a load balancer, set the <strong>instance header</strong> (such as <code>X-Served-By</code>) and requests are counted by the instance that answered.</p>
+<p>The source&#39;s <strong>Traffic</strong> page shows, live, what each instance answered: requests, share, p50 and p95 times, status codes and connection errors. Slow and failing instances are flagged, and so are instances that left the pool. The latest requests are listed with the gap between them. Export the report to Excel, CSV, PDF, an image, an HTML page, Markdown or JSON.</p>
+<h3 id="payloads"><a class="anchor" href="#payloads" aria-hidden="true" tabindex="-1">#</a>Payloads</h3>
+<p>Give a request the variations it should be called with (typed in, or imported from CSV or JSON rows) and send them in turn or at random. Each payload has its own rotation over the instances. Traffic is counted per payload too, so a payload that is slow on every instance can be told apart from an instance that is slow for every payload. The same goes for network segments: <strong>By network segment</strong> appears when instances answer from more than one.</p>
+<h3 id="compare-instances"><a class="anchor" href="#compare-instances" aria-hidden="true" tabindex="-1">#</a>Compare instances</h3>
+<p><strong>Compare</strong>, next to Send, sends the request to every healthy instance of the service in its URL (the source is synced again first), or to every address its host resolves to in DNS (round-robin DNS, Kubernetes headless services; this uses your own resolver and needs a direct connection, not a proxy). It compares the answers (status, headers and every field of a JSON body) and names the instance that answered differently, with each difference: <code>X-Version</code> 2.3.0 where the others say 2.4.1, a missing <code>qty</code>, a different <code>state</code>.</p>
+<ul>
+<li>Values that differ on every instance by nature (ids, timestamps, the instance&#39;s own name) are set apart, and can be ignored for the request with one click (<code>items[*].updatedAt</code> covers every item).</li>
+<li>Headers that always vary, such as <code>Date</code> and request ids, are ignored.</li>
+<li>Each instance&#39;s status, time, tests and address are listed, and <strong>Show</strong> opens its full answer.</li>
+<li>Any method but GET, HEAD and OPTIONS asks first, since it runs once per instance.</li>
+</ul>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="ai-agents-openapi-and-mcp.html"><span>Previous</span>AI agents (OpenAPI and MCP)</a>
+        <a class="docs-next" href="health-while-it-runs-profiling.html"><span>Next</span>Health while it runs (profiling)</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+      <nav class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-title">On this page</p>
+        <ul>
+          <li><a href="#a-collection-for-every-discovered-service">A collection for every discovered service</a></li>
+          <li><a href="#openapi-documents-versioned">OpenAPI documents, versioned</a></li>
+          <li><a href="#load-balancing-and-traffic-by-instance">Load balancing and traffic by instance</a></li>
+          <li><a href="#payloads">Payloads</a></li>
+          <li><a href="#compare-instances">Compare instances</a></li>
+        </ul>
+        <a class="docs-top" href="#main">Back to top</a>
+      </nav>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>
