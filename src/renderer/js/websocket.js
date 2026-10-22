@@ -67,7 +67,7 @@
       return { collection: found.collection, chain: [found.collection, ...found.parents], found };
     };
     HD.variableInfo = () => HD.variableInfoFor(context().collection);
-    const markDirty = () => { HD.pinTab(tab); if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); } HD.save(); };
+    const markDirty = () => { HD.pinTab(tab); if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); } HD.save(); HD.recordEdit(tab); };
 
     // Header and URL bar.
     const ctx = context();
@@ -115,6 +115,7 @@
           onChange: (v) => { ui.wsDraft = v; HD.save(); },
           extraKeys: { 'Ctrl-Enter': () => sendMessage(), 'Cmd-Enter': () => sendMessage() },
         });
+        msgCm.getWrapperElement().classList.add('own-undo'); // the message isn't part of the saved request
       } else if (t === 'headers') {
         panel.appendChild(HD.kvTable({ title: 'Handshake headers', rows: req.headers, onChange: () => { markDirty(); renderTabs(); } }));
         panel.appendChild(h('div.panel-pad.muted.small', 'Auth from the collection or folder (Bearer, Basic, API key, OAuth 2.0…) and matching cookies are added to the handshake automatically.'));
@@ -230,6 +231,8 @@
 
     const top = h('div.ws-top', header, urlBar, tabsHost, panel);
     root.append(h('div.ws-view', top, h('div.ws-log', logBar, logList)));
+    // Ctrl/Cmd+Enter connects, and once connected sends the message.
+    S.senders.set(tab.id, () => (c.state === 'open' ? sendMessage() : c.state === 'idle' ? toggle() : null));
     HD.lineEditor(urlHost, {
       value: req.url, placeholder: 'wss://echo.example.com/socket',
       onEnter: () => toggle(),
@@ -239,5 +242,6 @@
     renderPanel();
     redraw();
     status();
+    HD.trackEdits(tab);
   };
 })();

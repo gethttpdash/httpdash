@@ -10,9 +10,16 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - a double-click on the tab or on the item in the sidebar
   - **Keep open** in the tab's menu.
 - **Where a new request goes:** a request that isn't in a collection yet says so in its header ("Not saved yet · Save… puts it in Orders API / Orders"). Save suggests the folder you were working in when you opened it, instead of the first collection.
+- **Keyboard shortcuts:**
+  - **Undo and redo for the whole request** (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y): typed text and changes such as a deleted header, a new method or a switched version, in one history per tab. Undoing back to the saved request makes the tab clean again.
+  - **Find** (Ctrl/Cmd+F) searches the response from anywhere in a request tab, or the editor you're typing in; **Ctrl/Cmd+Shift+F** searches requests in the sidebar. Both are in a new **Edit** menu section.
+  - **Tabs:** Ctrl+Tab and Ctrl+Shift+Tab (also Ctrl+PageDown / PageUp and Ctrl/Cmd+Shift+] / [), and Ctrl/Cmd+1 to 9.
+  - **Ctrl/Cmd+Enter on a WebSocket tab** connects, and once connected sends the message.
+  - The user guide lists every shortcut.
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Documentation:** the README is now what HttpDash is, a quick guide and its sponsors; how every feature works moved to [USERGUIDE.md](USERGUIDE.md), which **Help → Documentation** opens. Building, the website and the source layout moved to [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Dragging in the sidebar:**
   - It shows exactly where an item will land: a thin line with a dot, at the right indentation, above or below a request (by which half of the row you're over); the middle of a folder highlights it to drop into, and its edges place the item before or after it.
   - A closed folder opens when you hold an item over it, and the item being dragged fades.
@@ -21,6 +28,10 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ### Fixed
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
+- Ctrl/Cmd+F in the URL bar opened a search box inside the one-line URL; it now searches the response.
+- **A narrow response pane:** the status, time and size line was drawn over the response tabs. It now moves below them, and the tabs wrap instead of being cut off.
+- **The Windows icon** looked smaller than other apps' on the taskbar: it kept the macOS icon's empty border. Windows now gets its own icon that fills the square (`build/icon.ico`, made with `npm run icon:win`).
+- **The sidebar** could be dragged so narrow that the search box was too short to read; its minimum width is now 300px, including a width saved before.
 - Help text that said more than the app does:
   - **Show auto-generated** no longer lists `Cache-Control` when **Send no-cache header** is off.
   - The segment size setting says it applies to the Timeline (Traffic and trace route use /24 and /64).

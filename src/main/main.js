@@ -131,12 +131,26 @@ function buildMenu() {
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
     },
-    { role: 'editMenu' },
+    {
+      // Undo and redo keep their roles so every text field has them; in a request tab the window
+      // takes the shortcut first and undoes the request's edits.
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+        { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, ...(isMac ? [{ role: 'pasteAndMatchStyle' }] : []), { role: 'delete' }, { role: 'selectAll' },
+        { type: 'separator' },
+        { label: 'Find', accelerator: 'CmdOrCtrl+F', registerAccelerator: false, click: send('find') },
+        { label: 'Search Requests', accelerator: 'CmdOrCtrl+Shift+F', registerAccelerator: false, click: send('search-requests') },
+      ],
+    },
     {
       label: 'View',
       submenu: [
         { label: 'Toggle Sidebar', accelerator: 'CmdOrCtrl+\\', registerAccelerator: false, click: send('toggle-sidebar') },
         { label: 'Toggle Console', accelerator: 'CmdOrCtrl+Alt+C', registerAccelerator: false, click: send('toggle-console') },
+        { type: 'separator' },
+        { label: 'Next Tab', accelerator: 'Ctrl+Tab', registerAccelerator: false, click: send('next-tab') },
+        { label: 'Previous Tab', accelerator: 'Ctrl+Shift+Tab', registerAccelerator: false, click: send('prev-tab') },
         { type: 'separator' },
         { role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' },
         { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' },
@@ -165,7 +179,7 @@ function buildMenu() {
         { label: 'Check for Updates…', click: () => checkForUpdates() },
         { label: 'Release Notes', click: () => shell.openExternal('https://github.com/gethttpdash/httpdash/releases') },
         { type: 'separator' },
-        { label: 'Documentation', click: () => shell.openExternal('https://github.com/gethttpdash/httpdash#readme') },
+        { label: 'Documentation', click: () => shell.openExternal('https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md') },
         { label: 'Report an Issue', click: () => shell.openExternal('https://github.com/gethttpdash/httpdash/issues/new/choose') },
         { label: 'HttpDash Website', click: () => shell.openExternal('https://httpdash.com') },
       ],

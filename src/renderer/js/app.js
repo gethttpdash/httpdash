@@ -33,8 +33,118 @@
     HD.renderTabBar();
   };
 
+  // ---- Undo and redo --------------------------------------------------------------------------
+  //
+  // Each request tab keeps the history of its draft (in memory only), so Ctrl/Cmd+Z brings back a
+  // deleted header, a changed method or a switched version as well as typed text. Typing in one
+  // field without a pause is one step. In the request's own fields and editors, undo goes to this
+  // history, so everything undoes in one order; other fields (the sidebar search, a response
+  // filter, dialogs) keep their own undo.
+
+  const edits = new Map(); // tabId -> { past, future, current, clean, at, el }
+  const snapDraft = (tab) => JSON.stringify({ name: tab.draft.name, request: tab.draft.request });
+
+  const step = (e, now, el) => {
+    const t = Date.now();
+    if (!(el && el === e.el && t - e.at < 1000)) {
+      e.past.push(e.current);
+      const keep = Math.max(10, Math.min(200, Math.floor(20e6 / now.length))); // about 20 MB of steps
+      while (e.past.length > keep) e.past.shift();
+    }
+    e.future = [];
+    e.current = now;
+    e.at = t;
+    e.el = el;
+  };
+
+  /** Called when a request view renders: starts the tab's history, or notes a change made elsewhere. */
+  HD.trackEdits = (tab) => {
+    const now = snapDraft(tab);
+    const e = edits.get(tab.id);
+    // A saved tab replaced from outside (team sync, an AI edit) starts over.
+    if (!e || (now !== e.current && !tab.dirty)) {
+      edits.set(tab.id, { past: [], future: [], current: now, clean: tab.dirty ? null : now, at: 0, el: null });
+      return;
+    }
+    if (now !== e.current) step(e, now, null); // such as a version switched to: undoable too
+    if (!tab.dirty) e.clean = now;
+  };
+
+  /** Called after every edit of a request tab's draft. */
+  HD.recordEdit = (tab) => {
+    const e = edits.get(tab.id);
+    if (!e) return;
+    const now = snapDraft(tab);
+    if (now !== e.current) step(e, now, document.activeElement);
+  };
+
+  /** Whether undo and redo at this element go to the current tab's history. */
+  HD.ownsEdits = (el) => {
+    const tab = HD.currentTab();
+    if (!tab || tab.kind !== 'request' || !edits.has(tab.id)) return false;
+    if (document.querySelector('.modal-overlay') || document.body.classList.contains('is-locked')) return false;
+    if (!el || el === document.body) return true;
+    if (el.closest('.own-undo')) return false;
+    if (el.closest('.req-section, .ws-top')) return true;
+    return !el.matches('input, textarea, [contenteditable]') && !el.closest('.CodeMirror');
+  };
+
+  // Where the cursor was, so it can be put back after the view is drawn again.
+  const focusSpot = () => {
+    const root = document.getElementById('content');
+    const a = document.activeElement;
+    if (!a || !root.contains(a)) return null;
+    const cm = a.closest('.CodeMirror');
+    if (cm) return { cm: [...root.querySelectorAll('.CodeMirror')].indexOf(cm), cursor: cm.CodeMirror.getCursor() };
+    if (a.matches('input, textarea')) return { field: [...root.querySelectorAll('input, textarea')].indexOf(a), pos: a.selectionStart };
+    return null;
+  };
+  const refocus = (spot) => requestAnimationFrame(() => {
+    if (!spot) return;
+    const root = document.getElementById('content');
+    if (spot.cm != null) {
+      const el = root.querySelectorAll('.CodeMirror')[spot.cm];
+      if (el) { el.CodeMirror.focus(); el.CodeMirror.setCursor(spot.cursor); }
+      return;
+    }
+    const el = root.querySelectorAll('input, textarea')[spot.field];
+    if (!el) return;
+    el.focus();
+    try { if (spot.pos != null) el.setSelectionRange(spot.pos, spot.pos); } catch { /* not a text field */ }
+  });
+
+  const restore = (tab, e, text) => {
+    const s = JSON.parse(text);
+    tab.draft.name = s.name;
+    tab.draft.request = s.request;
+    e.current = text;
+    e.el = null;
+    tab.dirty = text !== e.clean;
+    const spot = focusSpot();
+    HD.pinTab(tab);
+    HD.save();
+    HD.renderTabBar();
+    HD.renderActiveTab();
+    refocus(spot);
+  };
+  HD.undoEdit = (tab) => {
+    const e = tab && edits.get(tab.id);
+    if (!e || !e.past.length) return false;
+    e.future.push(e.current);
+    restore(tab, e, e.past.pop());
+    return true;
+  };
+  HD.redoEdit = (tab) => {
+    const e = tab && edits.get(tab.id);
+    if (!e || !e.future.length) return false;
+    e.past.push(e.current);
+    restore(tab, e, e.future.pop());
+    return true;
+  };
+
   // What a closed tab leaves behind: a request in flight, a WebSocket, its response.
   const forget = (tab) => {
+    edits.delete(tab.id);
     if (S.sending.get(tab.id)) window.api.cancel(tab.id);
     HD.closeWebSocketTab(tab.id);
     S.resRenderers.delete(tab.id);
@@ -374,10 +484,12 @@
 
   HD.on('tunnels', () => renderStatusbar());
 
+  // The rail takes about 95px of the sidebar; below 300 the list's search box is too short to read.
+  const SIDEBAR_MIN = 300, SIDEBAR_MAX = 600;
   const applyLayout = () => {
     const side = document.getElementById('sidebar-wrap');
     side.style.display = S.ws.ui.sidebarHidden ? 'none' : '';
-    side.style.width = `${S.ws.ui.sidebarWidth || 300}px`;
+    side.style.width = `${Math.max(SIDEBAR_MIN, S.ws.ui.sidebarWidth || SIDEBAR_MIN)}px`;
   };
 
   // ---- Theme --------------------------------------------------------------------------------
@@ -414,13 +526,55 @@
     monitors: () => { S.ws.ui.sidebarTab = 'monitors'; HD.save(); HD.renderSidebar(); },
     team: () => { S.ws.ui.sidebarTab = 'team'; HD.save(); HD.renderSidebar(); if (!HD.teamRepos().length) HD.newTeamRepo(); },
     'team-sync': () => HD.teamRepos().forEach((r) => HD.teamSync(r)),
+    // Find: the response body (or the page's filter); with nothing to search there, the requests.
+    find: () => {
+      const root = document.getElementById('content');
+      const body = root.querySelector('.res-pane .CodeMirror');
+      if (body) { body.CodeMirror.focus(); body.CodeMirror.execCommand('findPersistent'); return; }
+      const filter = root.querySelector('.res-pane .jt-filter, .ws-filter, .runner-filter input, .side-search');
+      if (filter) { filter.focus(); filter.select(); return; }
+      commands['search-requests']();
+    },
+    'search-requests': () => {
+      S.ws.ui.sidebarHidden = false;
+      applyLayout();
+      if ((S.ws.ui.sidebarTab || 'collections') !== 'collections') { S.ws.ui.sidebarTab = 'collections'; HD.renderSidebar(); }
+      HD.save();
+      const input = document.querySelector('#sidebar .side-search-box input');
+      if (input) { input.focus(); input.select(); }
+    },
+    'next-tab': () => cycleTab(1),
+    'prev-tab': () => cycleTab(-1),
+    undo: () => HD.undoEdit(HD.currentTab()),
+    redo: () => HD.redoEdit(HD.currentTab()),
   };
+  const cycleTab = (d) => {
+    const tabs = S.ws.tabs;
+    if (tabs.length < 2) return;
+    const i = tabs.indexOf(HD.currentTab());
+    activate(tabs[(i + d + tabs.length) % tabs.length].id);
+  };
+  // Ctrl/Cmd+1 to 8 open that tab, 9 the last one.
+  for (let n = 1; n <= 9; n++) commands[`tab-${n}`] = () => { const t = n === 9 ? S.ws.tabs[S.ws.tabs.length - 1] : S.ws.tabs[n - 1]; if (t) activate(t.id); };
   HD.command = (name) => commands[name] && commands[name]();
-  // Keyboard shortcuts are handled here; the application menu only displays them.
-  const SHORTCUTS = { t: 'new-request', o: 'import', s: 'save', w: 'close-tab', ',': 'settings', '\\': 'toggle-sidebar', Enter: 'send', l: 'lock' };
+  // Keyboard shortcuts are handled here; the application menu only displays them. A shortcut an
+  // editor already handled (Find in a code editor, say) is left to it.
+  const SHORTCUTS = { t: 'new-request', o: 'import', s: 'save', w: 'close-tab', f: 'find', ',': 'settings', '\\': 'toggle-sidebar', Enter: 'send', l: 'lock', Tab: 'next-tab', PageDown: 'next-tab', PageUp: 'prev-tab' };
+  const SHIFT_SHORTCUTS = { f: 'search-requests', Tab: 'prev-tab', BracketRight: 'next-tab', BracketLeft: 'prev-tab' };
   document.addEventListener('keydown', (e) => {
-    if (!(e.ctrlKey || e.metaKey) || e.shiftKey) return;
-    let cmd = e.altKey ? (e.key.toLowerCase() === 'c' || e.code === 'KeyC' ? 'toggle-console' : null) : SHORTCUTS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (!(e.ctrlKey || e.metaKey) || e.defaultPrevented) return;
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (!e.altKey && (key === 'z' || (key === 'y' && !e.shiftKey))) {
+      // Undo and redo in a request tab go to its history; elsewhere the field undoes its own typing.
+      if (!HD.ownsEdits(document.activeElement)) return;
+      e.preventDefault();
+      HD.command(key === 'y' || e.shiftKey ? 'redo' : 'undo');
+      return;
+    }
+    let cmd;
+    if (e.altKey) cmd = !e.shiftKey && (key === 'c' || e.code === 'KeyC') ? 'toggle-console' : null;
+    else if (e.shiftKey) cmd = SHIFT_SHORTCUTS[key] || SHIFT_SHORTCUTS[e.code];
+    else cmd = /^[1-9]$/.test(key) ? `tab-${key}` : SHORTCUTS[key];
     if (!cmd) return;
     if (document.querySelector('.modal-overlay') || document.body.classList.contains('is-locked')) return;
     e.preventDefault();
@@ -462,7 +616,7 @@
     handle.addEventListener('mousedown', () => { startW = document.getElementById('sidebar-wrap').offsetWidth; });
     HD.splitter(handle, {
       axis: 'x',
-      onMove: (d) => { S.ws.ui.sidebarWidth = Math.max(200, Math.min(600, startW + d)); applyLayout(); },
+      onMove: (d) => { S.ws.ui.sidebarWidth = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startW + d)); applyLayout(); },
       onEnd: () => { HD.save(); document.querySelectorAll('.CodeMirror').forEach((c) => c.CodeMirror && c.CodeMirror.refresh()); },
     });
     HD.on('variables', () => {

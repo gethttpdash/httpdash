@@ -122,6 +122,7 @@
       HD.pinTab(tab); // an edit keeps a preview tab open
       if (!tab.dirty) { tab.dirty = true; HD.renderTabBar(); }
       HD.save();
+      HD.recordEdit(tab);
       afterEdit();
     };
 
@@ -713,6 +714,7 @@
       if (result.skipped) HD.toast('Request skipped by pm.execution.skipRequest()', 'info');
     };
     S.senders.set(tab.id, send);
+    HD.trackEdits(tab);
   };
 
   function inheritedAuth(chain) {

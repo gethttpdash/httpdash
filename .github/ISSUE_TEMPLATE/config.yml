@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/gethttpdash/httpdash/security/advisories/new
     about: Report security problems privately, not as a public issue.
   - name: Documentation
-    url: https://github.com/gethttpdash/httpdash#readme
+    url: https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md
     about: How every feature works.

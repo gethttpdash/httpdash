@@ -95,6 +95,14 @@
     });
   }
 
+  // In a request's own editors, undo and redo go to the tab's edit history (app.js), so every edit
+  // undoes in one order; anywhere else the editor keeps its own.
+  const undoKeys = () => {
+    const undo = (cm) => (HD.ownsEdits(cm.getWrapperElement()) ? HD.command('undo') : cm.undo());
+    const redo = (cm) => (HD.ownsEdits(cm.getWrapperElement()) ? HD.command('redo') : cm.redo());
+    return { 'Ctrl-Z': undo, 'Cmd-Z': undo, 'Shift-Ctrl-Z': redo, 'Shift-Cmd-Z': redo, 'Ctrl-Y': redo, 'Cmd-Y': redo };
+  };
+
   /** Creates a CodeMirror editor. */
   HD.editor = (parent, opts = {}) => {
     const cm = CodeMirror(parent, {
@@ -116,6 +124,7 @@
         'Cmd-F': 'findPersistent',
         'Ctrl-/': 'toggleComment',
         'Cmd-/': 'toggleComment',
+        ...undoKeys(),
         ...(opts.extraKeys || {}),
       },
     });
@@ -137,7 +146,8 @@
       scrollbarStyle: null,
       placeholder,
       lineWrapping: false,
-      extraKeys: { Enter: () => onEnter && onEnter(), 'Shift-Enter': () => onEnter && onEnter(), Tab: false, 'Shift-Tab': false },
+      // Find searches the response, not the one line of the URL.
+      extraKeys: { Enter: () => onEnter && onEnter(), 'Shift-Enter': () => onEnter && onEnter(), Tab: false, 'Shift-Tab': false, 'Ctrl-F': false, 'Cmd-F': false, ...undoKeys() },
     });
     cm.getWrapperElement().classList.add('cm-line-editor');
     enableVariables(cm);

@@ -15,7 +15,8 @@ Key facts:
 
 ## Docs
 
-- [README](https://raw.githubusercontent.com/gethttpdash/httpdash/main/README.md): every feature in detail, how to run and build it, the CLI, AI access, team sharing, discovery, health, network trace, tunnels and the source layout
+- [README](https://raw.githubusercontent.com/gethttpdash/httpdash/main/README.md): what HttpDash is, downloads, a quick guide and sponsors
+- [User guide](https://raw.githubusercontent.com/gethttpdash/httpdash/main/USERGUIDE.md): every feature in detail: install, the CLI, AI access, team sharing, discovery, health, network trace, tunnels and more
 - [Changelog](https://raw.githubusercontent.com/gethttpdash/httpdash/main/CHANGELOG.md): what changed in each version
 - [Security policy](https://raw.githubusercontent.com/gethttpdash/httpdash/main/SECURITY.md): how scripts are sandboxed and how to report a vulnerability
 - [Contributing](https://raw.githubusercontent.com/gethttpdash/httpdash/main/CONTRIBUTING.md): how to work on HttpDash
@@ -23,15 +24,15 @@ Key facts:
 
 ## Features
 
-- [Auth dependencies](https://github.com/gethttpdash/httpdash#auth-dependencies-auto-refresh-tokens): run a login request first when the token is missing or expired, save the token, retry once on 401
-- [Service discovery](https://github.com/gethttpdash/httpdash#service-discovery-auto-create-environments): environments from Consul, Eureka, Kubernetes, custom JSON or an OpenAPI document (with versioned sync); load balancing and traffic by instance, payload and network segment
-- [Compare instances](https://github.com/gethttpdash/httpdash#compare-instances): send one request to every instance of a service (from the registry or DNS) and see which answered differently
-- [Health while it runs](https://github.com/gethttpdash/httpdash#health-while-it-runs-profiling): read a health endpoint before, during and after each request
-- [Network trace](https://github.com/gethttpdash/httpdash#where-a-request-went-on-the-network): resolved addresses, octets and segments, reverse DNS, local adapter, split DNS, traceroute
-- [Tunnels](https://github.com/gethttpdash/httpdash#tunnels-into-internal-networks): SSH jump hosts (the system's ssh -D) and SOCKS5 proxies, per host or per environment
-- [Request versions and spec warnings](https://github.com/gethttpdash/httpdash#request-versions-and-spec-warnings) and [tags and search](https://github.com/gethttpdash/httpdash#tags-and-search)
-- [AI agents](https://github.com/gethttpdash/httpdash#ai-agents-openapi-and-mcp): 30 operations through OpenAPI or MCP, with permissions and an access history
-- [Command-line runner](https://github.com/gethttpdash/httpdash#command-line-runner-ci-and-schedulers), [monitors](https://github.com/gethttpdash/httpdash#monitors), [mock server](https://github.com/gethttpdash/httpdash#mock-server), [team sharing through git](https://github.com/gethttpdash/httpdash#team-sharing-through-git), [WebSocket](https://github.com/gethttpdash/httpdash#websocket-requests), [Server-Sent Events](https://github.com/gethttpdash/httpdash#streaming-responses-server-sent-events), [client certificates](https://github.com/gethttpdash/httpdash#client-certificates-and-custom-cas), [LDAP app lock](https://github.com/gethttpdash/httpdash#app-lock-with-ldap-sign-in)
+- [Auth dependencies](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#auth-dependencies-auto-refresh-tokens): run a login request first when the token is missing or expired, save the token, retry once on 401
+- [Service discovery](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#service-discovery-auto-create-environments): environments from Consul, Eureka, Kubernetes, custom JSON or an OpenAPI document (with versioned sync); load balancing and traffic by instance, payload and network segment
+- [Compare instances](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#compare-instances): send one request to every instance of a service (from the registry or DNS) and see which answered differently
+- [Health while it runs](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#health-while-it-runs-profiling): read a health endpoint before, during and after each request
+- [Network trace](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#where-a-request-went-on-the-network): resolved addresses, octets and segments, reverse DNS, local adapter, split DNS, traceroute
+- [Tunnels](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#tunnels-into-internal-networks): SSH jump hosts (the system's ssh -D) and SOCKS5 proxies, per host or per environment
+- [Request versions and spec warnings](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#request-versions-and-spec-warnings) and [tags and search](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#tags-and-search)
+- [AI agents](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#ai-agents-openapi-and-mcp): 30 operations through OpenAPI or MCP, with permissions and an access history
+- [Command-line runner](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#command-line-runner-ci-and-schedulers), [monitors](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#monitors), [mock server](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#mock-server), [team sharing through git](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#team-sharing-through-git), [WebSocket](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#websocket-requests), [Server-Sent Events](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#streaming-responses-server-sent-events), [client certificates](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#client-certificates-and-custom-cas), [LDAP app lock](https://github.com/gethttpdash/httpdash/blob/main/USERGUIDE.md#app-lock-with-ldap-sign-in)
 
 ## Website
 

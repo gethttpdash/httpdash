@@ -457,8 +457,10 @@ li.CodeMirror-hint-active .hint-scope { color: #fff; }
 
 /* Response */
 .res-header { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-right: 12px; flex-wrap: wrap; }
-.res-header .subtabs { border-bottom: 0; }
-.res-meta { display: flex; align-items: center; gap: 14px; flex: 1; justify-content: flex-end; min-width: 0; }
+.res-header .subtabs { border-bottom: 0; flex: 0 1 auto; min-width: 0; }
+/* Basis auto, not 0: when the tabs leave too little room the whole line wraps below them instead of
+   shrinking to nothing and spilling its right-aligned content over the tabs; on a very narrow pane it wraps itself. */
+.res-meta { display: flex; align-items: center; gap: 4px 14px; flex: 1 1 auto; justify-content: flex-end; flex-wrap: wrap; min-width: 0; padding: 4px 0 4px 12px; }
 .res-meta > .spacer { display: none; }
 .res-status { font-weight: 700; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; }
 .res-status.status-ok { background: var(--ok-soft); }
@@ -755,7 +757,7 @@ li.CodeMirror-hint-active .hint-scope { color: #fff; }
   .auth-type { width: 210px; }
 }
 @media (max-width: 900px) {
-  #sidebar-wrap { max-width: 34vw; }
+  #sidebar-wrap { max-width: max(300px, 34vw); }
   .brand > span:last-child { display: none; }
   .subtab { padding: 7px 8px; }
   .runner-config { width: 290px; }
