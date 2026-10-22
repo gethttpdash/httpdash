@@ -5,7 +5,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
-- **Flows (request orchestration):** a designer where requests are nodes you drag and connect, with Start, Execute, Condition and End nodes. Execute nodes pass values from their responses to later nodes (`{{login.token}}`), conditions branch on rules, and the End node's result tabs show the parts of responses you pick (`data.items`) as tables. Runs show each node's state live; nodes wait for everything before them, and the branch not taken is skipped.
+- **Flows (request orchestration):** a designer where requests are nodes you drag and connect, with Start, Execute, Condition and End nodes. Execute nodes pass values from their responses to later nodes (`{{login.token}}`), conditions branch on rules, and the End node's result tabs show the parts of responses you pick (`data.items`) as tables. Runs show each node's state live; nodes wait for everything before them, and the branch not taken is skipped. Nodes collapse to their title bar, and the side panel and results can be hidden or resized.
 - **A collection for every discovered service:** Consul, Eureka, Kubernetes and custom JSON sources can build a collection per service from its own OpenAPI document (looked for at `/v3/api-docs`, `/openapi.json` and other common paths, or yours), with requests on the service's variable so load balancing applies. Each sync keeps the collections in step with their documents and keeps your edits; the results table links each service to its collection or says why it has none.
 - **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.
 - **Search finds the real host:** URLs also match with their variables filled in from the collection, the active environment and globals (secrets left out), so `api.example.com` finds `{{base_url}}/…` requests. The same goes for the Runner's filter and the AI API's `searchRequests`.
@@ -41,6 +41,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - You can drop after the last request in a folder.
 
 ### Fixed
+- **Table view for a version's response:** versions keep the first 64 KB of a response, which cut large JSON short and hid the Table view. It now shows the items in the part that was kept, with a note saying so.
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.
 - Ctrl/Cmd+F in the URL bar opened a search box inside the one-line URL; it now searches the response.
