@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Import and export everything · HttpDash docs</title>
+  <meta name="description" content="Export (top bar) offers two formats.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/import-and-export-everything.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/import-and-export-everything.html">
+  <meta property="og:title" content="Import and export everything · HttpDash docs">
+  <meta property="og:description" content="Export (top bar) offers two formats.">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything " class="current" aria-current="page">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Getting started</p>
+      <article class="docs-article">
+        <h1>Import and export everything</h1>
+<p><strong>Export</strong> (top bar) offers two formats:</p>
+<ul>
+<li><strong>HttpDash backup:</strong> one <code>.json</code> file with collections, environments, globals, history, service discovery sources, settings and cookies. Monitors, tunnels, team repositories and request versions stay on this computer.</li>
+<li><strong>Postman format:</strong> an <code>httpdash-export-&lt;date&gt;</code> folder with one <code>.postman_collection.json</code> per collection, one <code>.postman_environment.json</code> per environment, and a globals file, ready for Postman or teammates. Auth dependencies, discovery sources and WebSocket requests are HttpDash-only, so they are not in these files; tags are kept as <code>x-httpdash-tags</code>.</li>
+</ul>
+<p>Tick <strong>Leave out secrets</strong> before sharing an export. This empties secret variables and the variables holding auth-dependency tokens, removes credentials typed into auth fields, including those of saved examples and history (references like <code>{{token}}</code> are kept), and drops discovery tokens and secret-looking discovery headers, the proxy password, certificate passphrases and cookies. It does not touch credentials typed straight into headers, URLs, scripts, bodies or saved responses, or the resolved URLs and headers in history: run <strong>Scan for Secrets</strong> first (it&#39;s in the Export dialog). Without it, the file contains your credentials.</p>
+<p><strong>Import</strong> accepts all of these, and several files can be selected at once (for example a whole Postman export folder). For a backup, you choose:</p>
+<ul>
+<li><strong>Merge:</strong> adds everything; collections, environments and discovery sources with the same id are added as copies marked &quot;(imported)&quot;, history you already have is skipped, existing global keys are kept, and cookies with the same name, domain and path are replaced. Your settings stay as they are.</li>
+<li><strong>Replace:</strong> swaps your collections, environments, globals, history and discovery sources for the backup&#39;s, and applies its settings over yours (a backup without cookies keeps your cookies). It asks for confirmation first.</li>
+</ul>
+<p><img src="img/17-export-all.png" alt="Export all" loading="lazy"></p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="install-and-update.html"><span>Previous</span>Install and update</a>
+        <a class="docs-next" href="keyboard-shortcuts.html"><span>Next</span>Keyboard shortcuts</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>

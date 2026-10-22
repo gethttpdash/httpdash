@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Command-line runner (CI and schedulers) · HttpDash docs</title>
+  <meta name="description" content="Run collections without opening the app, like Postman's Newman. The runner needs Node.js 22+.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/command-line-runner-ci-and-schedulers.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/command-line-runner-ci-and-schedulers.html">
+  <meta property="og:title" content="Command-line runner (CI and schedulers) · HttpDash docs">
+  <meta property="og:description" content="Run collections without opening the app, like Postman's Newman. The runner needs Node.js 22+.">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) " class="current" aria-current="page">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> Automation</p>
+      <article class="docs-article">
+        <h1>Command-line runner (CI and schedulers)</h1>
+<p>Run collections without opening the app, like Postman&#39;s Newman. The runner needs Node.js 22+:</p>
+<pre><code class="language-bash">npm install -g github:gethttpdash/httpdash     # or, in a clone: npm run cli -- run …
+httpdash list backup.json
+httpdash run backup.json -c &quot;Orders API&quot; -e &quot;Staging&quot; --env-var password=$API_PASSWORD -r cli,junit
+httpdash send &#39;{{orders_url}}/orders&#39; -e Staging      # one request through the running app, like curl
+</code></pre>
+<ul>
+<li><strong>Input:</strong> an HttpDash backup (<strong>Export → HttpDash backup</strong>, ideally with &quot;Leave out secrets&quot;), a Postman collection, or a <code>workspace.json</code>. When the file has several collections, pick one with <code>-c</code> (name or id); <code>httpdash list</code> shows them.</li>
+<li><strong>Environments:</strong> pick one by name from the backup with <code>-e</code>, or pass a Postman environment file; <code>-g</code> takes a Postman globals file.</li>
+<li><strong>Secrets in CI:</strong> pass them with <code>--env-var key=value</code>.</li>
+<li><strong>Other options:</strong><ul>
+<li><code>-n</code> for iterations and <code>-d data.csv</code> (or <code>.json</code>) for data-driven runs (see <a href="data-files-data-driven-runs.html">Data files</a>).</li>
+<li><code>-f</code> / <code>--folder</code>, <code>--tag</code> (repeat it to require several tags), <code>--bail</code>, <code>--delay-request</code>, <code>--timeout-request</code>, <code>--no-color</code>.</li>
+<li><code>--socks5 host:port</code> to send every request through a SOCKS5 proxy; <code>--no-tunnels</code> to ignore the tunnels saved in a <code>workspace.json</code>.</li>
+<li><code>-k</code> to skip SSL verification.</li>
+<li>Client certificates with Newman&#39;s flags: <code>--ssl-client-cert</code>, <code>--ssl-client-key</code>, <code>--ssl-client-passphrase</code>, <code>--ssl-client-cert-list</code> (Newman&#39;s JSON format) and <code>--ssl-extra-ca-certs</code>.</li>
+<li>Reporters: <code>cli</code>, <code>json</code> and <code>junit</code> (JUnit XML is read by Jenkins, GitLab, Azure DevOps and GitHub test reporters). They write <code>httpdash-report.json</code> and <code>httpdash-junit.xml</code> unless <code>--reporter-json-export</code> / <code>--reporter-junit-export</code> name another file.</li>
+</ul>
+</li>
+<li><strong>What carries over from the app:</strong> auth dependencies and scripts work exactly as in the app, and each request&#39;s health line is printed when a health URL is set.</li>
+<li><strong>Exit codes:</strong> <code>0</code> all passed, <code>1</code> a test or request failed, <code>2</code> bad arguments or input (or the run couldn&#39;t start).</li>
+</ul>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="flows-request-orchestration.html"><span>Previous</span>Flows (request orchestration)</a>
+        <a class="docs-next" href="monitors.html"><span>Next</span>Monitors</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="docs.js"></script>
+</body>
+</html>

@@ -48,7 +48,7 @@ Scripts run inside a QuickJS sandbox. The `pm` API lives in `src/core/sandbox-gu
 2. Make your change, matching the style of the code around it: plain CommonJS, small functions, comments only where the *why* isn't obvious.
 3. Add or update tests in `test/` for anything in `src/core/`. Run `npm test`; it must pass.
 4. For UI changes, try them in both light and dark themes and in a narrow window, and run `npm run audit:contrast`: it opens the app, goes through its screens in both themes, and fails if any text is below WCAG AA contrast (4.5:1). Colors are tokens at the top of `src/renderer/css/app.css`; use the `-solid` tokens (`--ok-solid`, `--accent-solid`…) for fills behind white text.
-5. Update `USERGUIDE.md` if you changed how something works (and `README.md` if it changes what HttpDash is), and add a line under **Unreleased** in `CHANGELOG.md`.
+5. Update `USERGUIDE.md` if you changed how something works (and `README.md` if it changes what HttpDash is), and add a line under **Unreleased** in `CHANGELOG.md`. Then run `npm run docs`, which rebuilds the documentation pages of the website from the user guide; `npm test` fails while they are out of date.
 6. Open a pull request and fill in the template. CI runs the tests and builds macOS, Windows and Linux packages.
 
 Commit messages are short and in the imperative, like the existing history: `Add WebSocket requests`, `Fix URL bar text jumping on focus`.
@@ -67,7 +67,7 @@ Without certificates, the Mac build is ad-hoc signed and the Windows build is un
 
 ## Website
 
-The site for httpdash.com lives in `website/`: plain HTML, CSS and a little JavaScript, with no build step. The download buttons link to the latest GitHub release.
+The site for httpdash.com lives in `website/`: plain HTML, CSS and a little JavaScript, with no build step. The documentation pages in `website/docs/` are the exception: `npm run docs` (`scripts/build-docs.js`) builds them from `USERGUIDE.md`, one page per topic with the topics on the left and the page's sections on the right, and they are committed like the rest. The download buttons link to the latest GitHub release.
 
 `.github/workflows/website.yml` uploads it to the web host over SSH whenever `website/` changes on `main`. It needs the `DEPLOY_*` repository secrets listed at the top of that file; until they are set, the job is skipped. To publish by hand instead:
 
