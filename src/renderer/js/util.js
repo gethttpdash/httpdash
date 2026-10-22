@@ -57,6 +57,7 @@ HD.statusClass = (s) => (!s ? '' : s < 300 ? 'status-ok' : s < 400 ? 'status-red
 HD.icon = (name) => {
   const paths = {
     plus: 'M12 5v14M5 12h14',
+    minus: 'M5 12h14',
     x: 'M6 6l12 12M18 6L6 18',
     folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
     chevron: 'M9 6l6 6-6 6',

@@ -261,6 +261,12 @@
       } else if (section === 'appearance') {
         panel.append(
           h('div.setting-row', h('div', h('div.setting-label', 'Theme')), HD.select([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], s.theme || 'system', (v) => { s.theme = v; HD.save(); HD.applyTheme(); })),
+          h('div.setting-row', h('div', h('div.setting-label', 'Zoom'), h('div.setting-help', 'The whole window. Also Ctrl/Cmd + and −, and Ctrl/Cmd+0 for 100%.')),
+            h('div.zoom-stepper',
+              HD.button('', () => HD.setZoom(-1), { icon: 'minus', small: true, title: 'Zoom out', class: 'zoom-out', disabled: HD.zoom() === HD.ZOOM_STEPS[0] }),
+              h('span.zoom-value', { 'aria-live': 'polite' }, `${HD.zoom()}%`),
+              HD.button('', () => HD.setZoom(1), { icon: 'plus', small: true, title: 'Zoom in', class: 'zoom-in', disabled: HD.zoom() === HD.ZOOM_STEPS[HD.ZOOM_STEPS.length - 1] }),
+              HD.button('Reset', () => HD.setZoom(0), { small: true, ghost: true, class: 'zoom-reset', disabled: HD.zoom() === 100 }))),
           h('div.setting-row', h('div', h('div.setting-label', 'Editor font size')), HD.select([11, 12, 13, 14, 15, 16].map((n) => [n, `${n}px`]), s.fontSize || 13, (v) => { s.fontSize = Number(v); HD.save(); HD.applyTheme(); })),
           h('div.setting-row', h('div', h('div.setting-label', 'Request / response layout')), HD.select([['vertical', 'Stacked (response below)'], ['horizontal', 'Side by side']], S.ws.ui.layout || 'vertical', (v) => { S.ws.ui.layout = v; HD.save(); HD.renderActiveTab(); })));
       } else if (section === 'ai') {

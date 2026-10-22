@@ -153,7 +153,11 @@ function buildMenu() {
         { label: 'Previous Tab', accelerator: 'Ctrl+Shift+Tab', registerAccelerator: false, click: send('prev-tab') },
         { type: 'separator' },
         { role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' },
-        { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' },
+        // Zoom goes through the window's own steps and setting (Settings → Appearance), not Chromium's.
+        { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', registerAccelerator: false, click: send('zoom-reset') },
+        { label: 'Zoom In', accelerator: 'CmdOrCtrl+=', registerAccelerator: false, click: send('zoom-in') },
+        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', registerAccelerator: false, click: send('zoom-out') },
+        { type: 'separator' }, { role: 'togglefullscreen' },
       ],
     },
     {

@@ -411,6 +411,7 @@ Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.
 | Ctrl/Cmd+, | Settings |
 | Ctrl/Cmd+\\ | Show or hide the sidebar |
 | Ctrl/Cmd+Alt+C | Show or hide the console |
+| Ctrl/Cmd+= (or +), Ctrl/Cmd+−, Ctrl/Cmd+0 | Zoom in, zoom out, back to 100% (also in **Settings → Appearance**) |
 | Ctrl/Cmd+L | Lock HttpDash (with the app lock on) |
 | Ctrl/Cmd+/ | Comment or uncomment lines in a script editor |
 
@@ -474,7 +475,7 @@ Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.
 - Export everything as a restorable backup or as Postman files, or export single collections, environments and globals
 - Code generation: cURL, raw HTTP, JavaScript fetch, Node.js Axios, Python requests, Go, PHP cURL, C# HttpClient, Java OkHttp, PowerShell, wget
 - Cookie manager (view / add / edit / delete per domain)
-- Settings: timeout, redirects (and how many), SSL verification, connection reuse, cookie jar, no-cache header, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), tunnels (SSH jump hosts and SOCKS5) into internal networks, network tracing and segment size, user agent, response size limit and large-response size, history length, light / dark / system theme, editor font size, stacked or side-by-side layout; plus certificates, security (app lock), AI access and data
+- Settings: timeout, redirects (and how many), SSL verification, connection reuse, cookie jar, no-cache header, HTTP proxy (including HTTPS via CONNECT, with auth and bypass list), tunnels (SSH jump hosts and SOCKS5) into internal networks, network tracing and segment size, user agent, response size limit and large-response size, history length, light / dark / system theme, zoom (70% to 130%), editor font size, stacked or side-by-side layout; plus certificates, security (app lock), AI access and data
 - Console panel with network and script logs; [keyboard shortcuts](#keyboard-shortcuts) for sending, find, undo and redo across the whole request, and moving between tabs
 
 ## Script sandbox

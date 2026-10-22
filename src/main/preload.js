@@ -1,6 +1,6 @@
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const invoke = (channel) => (...args) => ipcRenderer.invoke(channel, ...args);
 
@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   loadWorkspace: invoke('workspace:load'),
   saveWorkspace: invoke('workspace:save'),
   appInfo: invoke('app:info'),
+  setZoom: (factor) => webFrame.setZoomFactor(factor),
 
   send: invoke('request:send'),
   compareInstances: invoke('request:compare'),

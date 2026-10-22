@@ -500,9 +500,33 @@
     const theme = pref === 'system' ? (darkQuery.matches ? 'dark' : 'light') : pref;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.setProperty('--editor-font-size', `${S.ws.settings.fontSize || 13}px`);
+    applyZoom();
     document.querySelectorAll('.CodeMirror').forEach((c) => c.CodeMirror && c.CodeMirror.refresh());
   };
   darkQuery.addEventListener('change', () => HD.applyTheme());
+
+  // Zoom: 70% to 130% in steps of 10, kept in the settings so it comes back at the next start
+  // (a value outside the steps reads as 100). Settings shows it with − and +, and Ctrl/Cmd + = − 0
+  // (and the View menu) move the same value.
+  HD.ZOOM_STEPS = [70, 80, 90, 100, 110, 120, 130];
+  HD.zoom = () => (HD.ZOOM_STEPS.includes(S.ws.settings.zoom) ? S.ws.settings.zoom : 100);
+  const applyZoom = () => {
+    const z = HD.zoom();
+    if (window.api.setZoom) window.api.setZoom(z / 100);
+    // A Settings dialog that is open follows a change made from the keyboard or the menu.
+    document.querySelectorAll('.zoom-value').forEach((el) => { el.textContent = `${z}%`; });
+    document.querySelectorAll('.zoom-out').forEach((el) => { el.disabled = z === HD.ZOOM_STEPS[0]; });
+    document.querySelectorAll('.zoom-in').forEach((el) => { el.disabled = z === HD.ZOOM_STEPS[HD.ZOOM_STEPS.length - 1]; });
+    document.querySelectorAll('.zoom-reset').forEach((el) => { el.disabled = z === 100; });
+  };
+  HD.setZoom = (step) => {
+    const i = HD.ZOOM_STEPS.indexOf(HD.zoom());
+    const z = step === 0 ? 100 : HD.ZOOM_STEPS[Math.max(0, Math.min(HD.ZOOM_STEPS.length - 1, i + step))];
+    if (z === HD.zoom() && S.ws.settings.zoom === z) return;
+    S.ws.settings.zoom = z;
+    HD.save();
+    applyZoom();
+  };
 
   // ---- Commands -----------------------------------------------------------------------------
 
@@ -543,6 +567,9 @@
       const input = document.querySelector('#sidebar .side-search-box input');
       if (input) { input.focus(); input.select(); }
     },
+    'zoom-in': () => HD.setZoom(1),
+    'zoom-out': () => HD.setZoom(-1),
+    'zoom-reset': () => HD.setZoom(0),
     'next-tab': () => cycleTab(1),
     'prev-tab': () => cycleTab(-1),
     undo: () => HD.undoEdit(HD.currentTab()),
@@ -571,6 +598,14 @@
       HD.command(key === 'y' || e.shiftKey ? 'redo' : 'undo');
       return;
     }
+    // Zoom works over a dialog too, so Settings shows the change as it happens. Ctrl/Cmd+= and +
+    // (with or without Shift, or on the keypad) zoom in.
+    if (!e.altKey && (key === '=' || key === '+' || key === '-' || key === '_' || (key === '0' && !e.shiftKey))) {
+      if (document.body.classList.contains('is-locked')) return;
+      e.preventDefault();
+      HD.command(key === '0' ? 'zoom-reset' : key === '-' || key === '_' ? 'zoom-out' : 'zoom-in');
+      return;
+    }
     let cmd;
     if (e.altKey) cmd = !e.shiftKey && (key === 'c' || e.code === 'KeyC') ? 'toggle-console' : null;
     else if (e.shiftKey) cmd = SHIFT_SHORTCUTS[key] || SHIFT_SHORTCUTS[e.code];
@@ -583,7 +618,7 @@
   window.api.onMenu((cmd) => {
     // Don't fire app shortcuts while a modal dialog is open.
     if (document.body.classList.contains('is-locked')) return;
-    if (document.querySelector('.modal-overlay') && cmd !== 'close-tab') return;
+    if (document.querySelector('.modal-overlay') && cmd !== 'close-tab' && !cmd.startsWith('zoom-')) return;
     HD.command(cmd);
   });
 

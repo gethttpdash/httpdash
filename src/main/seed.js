@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   historyLimit: 200,
   theme: 'system',
   fontSize: 13,
+  zoom: 100,
   proxy: { enabled: false, host: '', port: 8080, username: '', password: '', bypass: 'localhost,127.0.0.1' },
 };
 

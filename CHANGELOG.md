@@ -16,6 +16,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - **Tabs:** Ctrl+Tab and Ctrl+Shift+Tab (also Ctrl+PageDown / PageUp and Ctrl/Cmd+Shift+] / [), and Ctrl/Cmd+1 to 9.
   - **Ctrl/Cmd+Enter on a WebSocket tab** connects, and once connected sends the message.
   - The user guide lists every shortcut.
+- **Zoom in Settings:** **Settings → Appearance → Zoom** has − and + buttons that step the whole window from 70% to 130% in steps of 10% and a Reset to 100%. The zoom is kept for the next start, and Ctrl/Cmd + = / − / 0 and the View menu move the same setting.
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
@@ -32,6 +33,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **A narrow response pane:** the status, time and size line was drawn over the response tabs. It now moves below them, and the tabs wrap instead of being cut off.
 - **The Windows icon** looked smaller than other apps' on the taskbar: it kept the macOS icon's empty border. Windows now gets its own icon that fills the square (`build/icon.ico`, made with `npm run icon:win`).
 - **The request header:** a long version label (`GET /api/…`) ran under **Versions** and **Save** when the header was narrow. It now shortens with an ellipsis, the folder path giving way first.
+- **Small or zoomed-in windows:** the request's header, URL and tabs could fill its half and leave the editor no room; the editor now keeps at least 120px and the half scrolls. In a narrow request header the version chip and "Not saved yet" step aside rather than shrink to a letter, and the response toolbar wraps instead of crushing the language picker.
 - **The sidebar** could be dragged so narrow that the search box was too short to read; its minimum width is now 300px, including a width saved before.
 - Help text that said more than the app does:
   - **Show auto-generated** no longer lists `Cache-Control` when **Send no-cache header** is off.
