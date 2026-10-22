@@ -6,7 +6,7 @@
 
 **A free, source-available API client that runs your Postman collections and scripts, keeps everything on your machine, and logs in for you.** No account, no cloud. For macOS, Windows and Linux.
 
-Built for demanding microservice APIs: it builds environments from your service registry, spreads requests over every instance and counts what each answers, compares instances side by side, reads a service's health while your request runs, shows where each request went on the network, and lets AI agents work alongside you. Its collection runner is about 16 times faster than Postman's.
+**Built for service-heavy backends and for AI agents.** It reads your service registry (Consul, Eureka, Kubernetes), so `{{orders_url}}` always points at live instances. It spreads requests over every instance, counts what each one answers, and finds the instance that answers differently. AI agents can build requests and scripts, run data-driven collections and read the results over MCP, with the permissions you choose. It also reads a service's health while your request runs and shows where each request went on the network. Its collection runner is about 16 times faster than Postman's.
 
 [Website](https://httpdash.com) · [Download](https://github.com/gethttpdash/httpdash/releases/latest) · [User guide](USERGUIDE.md) · [Changelog](CHANGELOG.md) · [Sponsors](#sponsors)
 
@@ -27,6 +27,28 @@ Built for demanding microservice APIs: it builds environments from your service 
 - **And more:** request versions and spec warnings, tags and search, monitors, mock servers, WebSocket and Server-Sent Events, client certificates, a secret scan, an audit log, and an app lock with LDAP sign-in. [Everything](USERGUIDE.md#features-at-a-glance)
 
 Built with Electron and plain JavaScript. Your data stays on your computer as JSON files.
+
+## How it compares
+
+|  | HttpDash | Postman | Insomnia | Bruno | Hoppscotch | Yaak |
+| --- | --- | --- | --- | --- | --- | --- |
+| License | [FSL-1.1-ALv2](#license), source-available (Apache 2.0 after two years) | Proprietary | Apache-2.0 | MIT | MIT | MIT source; commercial use of the builds needs a licence |
+| Environments from a service registry (Consul, Eureka, Kubernetes) | ✅ | —¹ | — | — | — | — |
+| Requests spread over every instance, traffic per instance, instances compared | ✅ | — | — | — | — | — |
+| MCP server for AI agents | ✅ built in | ✅ | MCP client only² | Community servers³ | ✅ separate package | ✅ plugin |
+| Agents run collections with data files over MCP | ✅ | — | — | — | — | — |
+| Agents see and use the app's screen | ✅ | — | — | — | — | — |
+| Agents can reach local and private-network APIs | ✅ | — | — | — | Off by default⁴ | ✅ |
+| Secret values hidden from agents unless you allow them | ✅ | — | — | — | No⁴ | — |
+| gRPC | ❌ | ✅ | ✅ | ✅ | Not confirmed | ✅ |
+| GraphQL | Body mode only | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+A dash means we found no such feature in their documentation, as of October 2026. Tools change quickly; if a row is out of date, please [open an issue](https://github.com/gethttpdash/httpdash/issues/new/choose) and we'll fix it.
+
+1. Postman's Insights Agent can discover the services in a Kubernetes cluster to fill its API Catalog. It doesn't resolve service addresses for the requests you send.
+2. Insomnia's MCP client is for testing MCP servers; it doesn't let agents work in Insomnia.
+3. Community MCP servers wrap Bruno's command line; an official one is reported to be in early development.
+4. Hoppscotch's MCP server blocks private and loopback addresses by default, and returns stored credentials in plain text.
 
 ## Download
 
