@@ -224,11 +224,26 @@
     if (existing) return reuse(existing, opts);
     return addTab({ id: HD.uid(), kind: 'globals' }, opts);
   };
+  // The environment selected, as the selector in the top bar does (`drawn`: called by that selector, already showing it;
+  // `say`: a toast naming it, when it changed because of something else the person did).
+  HD.useEnvironment = (id, { drawn = false, say = false } = {}) => {
+    S.ws.activeEnvironmentId = id || null;
+    HD.save();
+    if (!drawn) HD.renderEnvSelect();
+    HD.renderSidebar();
+    HD.refreshVarHighlights();
+    const t = HD.currentTab();
+    if (t && t.kind === 'environment') HD.renderActiveTab();
+    const env = HD.activeEnvironment();
+    if (say && env) HD.toast(`Environment "${env.name}" selected: this collection's discovery source syncs into it.`, 'info');
+  };
   HD.openRunner = (collectionId, folderId) => {
     const existing = S.ws.tabs.find((t) => t.kind === 'runner');
-    const cfg = { iterations: 1, delay: 0, persist: true, stopOnFailure: false, useCookies: true, environmentId: S.ws.activeEnvironmentId, excluded: {} };
+    // A collection a discovery source keeps runs in that source's environment, where its base URL variable is.
+    const own = collectionId && HD.environmentForCollection ? HD.environmentForCollection(collectionId) : null;
+    const cfg = { iterations: 1, delay: 0, persist: true, stopOnFailure: false, useCookies: true, environmentId: own || S.ws.activeEnvironmentId, excluded: {} };
     if (existing) {
-      if (collectionId) existing.runner = { ...(existing.runner || cfg), collectionId, folderId: folderId || null, excluded: {} };
+      if (collectionId) existing.runner = { ...(existing.runner || cfg), collectionId, folderId: folderId || null, excluded: {}, ...(own ? { environmentId: own } : {}) };
       return activate(existing.id);
     }
     return addTab({ id: HD.uid(), kind: 'runner', runner: { ...cfg, collectionId: collectionId || null, folderId: folderId || null } });
@@ -398,14 +413,7 @@
     HD.applyEnvColor();
     const dot = HD.envDot(HD.activeEnvironment());
     if (dot) host.appendChild(dot);
-    host.appendChild(HD.select([['', 'No Environment'], ...S.ws.environments.map((e) => [e.id, e.name])], S.ws.activeEnvironmentId || '', (v) => {
-      S.ws.activeEnvironmentId = v || null;
-      HD.save();
-      HD.renderSidebar();
-      HD.refreshVarHighlights();
-      const t = HD.currentTab();
-      if (t && t.kind === 'environment') HD.renderActiveTab();
-    }, 'env-dropdown'));
+    host.appendChild(HD.select([['', 'No Environment'], ...S.ws.environments.map((e) => [e.id, e.name])], S.ws.activeEnvironmentId || '', (v) => HD.useEnvironment(v, { drawn: true }), 'env-dropdown'));
     const eye = HD.button('', () => HD.showQuickLook(eye), { icon: 'eye', ghost: true, title: 'Environment quick look' });
     host.appendChild(eye);
   };

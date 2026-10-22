@@ -203,6 +203,21 @@
   };
 
   const collectionOf = (src) => (src.collectionId && S.ws.collections.find((c) => c.id === src.collectionId)) || null;
+
+  // The environment a collection belongs with: the one the discovery source that keeps it syncs into (its OpenAPI
+  // document's collection, or a registry service's), which holds its base URL variable. null for any other collection.
+  HD.environmentForCollection = (collectionId) => {
+    if (!collectionId) return null;
+    const src = sources().find((s) => s.collectionId === collectionId || Object.values(s.serviceCollectionIds || {}).includes(collectionId));
+    const env = src && src.environmentId && S.ws.environments.find((e) => e.id === src.environmentId);
+    return env ? env.id : null;
+  };
+  // A collection opened from its source: its environment selected too, so its requests resolve as the source synced them.
+  const openCollection = (collectionId) => {
+    const env = HD.environmentForCollection(collectionId);
+    if (env && env !== S.ws.activeEnvironmentId) HD.useEnvironment(env, { say: true });
+    HD.openContainer(collectionId);
+  };
   const isOpenApi = (src) => src.provider === 'openapi';
 
   // The collections a registry source keeps for its services (from their own API documents), by service name.
@@ -499,7 +514,7 @@
         }, { icon: 'search', primary: !!src.lastSync }),
         // The first sync has nothing to compare with, so it can create straight away.
         !src.lastSync ? HD.button(`Create ${src.syncRequests !== false ? 'collection and ' : ''}environment`, () => apply(null), { primary: true, icon: 'download' }) : null,
-        collectionOf(src) ? HD.button('Open collection', () => HD.openContainer(src.collectionId), { ghost: true }) : null,
+        collectionOf(src) ? HD.button('Open collection', () => openCollection(src.collectionId), { ghost: true }) : null,
         src.environmentId ? HD.button('Open environment', () => HD.openEnvironment(src.environmentId), { ghost: true }) : null)
       : h('div.button-row.discovery-actions',
         HD.button('Preview services', async () => {
@@ -524,7 +539,7 @@
       if (!x) return h('td.muted', '—');
       const col = x.collectionId && S.ws.collections.find((c) => c.id === x.collectionId);
       if (col) {
-        return h('td', h('a', { href: '#', onclick: (e) => { e.preventDefault(); HD.openContainer(col.id); } }, col.name),
+        return h('td', h('a', { href: '#', onclick: (e) => { e.preventDefault(); openCollection(col.id); } }, col.name),
           h('span.muted.small', ` · ${plural(x.operations || 0, 'request')}${ver(x.spec)}`),
           x.requests && x.status === 'synced' ? h('span.muted.small', { title: x.requests }, ` · ${x.requests}`) : null);
       }

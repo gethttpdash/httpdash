@@ -30,6 +30,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Collection Runner results:** Passed and Failed (the cards and the filter) appear only when the requests have tests. A run without tests shows its requests, errors and average response time, with an **Errors** filter when a request couldn't be sent.
 - **Sidebar search suggestions open beside the sidebar,** when there's room, so they no longer cover the results while you type.
 - **Search suggestions work with screen readers:** the highlighted suggestion is announced (`aria-activedescendant`, `aria-selected`), in the sidebar search, the Runner's filter and the tag field.
 - **Search finds more of what you type:** each word is matched on its own, in any order (`create order`, `post orders`), the method and folder and collection names count, and when nothing matches exactly, close matches one typo away are shown with a note (`ordrs` finds "orders"). The Runner's request filter and the AI API's `searchRequests` match words and folders the same way.
@@ -42,6 +43,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - You can drop after the last request in a folder.
 
 ### Fixed
+- **A synced collection brings its environment:** **Open collection** on a discovery source selects the environment that source syncs into (a toast says so), and the Runner takes it too, when it is opened for that collection or the collection is picked in it. A Runner whose environment was deleted no longer shows "No environment" and fails every request on unresolved variables: it uses the collection's own environment, or the one selected. "No environment" chosen on purpose stays.
 - **Table view for a version's response:** versions keep the first 64 KB of a response, which cut large JSON short and hid the Table view. It now shows the items in the part that was kept, with a note saying so.
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.
 - **History opens the saved request:** a history entry of a saved request now opens that request, so a tag or an edit goes on it. That includes one an AI agent saved with `sendAdHoc` or `httpdash send --save`. **Open as a new request** still opens a copy as it was sent.

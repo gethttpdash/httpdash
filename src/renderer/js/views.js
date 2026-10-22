@@ -249,6 +249,12 @@
     const cfg = (tab.runner = tab.runner || { iterations: 1, delay: 0, persist: true, stopOnFailure: false, useCookies: true, environmentId: S.ws.activeEnvironmentId, excluded: {} });
     cfg.excluded = cfg.excluded || {};
     if (!cfg.collectionId && S.ws.collections[0]) cfg.collectionId = S.ws.collections[0].id;
+    // Its environment deleted since: the collection's own (its discovery source's), else the one selected, never a
+    // silent "No environment" whose variables resolve to nothing. No environment chosen on purpose stays so.
+    if (cfg.environmentId && !S.ws.environments.some((e) => e.id === cfg.environmentId)) {
+      cfg.environmentId = HD.environmentForCollection(cfg.collectionId) || S.ws.activeEnvironmentId || null;
+      HD.save();
+    }
     const run = runs.get(tab.id) || { results: [] };
     runs.set(tab.id, run);
     HD.variableInfo = () => ({});
@@ -268,7 +274,7 @@
     const picker = requestPicker(cfg, col, runBtn);
     left.append(
       h('div.section-title', 'Run configuration'),
-      h('label.field', h('span', 'Collection'), HD.select([['', '— Select —'], ...S.ws.collections.map((c) => [c.id, c.name])], cfg.collectionId || '', (v) => { cfg.collectionId = v; cfg.folderId = null; cfg.excluded = {}; HD.save(); rerender(); })),
+      h('label.field', h('span', 'Collection'), HD.select([['', '— Select —'], ...S.ws.collections.map((c) => [c.id, c.name])], cfg.collectionId || '', (v) => { cfg.collectionId = v; cfg.folderId = null; cfg.excluded = {}; const own = HD.environmentForCollection(v); if (own) cfg.environmentId = own; HD.save(); rerender(); })),
       col ? h('label.field', h('span', 'Folder'), HD.select([['', 'Entire collection'], ...folders], cfg.folderId || '', (v) => { cfg.folderId = v || null; HD.save(); rerender(); })) : null,
       h('label.field', h('span', 'Environment'), HD.select([['', 'No environment'], ...S.ws.environments.map((e) => [e.id, e.name])], cfg.environmentId || '', (v) => { cfg.environmentId = v || null; HD.save(); })),
       h('div.field-row',
@@ -306,10 +312,12 @@
       const failed = tests.filter((t) => !t.passed).length;
       const errors = results.filter((r) => r.error).length;
       const avg = results.length ? Math.round(results.reduce((n, r) => n + r.time, 0) / results.length) : 0;
+      // Passed and Failed count tests: a run whose requests have none shows neither.
+      const tested = tests.length > 0;
       right.appendChild(h('div.runner-summary',
         h('div.stat', h('div.stat-value', String(results.length)), h('div.stat-label', 'Requests')),
-        h('div.stat.pass', h('div.stat-value', String(passed)), h('div.stat-label', 'Passed')),
-        h('div.stat.fail', h('div.stat-value', String(failed)), h('div.stat-label', 'Failed')),
+        tested ? h('div.stat.pass', h('div.stat-value', String(passed)), h('div.stat-label', 'Passed')) : null,
+        tested ? h('div.stat.fail', h('div.stat-value', String(failed)), h('div.stat-label', 'Failed')) : null,
         h('div.stat', h('div.stat-value', String(errors)), h('div.stat-label', 'Errors')),
         h('div.stat', h('div.stat-value', HD.formatMs(avg)), h('div.stat-label', 'Avg. response')),
         h('span.spacer'),
@@ -322,8 +330,11 @@
         right.appendChild(h('details.runner-instances', { open: true }, h('summary', 'By instance'), HD.trafficTable(run.summary.instances)));
       }
       if (run.error) right.appendChild(h('div.test-script-error', run.error));
-      const filter = tab.ui && tab.ui.filter ? tab.ui.filter : 'all';
-      right.appendChild(h('div.body-toolbar', HD.tabStrip([{ id: 'all', label: 'All' }, { id: 'passed', label: 'Passed' }, { id: 'failed', label: 'Failed' }], filter, (id) => { tab.ui = tab.ui || {}; tab.ui.filter = id; renderResults(); }, 'segmented')));
+      // Without tests, the only thing to filter by is a request that couldn't be sent.
+      const filters = tested ? [{ id: 'all', label: 'All' }, { id: 'passed', label: 'Passed' }, { id: 'failed', label: 'Failed' }]
+        : errors ? [{ id: 'all', label: 'All' }, { id: 'failed', label: 'Errors' }] : [];
+      const filter = tab.ui && filters.some((f) => f.id === tab.ui.filter) ? tab.ui.filter : 'all';
+      if (filters.length) right.appendChild(h('div.body-toolbar', HD.tabStrip(filters, filter, (id) => { tab.ui = tab.ui || {}; tab.ui.filter = id; renderResults(); }, 'segmented')));
       const list = h('div.runner-list');
       let lastIt = -1;
       for (const r of results) {
