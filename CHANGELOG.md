@@ -6,6 +6,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 
 ### Added
 - **Recent searches:** the empty sidebar search lists your last 10 searches, chips and text, to run again or remove.
+- **Search finds the real host:** URLs also match with their variables filled in from the collection, the active environment and globals (secrets left out), so `api.example.com` finds `{{base_url}}/…` requests. The same goes for the Runner's filter and the AI API's `searchRequests`.
 - **Search highlights what matched** in request, folder and collection names and in tags, including close matches; a request shows the tag that matched.
 - **Click a tag to filter by it:** a tag on the request screen or in the sidebar tree adds itself to the sidebar search.
 - **Data files for AI agents:** `startRun` takes `data` (one object per iteration), and through MCP `dataFile`, the path to a CSV or JSON file that `httpdash mcp` reads and sends. Iterations default to the number of rows.
@@ -26,6 +27,8 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Sidebar search suggestions open beside the sidebar,** when there's room, so they no longer cover the results while you type.
+- **Search suggestions work with screen readers:** the highlighted suggestion is announced (`aria-activedescendant`, `aria-selected`), in the sidebar search, the Runner's filter and the tag field.
 - **Search finds more of what you type:** each word is matched on its own, in any order (`create order`, `post orders`), the method and folder and collection names count, and when nothing matches exactly, close matches one typo away are shown with a note (`ordrs` finds "orders"). The Runner's request filter and the AI API's `searchRequests` match words and folders the same way.
 - **README:** a sharper summary (service-heavy backends and AI agents) and a **How it compares** table against Postman, Insomnia, Bruno, Hoppscotch and Yaak, listing only what their documentation shows.
 - **Resizers are easier to find:** the bar between the request and the response is 6 px with a grip in the middle, and the sidebar and console edges show a grip too; all turn the accent color on hover and while dragging.
