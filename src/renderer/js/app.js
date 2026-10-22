@@ -241,6 +241,7 @@
     if (t.kind === 'globals') return 'Globals';
     if (t.kind === 'runner') return 'Collection Runner';
     if (t.kind === 'monitor') { const m = HD.monitors().find((x) => x.id === t.refId); return m ? m.name : 'Deleted'; }
+    if (t.kind === 'flow') { const fl = HD.flows().find((x) => x.id === t.refId); return fl ? fl.name : 'Deleted'; }
     if (t.kind === 'secrets') return 'Secret scan';
     if (t.kind === 'audit') return 'Audit log';
     if (t.kind === 'team') { const r = HD.teamRepos().find((x) => x.id === t.refId); return r ? r.name : 'Disconnected'; }
@@ -317,7 +318,7 @@
     for (const t of S.ws.tabs) {
       const icon = t.kind === 'request'
         ? h(`span.method-tag.${HD.methodClass(t.draft.request.method)}`, t.draft.request.method.slice(0, 6))
-        : HD.icon({ collection: 'layers', folder: 'folder', environment: 'globe', globals: 'globe', runner: 'play', discovery: 'search', monitor: 'pulse', secrets: 'shield', audit: 'history', team: 'users' }[t.kind] || 'file');
+        : HD.icon({ collection: 'layers', folder: 'folder', environment: 'globe', globals: 'globe', runner: 'play', discovery: 'search', monitor: 'pulse', flow: 'flow', secrets: 'shield', audit: 'history', team: 'users' }[t.kind] || 'file');
       const el = h('div.tab', {
         class: [t.id === S.ws.activeTabId && 'active', t.dirty && 'dirty', S.sending.get(t.id) && 'sending', t.preview && 'preview'].filter(Boolean).join(' '),
         title: `${t.kind === 'request' ? `${tabTitle(t)}\n${t.draft.request.url}` : tabTitle(t)}${t.preview ? '\nPreview: the next item you open replaces it. Double-click to keep it.' : ''}`,
