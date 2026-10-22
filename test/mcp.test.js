@@ -61,3 +61,38 @@ test('errors say what to do', async () => {
   assert.strictEqual(denied.result.isError, true);
   assert.match(denied.result.content[0].text, /"run" permission/);
 });
+
+test('startRun takes a data file from this computer and sends its rows as data', async () => {
+  const mcp = createServer({ dataDir: dir });
+  const start = (await rpc(mcp, 'tools/list')).result.tools.find((t) => t.name === 'startRun');
+  assert.ok(start.inputSchema.properties.dataFile && start.inputSchema.properties.data);
+  const { port } = api.status();
+  await api.configure({ enabled: true, port, permissions: { read: true, edit: true, ui: true, run: true } });
+  try {
+    const csv = path.join(dir, 'rows.csv');
+    fs.writeFileSync(csv, 'techno,expected\nJAVA,200\n"C, C++",404\n');
+    const r = await rpc(mcp, 'tools/call', { name: 'startRun', arguments: { collectionId: 'c1', dataFile: csv } });
+    assert.deepStrictEqual(r.result.structuredContent.args.body, { collectionId: 'c1', data: [{ techno: 'JAVA', expected: '200' }, { techno: 'C, C++', expected: '404' }] });
+    const json = path.join(dir, 'rows.json');
+    fs.writeFileSync(json, JSON.stringify([{ user: { name: 'Ada' } }]));
+    const j = await rpc(mcp, 'tools/call', { name: 'startRun', arguments: { collectionId: 'c1', dataFile: json } });
+    assert.deepStrictEqual(j.result.structuredContent.args.body.data, [{ user: { name: 'Ada' } }]);
+    const missing = await rpc(mcp, 'tools/call', { name: 'startRun', arguments: { collectionId: 'c1', dataFile: path.join(dir, 'nope.csv') } });
+    assert.strictEqual(missing.result.isError, true);
+    assert.match(missing.result.content[0].text, /Could not read data file/);
+  } finally {
+    await api.configure({ enabled: true, port, permissions: { read: true, edit: true, ui: true } });
+  }
+});
+
+test('folders and collections can be read and given scripts', async () => {
+  const mcp = createServer({ dataDir: dir });
+  const { tools } = (await rpc(mcp, 'tools/list')).result;
+  for (const name of ['createCollection', 'createFolder', 'updateCollection', 'updateFolder']) {
+    const t = tools.find((x) => x.name === name);
+    assert.ok(t.inputSchema.properties.preRequestScript && t.inputSchema.properties.testScript, name);
+  }
+  const r = await rpc(mcp, 'tools/call', { name: 'updateFolder', arguments: { folderId: 'f1', preRequestScript: 'pm.variables.set("a", 1)' } });
+  assert.deepStrictEqual(r.result.structuredContent.args, { folderId: 'f1', body: { preRequestScript: 'pm.variables.set("a", 1)' } });
+  assert.strictEqual(tools.find((x) => x.name === 'getFolder').annotations.readOnlyHint, true);
+});
