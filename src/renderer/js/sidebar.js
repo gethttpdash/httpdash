@@ -76,6 +76,14 @@
     role: 'button', title: `Show requests tagged #${tag}`,
     onclick: (e) => { e.stopPropagation(); HD.filterByTag(tag); },
   }, label);
+  // The tags of a request in the tree: one shown, the one the search matched if any, the rest as "+n".
+  const treeTags = (tags, terms) => {
+    const wanted = new Set(query.tokens.filter((t) => t.kind === 'tag').map((t) => t.value.toLowerCase()));
+    const hit = (t) => wanted.has(t.toLowerCase()) || HD.highlightRanges(t, terms, fuzzy).length > 0;
+    const first = tags.find(hit) || tags[0];
+    return h('span.tree-tags', { title: tags.map((t) => `#${t}`).join(' ') },
+      tagButton(first, HD.highlight(first, terms, fuzzy)), tags.length > 1 ? h('span.tree-tag.more', `+${tags.length - 1}`) : null);
+  };
   const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy }));
   // Exact matches first; only when there are none does a typo count.
   const chooseFuzzy = () => {
@@ -107,6 +115,8 @@
     HD.clear(tree);
     const f = HD.queryActive(query);
     if (f) chooseFuzzy(); else fuzzy = false;
+    // What the search matched is highlighted in names and tags.
+    const terms = f ? HD.searchTerms(query) : [];
     if (fuzzy) {
       const typed = [...query.tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text.trim()].filter(Boolean).join(' ');
       tree.appendChild(h('div.search-note', `No exact match for “${typed}”. Showing close matches.`));
@@ -171,9 +181,8 @@
       },
       isContainer ? h('span.tree-caret', { class: open ? 'open' : '' }, HD.icon('chevron')) : h('span.tree-caret.empty'),
       node.type === 'request' ? h(`span.method-tag.${HD.methodClass(node.request.method)}`, node.request.method.slice(0, 6)) : HD.icon(node.type === 'collection' ? 'layers' : 'folder'),
-      h('span.tree-name', node.name),
-      node.type === 'request' && node.request.tags && node.request.tags.length ? h('span.tree-tags', { title: node.request.tags.map((t) => `#${t}`).join(' ') },
-        tagButton(node.request.tags[0]), node.request.tags.length > 1 ? h('span.tree-tag.more', `+${node.request.tags.length - 1}`) : null) : null,
+      h('span.tree-name', HD.highlight(node.name, terms, fuzzy)),
+      node.type === 'request' && node.request.tags && node.request.tags.length ? treeTags(node.request.tags, terms) : null,
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);
@@ -183,7 +192,7 @@
           tree.appendChild(h('div.tree-row.tree-version', {
             style: { paddingLeft: `${30 + depth * 14}px` }, title: 'Open the request with this version',
             onclick: () => { HD.openRequest(node.id); const t = HD.currentTab(); if (t) HD.useVersion(t, v); },
-          }, HD.icon('history'), h('span.tree-name', v.name || HD.versionLabel(v)),
+          }, HD.icon('history'), h('span.tree-name', HD.highlight(v.name || HD.versionLabel(v), terms)),
           (v.tags || []).length ? h('span.tree-tags', h('span.tree-tag', v.tags[0]), v.tags.length > 1 ? h('span.tree-tag.more', `+${v.tags.length - 1}`) : null) : null,
           v.response && v.response.status ? h(`span.small.${HD.statusClass(v.response.status)}`, String(v.response.status)) : null));
         }
@@ -202,8 +211,8 @@
       for (const it of unsaved) {
         tree.appendChild(h('div.tree-row', { class: S.ws.activeTabId === it.tabId ? 'active' : '', style: { paddingLeft: '20px' }, title: 'Not saved yet: Ctrl+S keeps it in a collection', onclick: () => HD.activateTab(it.tabId) },
           h(`span.method-tag.${HD.methodClass(it.request.method)}`, String(it.request.method).slice(0, 6)),
-          h('span.tree-name', it.name),
-          (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 3).map((t) => h('span.tree-tag', `#${t}`))) : null));
+          h('span.tree-name', HD.highlight(it.name, terms, fuzzy)),
+          (it.request.tags || []).length ? h('span.tree-tags', it.request.tags.slice(0, 3).map((t) => h('span.tree-tag', '#', HD.highlight(t, terms, fuzzy)))) : null));
       }
     }
     if (f && !shown && S.ws.collections.length) tree.appendChild(h('div.empty-state.small', h('div', 'No request matches.'), h('div.muted', 'Remove a filter, or press Esc to clear the text.')));
