@@ -92,3 +92,30 @@ test('with fuzzy, a word of 5 letters or more may be one typo away', () => {
   assert.ok(textFound('custmer', ['Get customer'], true), 'a typo against a longer word');
   assert.ok(textFound('cutsom', ['customer-api'], true), 'a typo in the start of a longer word');
 });
+
+test('recent searches: newest first, no repeats, a search that grows the last one replaces it, at most 10', () => {
+  const { rememberSearch, forgetSearch } = global.HD;
+  global.HD.save = () => {};
+  ws.ui = {};
+  try {
+    const recent = () => ws.ui.searchHistory.sidebar.map((e) => [...e.tokens.map((t) => `${t.kind}:${t.value}`), e.text].filter(Boolean).join(' '));
+    rememberSearch('sidebar', { tokens: [], text: '' });
+    assert.strictEqual(ws.ui.searchHistory, undefined, 'an empty search is not kept');
+    rememberSearch('sidebar', { tokens: [], text: 'ord' });
+    rememberSearch('sidebar', { tokens: [], text: 'orders' });
+    assert.deepStrictEqual(recent(), ['orders'], '"ord" grew into "orders"');
+    rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: '' });
+    rememberSearch('sidebar', { tokens: [], text: 'ORDERS ' });
+    assert.deepStrictEqual(recent(), ['ORDERS', 'tag:smoke'], 'the same search (ignoring case) moves to the top, as last typed');
+    rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: 'list' });
+    assert.deepStrictEqual(recent(), ['tag:smoke list', 'ORDERS', 'tag:smoke'], 'a chip-only search is kept when text is added to it');
+    forgetSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: 'list' });
+    forgetSearch('sidebar', { tokens: [{ kind: 'tag', value: 'smoke' }], text: '' });
+    assert.deepStrictEqual(recent(), ['ORDERS']);
+    for (let i = 0; i < 15; i++) rememberSearch('sidebar', { tokens: [{ kind: 'tag', value: `t${i}` }], text: '' });
+    assert.strictEqual(recent().length, 10);
+    assert.strictEqual(recent()[0], 'tag:t14');
+  } finally {
+    delete ws.ui;
+  }
+});

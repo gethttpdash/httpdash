@@ -361,6 +361,9 @@ Tag requests (`smoke`, `orders`, `admin`, up to 20 of 40 characters each) in the
 
 Typed text is matched word by word, in any order. Each word can be in the request's name, URL, tags or method, or in the name of its folder or collection. So `create order` finds "Create new order", `post orders` finds the POST requests on `/orders`, and `Admin` lists everything in the Admin folder. When nothing matches exactly, the search allows one typo in words of 5 letters or more: a letter wrong, missing or extra, or two letters swapped, so `ordrs` finds "orders". A note above the results says these are close matches.
 
+- **Recent searches:** click into the empty search field to see your last searches (up to 10, newest first) and pick one to run it again. Hover one and click **×** to remove it. A search counts once you leave the field with something in it. One that only grows the last search, such as `ord` then `orders`, replaces it.
+- **Click a tag to filter by it:** a tag on the request screen, under its name, or a tag in the sidebar tree adds that tag to the sidebar search. The sidebar opens if it was hidden.
+
 The Runner's request picker uses the same search, so picking the `smoke` tag then **All** runs the smoke tests, and the CLI has `-t` / `--tag`. Tags travel with team sharing and survive a Postman export and import.
 
 ## Health while it runs (profiling)

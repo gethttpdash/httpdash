@@ -63,6 +63,19 @@
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
     return (node.items || []).some((c) => matches(c, [...path, node.name]));
   };
+  // A tag clicked on a request (or in the tree) is added to the search, which is shown if it was hidden.
+  HD.filterByTag = (tag) => {
+    if (!query.tokens.some((t) => t.kind === 'tag' && t.value.toLowerCase() === String(tag).toLowerCase())) query.tokens.push({ kind: 'tag', value: tag });
+    S.ws.ui.sidebarTab = 'collections';
+    if (S.ws.ui.sidebarHidden) { S.ws.ui.sidebarHidden = false; HD.applyLayout(); }
+    HD.rememberSearch('sidebar', query);
+    HD.save();
+    HD.renderSidebar();
+  };
+  const tagButton = (tag, label = tag) => h('span.tree-tag.clickable', {
+    role: 'button', title: `Show requests tagged #${tag}`,
+    onclick: (e) => { e.stopPropagation(); HD.filterByTag(tag); },
+  }, label);
   const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy }));
   // Exact matches first; only when there are none does a typo count.
   const chooseFuzzy = () => {
@@ -73,7 +86,7 @@
   };
 
   function renderCollections(panel) {
-    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box' });
+    const search = HD.searchBox({ query, onChange: () => drawTree(), className: 'side-search-box', historyKey: 'sidebar' });
     panel.appendChild(h('div.side-toolbar',
       HD.button('', async () => {
         const name = await HD.prompt('New collection', 'Name', 'New Collection');
@@ -160,7 +173,7 @@
       node.type === 'request' ? h(`span.method-tag.${HD.methodClass(node.request.method)}`, node.request.method.slice(0, 6)) : HD.icon(node.type === 'collection' ? 'layers' : 'folder'),
       h('span.tree-name', node.name),
       node.type === 'request' && node.request.tags && node.request.tags.length ? h('span.tree-tags', { title: node.request.tags.map((t) => `#${t}`).join(' ') },
-        h('span.tree-tag', node.request.tags[0]), node.request.tags.length > 1 ? h('span.tree-tag.more', `+${node.request.tags.length - 1}`) : null) : null,
+        tagButton(node.request.tags[0]), node.request.tags.length > 1 ? h('span.tree-tag.more', `+${node.request.tags.length - 1}`) : null) : null,
       teamBadge(node),
       h('button.tree-more', { type: 'button', title: 'More actions', onclick: (e) => { e.stopPropagation(); HD.menu(e, nodeMenu(node, collection)); } }, HD.icon('dots')));
       tree.appendChild(row);

@@ -1105,6 +1105,11 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .search-chip.search-tag { background: var(--accent-soft); }
 .search-chip button { border: 0; background: transparent; color: var(--text-2); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; }
 .search-chip button:hover { color: var(--text); }
+.search-chip.clickable > span[role="button"], .tree-tag.clickable { cursor: pointer; }
+.search-chip.clickable > span[role="button"]:hover, .tree-tag.clickable:hover { text-decoration: underline; }
+.search-chip.clickable > span[role="button"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 3px; }
+.search-forget { margin-left: auto; border: 0; background: transparent; color: var(--text-2); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; border-radius: 4px; }
+.search-forget:hover { color: var(--text); background: var(--bg-hover); }
 .search-menu { position: fixed; max-height: 340px; overflow: auto; z-index: 2500;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 4px; }
 .search-group { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); padding: 6px 8px 2px; }

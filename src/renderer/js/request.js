@@ -549,7 +549,7 @@
     // Layout.
     const vertical = (S.ws.ui.layout || 'vertical') === 'vertical';
     // Tags, for finding and running requests by what they're for (smoke, orders, admin...).
-    const tagsRow = h('div.req-tags', HD.tagInput({ tags: (req.tags = req.tags || []), onChange: () => markDirty() }));
+    const tagsRow = h('div.req-tags', HD.tagInput({ tags: (req.tags = req.tags || []), onChange: () => markDirty(), onTagClick: (t) => HD.filterByTag(t) }));
     // A warning when the request no longer fits its operation in an OpenAPI source's spec.
     const specHost = h('div.spec-host');
     const checkSpec = HD.debounce(async () => {
