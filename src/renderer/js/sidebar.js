@@ -50,15 +50,26 @@
 
   // ---- Collections --------------------------------------------------------------------------
 
-  // The collections search: chips (tags, methods, URLs, names) and typed text. A folder is shown when
-  // something inside it matches, or, for plain text, when its own name does.
+  // The collections search: chips (tags, methods, URLs, names) and typed text. Typed text also finds
+  // the requests in a folder or collection by its name. A folder is shown when something inside it
+  // matches, or, for plain text, when its own name does. When typed text matches nothing exactly,
+  // close matches (one typo away) are shown instead, with a note saying so.
   const query = { tokens: [], text: '' };
-  const matches = (node) => {
+  let fuzzy = false;
+  const matches = (node, path = []) => {
     if (!HD.queryActive(query)) return true;
-    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query) || HD.matchingVersions(node, query).length > 0;
+    if (node.type === 'request') return HD.matchRequest(HD.liveItem(node), query, { path, fuzzy }) || HD.matchingVersions(node, query).length > 0;
     const text = query.text.trim().toLowerCase();
     if (!query.tokens.length && text && node.name.toLowerCase().includes(text)) return true;
-    return (node.items || []).some(matches);
+    return (node.items || []).some((c) => matches(c, [...path, node.name]));
+  };
+  const unsavedMatches = () => HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query, { fuzzy }));
+  // Exact matches first; only when there are none does a typo count.
+  const chooseFuzzy = () => {
+    fuzzy = false;
+    if (!HD.queryHasText(query) || S.ws.collections.some((c) => matches(c)) || unsavedMatches().length) return;
+    fuzzy = true;
+    if (!S.ws.collections.some((c) => matches(c)) && !unsavedMatches().length) fuzzy = false;
   };
 
   function renderCollections(panel) {
@@ -82,14 +93,19 @@
     const drawTree = () => {
     HD.clear(tree);
     const f = HD.queryActive(query);
+    if (f) chooseFuzzy(); else fuzzy = false;
+    if (fuzzy) {
+      const typed = [...query.tokens.filter((t) => t.kind === 'text').map((t) => t.value), query.text.trim()].filter(Boolean).join(' ');
+      tree.appendChild(h('div.search-note', `No exact match for “${typed}”. Showing close matches.`));
+    }
     if (!S.ws.collections.length) {
       tree.appendChild(h('div.empty-state.small', h('div', 'No collections yet.'), h('div.muted', 'Create one, or import a Postman collection / OpenAPI file.')));
     }
     const active = HD.currentTab();
     const activeRef = active && active.refId;
     let shown = 0;
-    const renderNode = (node, depth, collection) => {
-      if (!matches(node)) return;
+    const renderNode = (node, depth, collection, path = []) => {
+      if (!matches(node, path)) return;
       if (node.type === 'request') shown++;
       const isContainer = node.type !== 'request';
       const open = f ? true : !!expanded()[node.id];
@@ -161,12 +177,12 @@
       }
       if (isContainer && open) {
         if (!node.items.length && !f) tree.appendChild(h('div.tree-empty', { style: { paddingLeft: `${34 + depth * 14}px` } }, 'Empty — ', h('a', { href: '#', onclick: (e) => { e.preventDefault(); addRequest(node); } }, 'add a request')));
-        node.items.forEach((c) => renderNode(c, depth + 1, collection));
+        node.items.forEach((c) => renderNode(c, depth + 1, collection, [...path, node.name]));
       }
     };
     S.ws.collections.forEach((c) => renderNode(c, 0, c));
     // Open tabs that aren't saved yet match too, so what was just typed in one is found.
-    const unsaved = f ? HD.unsavedTabItems().filter((it) => HD.matchRequest(it, query)) : [];
+    const unsaved = f ? unsavedMatches() : [];
     if (unsaved.length) {
       shown = true;
       tree.appendChild(h('div.side-section.tree-unsaved', h('span.section-title.flush', 'Open tabs, not saved')));

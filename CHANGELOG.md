@@ -23,6 +23,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Search finds more of what you type:** each word is matched on its own, in any order (`create order`, `post orders`), the method and folder and collection names count, and when nothing matches exactly, close matches one typo away are shown with a note (`ordrs` finds "orders"). The Runner's request filter and the AI API's `searchRequests` match words and folders the same way.
 - **README:** a sharper summary (service-heavy backends and AI agents) and a **How it compares** table against Postman, Insomnia, Bruno, Hoppscotch and Yaak, listing only what their documentation shows.
 - **Resizers are easier to find:** the bar between the request and the response is 6 px with a grip in the middle, and the sidebar and console edges show a grip too; all turn the accent color on hover and while dragging.
 - **Documentation:** the README is now what HttpDash is, a quick guide and its sponsors; how every feature works moved to [USERGUIDE.md](USERGUIDE.md), which **Help → Documentation** opens. Building, the website and the source layout moved to [CONTRIBUTING.md](CONTRIBUTING.md).

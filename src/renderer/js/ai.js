@@ -489,7 +489,7 @@
       const query = { tokens: [...split(tag).map((value) => ({ kind: 'tag', value })), ...split(method).map((value) => ({ kind: 'method', value: value.toUpperCase() })), ...(url ? [{ kind: 'url', value: url }] : [])], text: text || '' };
       const items = [];
       for (const c of S.ws.collections) {
-        HD.walk(c.items, (it, parents) => { if (it.type === 'request' && HD.matchRequest(it, query)) items.push({ ...summary(it, [c, ...parents]), collectionId: c.id }); });
+        HD.walk(c.items, (it, parents) => { if (it.type === 'request' && HD.matchRequest(it, query, { path: [c, ...parents].map((p) => p.name) })) items.push({ ...summary(it, [c, ...parents]), collectionId: c.id }); });
       }
       return { items: items.slice(0, Math.min(Number(limit) || 100, 1000)), total: items.length };
     },
