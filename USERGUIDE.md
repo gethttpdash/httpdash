@@ -439,6 +439,8 @@ The **Timeline** tab has a **Network** section for every request:
 
 Through a proxy, the address shown is the proxy's, and the trace says so. Segment size is /24 for IPv4 and /64 for IPv6; change it for this section, or turn tracing off, in **Settings → General**. Lookups are cached for a minute, so a collection run asks once per host.
 
+![The Network section of a request's Timeline: its addresses, and a route traced from this computer (you) to the address it connected to (instance)](docs/screenshots/39-trace-route.png)
+
 For services from service discovery, the **Traffic** page adds a **By network segment** table when instances answer from more than one segment, so a slow data center or VLAN stands out from a slow instance (always /24 and /64). It's in every export format except CSV, which has the instances only, and **Compare** shows the address each instance answered from.
 
 ## Environment diagrams
@@ -459,6 +461,8 @@ An environment's **Diagram** page (next to **Variables**) draws where its reques
 The diagram refreshes every two seconds while it's shown, so traffic you send appears as it happens. Click a node for its details (address, node, namespace, datacenter or zone, type, traffic) and a link to the source's **Traffic** page. Drag nodes to arrange them; where you put them is kept on this computer, and **Tidy** puts everything back. Zoom with Ctrl/Cmd + wheel, or use **Fit**.
 
 A discovery source synced before this version has no namespaces, nodes or zones yet: sync it again to group its instances. Through a tunnel, host names resolve on the far side, so this computer's DNS isn't asked about them.
+
+![An environment diagram: endpoints, load balancers and pods grouped by namespace and segment, with live traffic and a slow, failing pod selected](docs/screenshots/38-environment-diagram.png)
 
 ## Streaming responses (Server-Sent Events)
 
@@ -481,6 +485,10 @@ Pick **GraphQL** as a request's body type, then write the query and its variable
 - **Prettify** formats the query. Comments aren't kept, and a `{{variable}}` outside a string can't be formatted.
 - **Schema explorer:** **Schema** opens a pane with the root types. Follow a field's type to its fields, search every type and field by name, and click a field to insert it into the query.
 - `{{variables}}` work in the query and the variables. Outside a string they aren't GraphQL, so the checks leave them alone.
+
+| | |
+| --- | --- |
+| ![GraphQL with the schema fetched: autocomplete in the query and the schema explorer](docs/screenshots/36-graphql-schema.png) Autocomplete and the schema explorer | ![A GraphQL subscription streaming into the Events view](docs/screenshots/37-graphql-subscription.png) A subscription's results as they arrive |
 
 ### Subscriptions
 
@@ -522,6 +530,10 @@ Create one with **New → gRPC Request**, or **Add gRPC request** on a collectio
 - **TLS:** client certificates, trusted CAs (including the ones installed on your computer) and SSL verification from Settings apply as for HTTP.
 
 Proxies and tunnels don't apply to gRPC yet. The Runner, Monitors, mock servers and Postman export skip gRPC requests, and a Flow step or AI agent that sends one is told it's sent from its own tab.
+
+| | |
+| --- | --- |
+| ![A unary gRPC call, its methods read by server reflection, with the answer opened](docs/screenshots/34-grpc-call.png) A unary call, methods from server reflection | ![An open bidirectional gRPC stream, with messages each way](docs/screenshots/35-grpc-streaming.png) A bidirectional stream, open (dark theme) |
 
 ## Tunnels into internal networks
 

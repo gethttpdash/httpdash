@@ -93,6 +93,8 @@ Everything else, from service discovery to tunnels, is in the [user guide](USERG
 | ![Health](website/assets/health.webp) Health while the request ran | ![Network](website/assets/network.webp) Where the request went on the network |
 | ![Versions](website/assets/versions.webp) Versions and a spec warning | ![Search](website/assets/search.webp) Tags and the search that suggests |
 | ![AI access](website/assets/ai-agents.webp) AI agents at work | ![Table view](website/assets/table.webp) A JSON response as a table |
+| ![Environment diagram](docs/screenshots/38-environment-diagram.png) An environment's endpoints, load balancers and instances | ![Trace route](docs/screenshots/39-trace-route.png) The route from you to the instance |
+| ![gRPC](docs/screenshots/34-grpc-call.png) A gRPC call from server reflection | ![GraphQL](docs/screenshots/36-graphql-schema.png) GraphQL autocomplete and schema explorer |
 
 ## Not included
 

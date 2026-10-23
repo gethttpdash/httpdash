@@ -111,6 +111,18 @@
 <li><strong>Schema explorer:</strong> <strong>Schema</strong> opens a pane with the root types. Follow a field&#39;s type to its fields, search every type and field by name, and click a field to insert it into the query.</li>
 <li><code>{{variables}}</code> work in the query and the variables. Outside a string they aren&#39;t GraphQL, so the checks leave them alone.</li>
 </ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="img/36-graphql-schema.png" alt="GraphQL with the schema fetched: autocomplete in the query and the schema explorer" loading="lazy"> Autocomplete and the schema explorer</td>
+<td><img src="img/37-graphql-subscription.png" alt="A GraphQL subscription streaming into the Events view" loading="lazy"> A subscription&#39;s results as they arrive</td>
+</tr>
+</tbody></table></div>
 <h3 id="subscriptions"><a class="anchor" href="#subscriptions" aria-hidden="true" tabindex="-1">#</a>Subscriptions</h3>
 <p>A <code>subscription</code> runs over a WebSocket at the same URL (<code>http</code> becomes <code>ws</code>, <code>https</code> becomes <code>wss</code>), with the request&#39;s headers and auth in the handshake. Both the <code>graphql-transport-ws</code> protocol (the graphql-ws library) and the older <code>subscriptions-transport-ws</code> one are spoken; the server picks.</p>
 <ul>

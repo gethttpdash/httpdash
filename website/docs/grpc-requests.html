@@ -120,6 +120,18 @@
 <li><strong>TLS:</strong> client certificates, trusted CAs (including the ones installed on your computer) and SSL verification from Settings apply as for HTTP.</li>
 </ul>
 <p>Proxies and tunnels don&#39;t apply to gRPC yet. The Runner, Monitors, mock servers and Postman export skip gRPC requests, and a Flow step or AI agent that sends one is told it&#39;s sent from its own tab.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="img/34-grpc-call.png" alt="A unary gRPC call, its methods read by server reflection, with the answer opened" loading="lazy"> A unary call, methods from server reflection</td>
+<td><img src="img/35-grpc-streaming.png" alt="An open bidirectional gRPC stream, with messages each way" loading="lazy"> A bidirectional stream, open (dark theme)</td>
+</tr>
+</tbody></table></div>
 
       </article>
       <nav class="docs-pager" aria-label="Previous and next topic">
