@@ -17,7 +17,7 @@
     xml: 'xml',
     html: 'htmlmixed',
     text: null,
-    graphql: 'javascript',
+    graphql: 'graphql',
     shell: 'shell',
     python: 'python',
     go: 'go',

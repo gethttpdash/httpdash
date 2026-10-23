@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gRPC requests · HttpDash docs</title>
+  <meta name="description" content="Create one with New → gRPC Request, or Add gRPC request on a collection or folder. It's saved like any request (shown as GRPC), so it lives in collections and…">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/grpc-requests.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/grpc-requests.html">
+  <meta property="og:title" content="gRPC requests · HttpDash docs">
+  <meta property="og:description" content="Create one with New → gRPC Request, or Add gRPC request on a collection or folder. It's saved like any request (shown as GRPC), so it lives in collections and…">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links" id="site-menu">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="nav-toggle-open" d="M4 7h16M4 12h16M4 17h16"/><path class="nav-toggle-close" d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-group">More</p>
+          <ul>
+            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
+            <li><a href="grpc-requests.html" data-search="grpc requests " class="current" aria-current="page">gRPC requests</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> More</p>
+      <article class="docs-article">
+        <h1>gRPC requests</h1>
+<p>Create one with <strong>New → gRPC Request</strong>, or <strong>Add gRPC request</strong> on a collection or folder. It&#39;s saved like any request (shown as <strong>GRPC</strong>), so it lives in collections and syncs with your team.</p>
+<ul>
+<li><strong>Address:</strong> <code>host:port</code>, or a URL: <code>grpcs://</code> and <code>https://</code> mean TLS (port 443 by default), <code>grpc://</code> and <code>http://</code> mean plaintext. <strong>Settings → TLS</strong> can turn TLS on or off whatever the address says. <code>{{variables}}</code> work in the address, metadata and message.</li>
+<li><strong>Definitions,</strong> in the <strong>Definition</strong> tab:<ul>
+<li><strong>Server reflection</strong> (the default): HttpDash asks the server for its services and messages (v1, or v1alpha for older servers). Reflected definitions are kept until you press the refresh button next to the method.</li>
+<li><strong>.proto files:</strong> add the files, and the folders their imports are relative to. Google&#39;s well-known types (<code>google/protobuf/*.proto</code>) are built in. The paths are of your computer, so teammates add their own.</li>
+</ul>
+</li>
+<li><strong>Method:</strong> pick it next to the address; streaming methods say which way they stream. An empty message, or one still holding the last method&#39;s example, becomes the new method&#39;s example: every field with its default, nested messages included. <strong>Example</strong> fills it in again.</li>
+<li><strong>Message:</strong> JSON, with field names as in the <code>.proto</code> or in lowerCamelCase. A field the message doesn&#39;t have is an error rather than being dropped. 64-bit numbers are strings, so no digit is lost; enums are names; bytes are base64.</li>
+<li><strong>Metadata:</strong> the <strong>Metadata</strong> tab, plus the auth inherited from the collection or folder (Bearer, Basic, API key…) as <code>authorization</code> metadata. Keys ending in <code>-bin</code> take base64.</li>
+<li><strong>Calls of every kind:</strong><ul>
+<li><strong>Unary</strong> and <strong>server streaming:</strong> <strong>Invoke</strong> sends the message; every answer is listed as it arrives.</li>
+<li><strong>Client</strong> and <strong>bidirectional streaming:</strong> <strong>Start</strong> opens the call. Send messages one at a time with <strong>Send</strong> (Ctrl/Cmd+Enter), then <strong>End stream</strong>.</li>
+<li><strong>Cancel</strong> stops a call at any time.</li>
+</ul>
+</li>
+<li><strong>Log:</strong> the call, response headers, every message sent (↑) and received (↓), and the final status (<code>0 OK</code>, <code>5 NOT_FOUND: …</code>) with its trailers and time. Click a message to see it pretty-printed; a unary answer opens by itself.</li>
+<li><strong>Deadline:</strong> <strong>Settings → Deadline (ms)</strong>, or the request timeout from Settings.</li>
+<li><strong>TLS:</strong> client certificates, trusted CAs (including the ones installed on your computer) and SSL verification from Settings apply as for HTTP.</li>
+</ul>
+<p>Proxies and tunnels don&#39;t apply to gRPC yet. The Runner, Monitors, mock servers and Postman export skip gRPC requests, and a Flow step or AI agent that sends one is told it&#39;s sent from its own tab.</p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="graphql.html"><span>Previous</span>GraphQL</a>
+        <span></span>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="../nav.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

@@ -5,6 +5,17 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **gRPC requests:** **New → gRPC Request**, saved in collections like any request.
+  - **Definitions** from server reflection (v1 and v1alpha) or from `.proto` files with import paths; Google's well-known types are built in.
+  - **Every kind of call:** unary and server streaming with **Invoke**; client and bidirectional streaming stay open to **Send** messages one at a time, then **End stream**.
+  - **Messages** as JSON, with names as in the `.proto` or in lowerCamelCase, an **Example** of every field, and an error for a field the message doesn't have. 64-bit numbers keep every digit.
+  - **Metadata**, with the collection's or folder's auth as `authorization`, `{{variables}}` everywhere, a deadline, and TLS with your client certificates and trusted CAs.
+  - **A log** of the call: response headers, each message sent and received, and the final status with its trailers.
+- **GraphQL that knows the schema:**
+  - **Fetch schema** asks the endpoint by introspection, with the request's auth and login, and keeps it per endpoint.
+  - The query editor then autocompletes, underlines errors and shows types on hover, and the variables editor checks each variable's type.
+  - A query with several operations picks the one to run (`operationName`). **Prettify** formats it, and a **Schema** explorer browses types and fields, with search and click-to-insert.
+- **GraphQL subscriptions:** a `subscription` runs over a WebSocket (`graphql-transport-ws`, or the older `subscriptions-transport-ws`), with results in the Events view until the server completes it or you press **Stop**.
 - **Documentation pages on httpdash.com:** the user guide as one page per topic at `/docs/`, with the topics on the left (grouped, with a filter), the page's sections on the right (highlighting the one being read), previous and next links, and a Topics menu on phones. `npm run docs` builds them from `USERGUIDE.md`.
 - **Flows (request orchestration):** a designer where requests are nodes you drag and connect, with Start, Execute, Condition and End nodes. Execute nodes pass values from their responses to later nodes (`{{login.token}}`), conditions branch on rules, and the End node's result tabs show the parts of responses you pick (`data.items`) as tables. Runs show each node's state live; nodes wait for everything before them, and the branch not taken is skipped. Nodes collapse to their title bar, and the side panel and results can be hidden or resized.
 - **A collection for every discovered service:** Consul, Eureka, Kubernetes and custom JSON sources can build a collection per service from its own OpenAPI document (looked for at `/v3/api-docs`, `/openapi.json` and other common paths, or yours), with requests on the service's variable so load balancing applies. Each sync keeps the collections in step with their documents and keeps your edits; the results table links each service to its collection or says why it has none.
@@ -43,6 +54,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
   - You can drop after the last request in a folder.
 
 ### Fixed
+- The WebSocket message editor was squeezed to one line; it has its full height again.
 - **A synced collection brings its environment:** **Open collection** on a discovery source selects the environment that source syncs into (a toast says so), and the Runner takes it too, when it is opened for that collection or the collection is picked in it. A Runner whose environment was deleted no longer shows "No environment" and fails every request on unresolved variables: it uses the collection's own environment, or the one selected. "No environment" chosen on purpose stays.
 - **Table view for a version's response:** versions keep the first 64 KB of a response, which cut large JSON short and hid the Table view. It now shows the items in the part that was kept, with a note saying so.
 - The "Drop files to import" overlay appeared when moving a request in the sidebar (or a tab) and stayed on screen after the drop. It now shows only for files dragged in from outside, and always closes when a drag ends.

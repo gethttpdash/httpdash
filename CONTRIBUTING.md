@@ -40,7 +40,7 @@ There is no build step: the app is plain JavaScript, and changes show up on the 
 
 Put logic in `src/core/` whenever you can, so it can be tested without Electron and works in the CLI too.
 
-Scripts run inside a QuickJS sandbox. The `pm` API lives in `src/core/sandbox-guest.js`, which runs *inside* the sandbox and can only reach the outside through the host functions in `src/core/sandbox.js`. Keep those host functions small, and have them take and return plain strings and numbers. `src/core/vendor/chai.min.js` is generated: after upgrading chai, run `npm run vendor`.
+Scripts run inside a QuickJS sandbox. The `pm` API lives in `src/core/sandbox-guest.js`, which runs *inside* the sandbox and can only reach the outside through the host functions in `src/core/sandbox.js`. Keep those host functions small, and have them take and return plain strings and numbers. `src/core/vendor/chai.min.js` is generated: after upgrading chai, run `npm run vendor`. So is `src/renderer/vendor/graphql.min.js`, graphql-js and the CodeMirror GraphQL addons for the window, rebuilt by the same command after upgrading `graphql` or `codemirror-graphql`.
 
 ## Making a change
 
@@ -88,6 +88,8 @@ src/core/      request engine (no Electron dependency, unit-tested)
   oauth2.js       OAuth 2.0 authorization URLs (with PKCE), callbacks and token requests
   sse.js          Server-Sent Events parsing
   websocket.js    WebSocket client on the same HTTP stack
+  graphql.js      a GraphQL document's operations, and subscriptions over a WebSocket
+  grpc.js         gRPC: .proto files, server reflection, and calls of every kind (grpc-js)
   sandbox.js      runs scripts in a QuickJS (WebAssembly) sandbox
   sandbox-guest.js  the pm.* script API, running inside the sandbox
   vendor/         minified chai for the sandbox (npm run vendor)

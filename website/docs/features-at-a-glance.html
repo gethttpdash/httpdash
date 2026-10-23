@@ -86,6 +86,11 @@
             <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
             <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
           </ul>
+          <p class="docs-group">More</p>
+          <ul>
+            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
+            <li><a href="grpc-requests.html" data-search="grpc requests ">gRPC requests</a></li>
+          </ul>
           <p class="docs-none" hidden>No topic matches.</p>
         </details>
       </nav>
@@ -99,7 +104,7 @@
 <ul>
 <li>Any HTTP method, URL bar with <code>{{variable}}</code> highlighting, hover tooltips and autocomplete</li>
 <li>Query params table synced with the URL, path variables (<code>/users/:id</code>), headers with bulk edit</li>
-<li>Bodies: raw (JSON / XML / HTML / JavaScript / text, with beautify and JSON linting), <code>form-data</code> with file uploads, <code>x-www-form-urlencoded</code>, binary file, GraphQL (query + variables)</li>
+<li>Bodies: raw (JSON / XML / HTML / JavaScript / text, with beautify and JSON linting), <code>form-data</code> with file uploads, <code>x-www-form-urlencoded</code>, binary file, and GraphQL with schema autocomplete, checks, an explorer, operation picking and subscriptions (<a href="graphql.html">GraphQL</a>)</li>
 <li>Auth: inherit from parent, Basic, Bearer, API key (header or query), Digest, AWS Signature v4, and OAuth 2.0 with every common grant:<ul>
 <li><strong>Authorization Code</strong>, with or without <strong>PKCE</strong>, and <strong>Implicit</strong>: sign in in an HttpDash window, which catches the redirect to any registered callback URL, or in your own browser with a callback on <code>127.0.0.1</code> (RFC 8252)</li>
 <li><strong>Client Credentials</strong> and <strong>Password</strong></li>
@@ -107,6 +112,7 @@
 </ul>
 </li>
 <li>Per-request settings: follow redirects, SSL verification, cookies, timeout</li>
+<li><strong>WebSocket</strong> and <strong>gRPC</strong> requests (unary and every kind of streaming, from <code>.proto</code> files or server reflection) alongside HTTP</li>
 <li>Paste a cURL command into the URL bar to import it</li>
 <li><strong>Tags</strong> on requests, suggested as you type, and <strong>versions</strong>: the last 50 versions you sent by hand are kept with their responses, to switch back to in a click</li>
 <li>Connections are kept open and reused (keep-alive), so repeat requests skip DNS, TCP and TLS</li>

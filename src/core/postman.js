@@ -455,8 +455,8 @@ function exportBody(b) {
   return undefined;
 }
 
-// Postman's collection format has no WebSocket requests, so those are left out of exports.
-const isWebSocketItem = (item) => item.type !== 'folder' && item.request && item.request.protocol === 'websocket';
+// Postman's collection format has no WebSocket or gRPC requests, so those are left out of exports.
+const isWebSocketItem = (item) => item.type !== 'folder' && item.request && ['websocket', 'grpc'].includes(item.request.protocol);
 
 function exportItem(item) {
   if (item.type === 'folder') {

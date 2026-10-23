@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('api', {
   restoreBackup: invoke('backup:restore'),
   saveResponse: invoke('response:save'),
   openFile: invoke('dialog:openFile'),
+  openFolder: invoke('dialog:openFolder'),
 
   readDataFile: invoke('runner:readData'),
   payloadsFromRows: invoke('payloads:fromRows'),
@@ -62,6 +63,15 @@ contextBridge.exposeInMainWorld('api', {
   exportTable: invoke('table:export'),
   savePng: invoke('file:savePng'),
   flattenTable: invoke('table:flatten'),
+  grpc: {
+    describe: invoke('grpc:describe'),
+    start: invoke('grpc:start'),
+    write: invoke('grpc:write'),
+    end: invoke('grpc:end'),
+    cancel: invoke('grpc:cancel'),
+    example: invoke('grpc:example'),
+    onEvent: (fn) => ipcRenderer.on('grpc:event', (_e, evt) => fn(evt)),
+  },
   ws: {
     connect: invoke('ws:connect'),
     send: invoke('ws:send'),

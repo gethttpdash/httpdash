@@ -147,6 +147,7 @@
     edits.delete(tab.id);
     if (S.sending.get(tab.id)) window.api.cancel(tab.id);
     HD.closeWebSocketTab(tab.id);
+    HD.closeGrpcTab(tab.id);
     S.resRenderers.delete(tab.id);
     S.streamViews.delete(tab.id);
     S.responses.delete(tab.id);
@@ -192,7 +193,7 @@
   HD.openNewRequest = (request, name, opts = {}) => {
     const def = HD.newRequestDef({ auth: { type: 'none' }, ...(request || {}) });
     // A URL with a query string fills the Params table, as typing it would.
-    if (def.url && !(def.params && def.params.length) && !HD.isWebSocket(def)) HD.syncParamsFromUrl(def);
+    if (def.url && !(def.params && def.params.length) && !HD.isWebSocket(def) && !HD.isGrpc(def)) HD.syncParamsFromUrl(def);
     // Where it will be saved, suggested: the folder (or collection) of what you were working in.
     const cur = HD.currentTab();
     const at = cur && cur.refId ? HD.find(cur.refId) : null;
@@ -426,6 +427,7 @@
       HD.button('New', (e) => HD.menu(e, [
         { label: 'HTTP Request', hint: 'Ctrl+T', onClick: () => HD.openNewRequest() },
         { label: 'WebSocket Request', onClick: () => HD.openNewWebSocket() },
+        { label: 'gRPC Request', onClick: () => HD.openNewGrpc() },
         { label: 'Collection', onClick: async () => { const n = await HD.prompt('New collection', 'Name', 'New Collection'); if (n) { const c = HD.newCollection(n); S.ws.collections.push(c); HD.save(); S.ws.ui.sidebarTab = 'collections'; HD.renderSidebar(); HD.openContainer(c.id); } } },
         { label: 'Environment', onClick: async () => { const n = await HD.prompt('New environment', 'Name', 'New Environment'); if (n) { const env = HD.newEnvironment(n); S.ws.environments.push(env); HD.save(); HD.renderEnvSelect(); S.ws.ui.sidebarTab = 'environments'; HD.renderSidebar(); HD.openEnvironment(env.id); } } },
       ]), { icon: 'plus', small: true }),

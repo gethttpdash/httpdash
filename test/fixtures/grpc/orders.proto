@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package shop.v1;
+
+import "shop/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Orders, for the gRPC tests: one method of each kind.
+service Orders {
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc ListOrders(ListOrdersRequest) returns (stream Order);
+  rpc AddItems(stream Item) returns (Order);
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message ListOrdersRequest {
+  int32 limit = 1;
+  Status status = 2;
+  int32 delay_ms = 3;
+}
+
+message Order {
+  string order_id = 1;
+  repeated Item items = 2;
+  Status status = 3;
+  int64 total_cents = 4;
+  map<string, string> labels = 5;
+  google.protobuf.Timestamp created_at = 6;
+  oneof payment {
+    string card = 7;
+    string invoice = 8;
+  }
+}
+
+message ChatMessage {
+  string text = 1;
+}

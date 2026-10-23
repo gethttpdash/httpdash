@@ -86,6 +86,11 @@
             <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
             <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
           </ul>
+          <p class="docs-group">More</p>
+          <ul>
+            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
+            <li><a href="grpc-requests.html" data-search="grpc requests ">gRPC requests</a></li>
+          </ul>
           <p class="docs-none" hidden>No topic matches.</p>
         </details>
       </nav>
@@ -101,7 +106,7 @@
 <li><strong>SOCKS5 proxy:</strong> any SOCKS5 server, with an optional user name and password.</li>
 </ul>
 <p>Each tunnel carries the hosts you list, one per line: names with <code>*</code> wildcards (<code>*.mes.corp</code>) or address ranges (<code>10.42.0.0/16</code>). An environment can instead send all its requests through one tunnel (<strong>Tunnel</strong> under its color), or through none. Host names are resolved on the far side, so internal DNS names work.</p>
-<p>Everything goes through the tunnel: Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app&#39;s own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). <strong>Open</strong> / <strong>Check</strong> opens a tunnel and can try a <code>host:port</code> through it.</p>
+<p>Everything goes through the tunnel (except gRPC requests, for now): Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app&#39;s own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). <strong>Open</strong> / <strong>Check</strong> opens a tunnel and can try a <code>host:port</code> through it.</p>
 <p>The CLI uses the tunnels saved in a <code>workspace.json</code> from HttpDash&#39;s data folder (with the environment&#39;s choice; HttpDash backups don&#39;t include tunnels), or <code>--socks5 host:port</code> for every request, for example through an <code>ssh -D</code> started by your CI job. <code>--no-tunnels</code> ignores the saved ones.</p>
 
       </article>

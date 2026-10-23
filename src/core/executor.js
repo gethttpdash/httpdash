@@ -10,6 +10,7 @@ const { resolve, mergeScopes } = require('./variables');
 const { runScript, ScriptSession } = require('./sandbox');
 const certificates = require('./certificates');
 const sse = require('./sse');
+const graphql = require('./graphql');
 const dependency = require('./dependency');
 const balancer = require('./balancer');
 const payloads = require('./payloads');
@@ -316,6 +317,10 @@ async function executeRequest(opts) {
   const chain = opts.chain || [];
   const log = opts.log || (() => {});
   const result = { tests: [], scopes, nextRequest: undefined, visualizer: null };
+  if (request.protocol === 'websocket' || request.protocol === 'grpc') {
+    result.error = `${request.protocol === 'grpc' ? 'gRPC' : 'WebSocket'} requests are sent from their own tab; this sends HTTP requests only`;
+    return result;
+  }
   const pools = opts.scopes.pools || null;
   const picks = new Map(); // the instance each pooled variable went to, for this request
   const info = opts.info || {};
@@ -449,6 +454,20 @@ async function executeRequest(opts) {
       const clientOpts = clientOptions(prepared, settings, jar);
       clientOpts.signal = opts.signal;
       if (opts.connectTo) clientOpts.connectTo = opts.connectTo;
+      const gql = request.body && request.body.mode === 'graphql' ? request.body.graphql || {} : null;
+      if (gql && graphql.isSubscription(gql.query, gql.operationName)) {
+        // A subscription streams its results over a WebSocket. With someone watching (onStream) it
+        // runs until it completes or is stopped; in a run, it ends after its first result.
+        return await graphql.subscribe({
+          ...clientOpts,
+          headers: prepared.headers,
+          payload: JSON.parse(prepared.body.toString('utf8')),
+          timeout: settings.timeout || 30000,
+          maxEvents: opts.onStream ? 0 : 1,
+          maxMs: opts.onStream ? 0 : settings.timeout || 30000,
+          onEvent: (ev) => { streamed.push(ev); if (opts.onStream) opts.onStream(ev); },
+        });
+      }
       const started = Date.now();
       let parser = null;
       const decoder = new TextDecoder();
@@ -490,7 +509,10 @@ async function executeRequest(opts) {
       result.network = await network.trace({ url: response.url || prepared.url, remoteAddress: response.remoteAddress, localAddress: response.localAddress, viaProxy: response.viaProxy, tunnel: response.tunnel }, { bits4: settings.segmentBits4, bits6: settings.segmentBits6 });
     } catch (e) { log('warn', `Could not trace the network path: ${e.message}`); }
   }
-  if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
+  if (raw.subscription) {
+    // The body is the JSON array of every result, so tests can read it with pm.response.json().
+    Object.assign(response, { contentType: 'application/json', bodyText: raw.body.toString('utf8'), bodyBase64: null, events: streamed, subscription: raw.subscription });
+  } else if (sse.isEventStream(response.contentType)) response.events = streamed.length ? streamed : sse.parseEventStream(response.bodyText);
   if (raw.cancelled) response.cancelled = true;
   result.response = response;
   if (picks.size) result.routing = raw.cancelled ? [...picks.values()] : balancer.settle(picks, pools, { response, payload: payloadName });

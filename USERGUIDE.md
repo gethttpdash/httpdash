@@ -22,7 +22,9 @@ How every part of HttpDash works, in detail. For what HttpDash is and a quick st
 - [Health while it runs (profiling)](#health-while-it-runs-profiling)
 - [Where a request went on the network](#where-a-request-went-on-the-network)
 - [Streaming responses (Server-Sent Events)](#streaming-responses-server-sent-events)
+- [GraphQL](#graphql)
 - [WebSocket requests](#websocket-requests)
+- [gRPC requests](#grpc-requests)
 - [Tunnels into internal networks](#tunnels-into-internal-networks)
 - [Client certificates and custom CAs](#client-certificates-and-custom-cas)
 - [Spoofing Referer, Origin, User-Agent and other headers](#spoofing-referer-origin-user-agent-and-other-headers)
@@ -447,6 +449,27 @@ When a response is `text/event-stream`, as with AI APIs that stream their answer
 - Afterwards, the **Events** view lists every event (name, data, id); click one to see its data pretty-printed and copy it. The raw stream is still in **Raw**, and test scripts run as usual when the stream ends.
 - Events are parsed exactly as browsers do: multi-line `data`, `event`, `id`, `retry` and comments, with any line endings.
 
+## GraphQL
+
+Pick **GraphQL** as a request's body type, then write the query and its variables (JSON). It's sent as a `POST` with `query`, `variables` and, when there's a choice, `operationName`.
+
+- **Schema:** **Fetch schema** asks the endpoint for its schema (introspection), sent like the request itself: its auth, automatic login, pre-request scripts and certificates apply. The schema is kept per URL and environment, also after a restart; the refresh button asks again.
+- **With a schema:**
+  - The query editor suggests fields, arguments, types and directives as you type (Ctrl+Space to ask), underlines what the schema doesn't have, and shows a field's type and description when you hover it.
+  - The variables editor suggests and checks each variable by its declared type.
+- **Operations:** when the query holds several, pick the one to run; it's sent as `operationName`.
+- **Prettify** formats the query. Comments aren't kept, and a `{{variable}}` outside a string can't be formatted.
+- **Schema explorer:** **Schema** opens a pane with the root types. Follow a field's type to its fields, search every type and field by name, and click a field to insert it into the query.
+- `{{variables}}` work in the query and the variables. Outside a string they aren't GraphQL, so the checks leave them alone.
+
+### Subscriptions
+
+A `subscription` runs over a WebSocket at the same URL (`http` becomes `ws`, `https` becomes `wss`), with the request's headers and auth in the handshake. Both the `graphql-transport-ws` protocol (the graphql-ws library) and the older `subscriptions-transport-ws` one are spoken; the server picks.
+
+- Results appear in the response's **Events** view as they arrive, and **Send** becomes **Stop**.
+- It ends when the server completes it, an error arrives, or you press **Stop**. The response body is the JSON array of every result, so a test can read it with `pm.response.json()`.
+- In the Runner, Monitors and the CLI, a subscription ends after its first result, or at the request timeout.
+
 ## WebSocket requests
 
 Create one with **New → WebSocket Request**, or **Add WebSocket request** on a collection or folder. It's saved like any request (shown as **WS**), so it lives in collections and syncs with your team.
@@ -459,6 +482,27 @@ Create one with **New → WebSocket Request**, or **Add WebSocket request** on a
 
 The collection runner, mock servers and Postman export skip WebSocket requests.
 
+## gRPC requests
+
+Create one with **New → gRPC Request**, or **Add gRPC request** on a collection or folder. It's saved like any request (shown as **GRPC**), so it lives in collections and syncs with your team.
+
+- **Address:** `host:port`, or a URL: `grpcs://` and `https://` mean TLS (port 443 by default), `grpc://` and `http://` mean plaintext. **Settings → TLS** can turn TLS on or off whatever the address says. `{{variables}}` work in the address, metadata and message.
+- **Definitions,** in the **Definition** tab:
+  - **Server reflection** (the default): HttpDash asks the server for its services and messages (v1, or v1alpha for older servers). Reflected definitions are kept until you press the refresh button next to the method.
+  - **.proto files:** add the files, and the folders their imports are relative to. Google's well-known types (`google/protobuf/*.proto`) are built in. The paths are of your computer, so teammates add their own.
+- **Method:** pick it next to the address; streaming methods say which way they stream. An empty message, or one still holding the last method's example, becomes the new method's example: every field with its default, nested messages included. **Example** fills it in again.
+- **Message:** JSON, with field names as in the `.proto` or in lowerCamelCase. A field the message doesn't have is an error rather than being dropped. 64-bit numbers are strings, so no digit is lost; enums are names; bytes are base64.
+- **Metadata:** the **Metadata** tab, plus the auth inherited from the collection or folder (Bearer, Basic, API key…) as `authorization` metadata. Keys ending in `-bin` take base64.
+- **Calls of every kind:**
+  - **Unary** and **server streaming:** **Invoke** sends the message; every answer is listed as it arrives.
+  - **Client** and **bidirectional streaming:** **Start** opens the call. Send messages one at a time with **Send** (Ctrl/Cmd+Enter), then **End stream**.
+  - **Cancel** stops a call at any time.
+- **Log:** the call, response headers, every message sent (↑) and received (↓), and the final status (`0 OK`, `5 NOT_FOUND: …`) with its trailers and time. Click a message to see it pretty-printed; a unary answer opens by itself.
+- **Deadline:** **Settings → Deadline (ms)**, or the request timeout from Settings.
+- **TLS:** client certificates, trusted CAs (including the ones installed on your computer) and SSL verification from Settings apply as for HTTP.
+
+Proxies and tunnels don't apply to gRPC yet. The Runner, Monitors, mock servers and Postman export skip gRPC requests, and a Flow step or AI agent that sends one is told it's sent from its own tab.
+
 ## Tunnels into internal networks
 
 Reach services on a private network (a plant, a data center, a Kubernetes cluster) without a VPN. Add tunnels in **Settings → Tunnels**:
@@ -468,7 +512,7 @@ Reach services on a private network (a plant, a data center, a Kubernetes cluste
 
 Each tunnel carries the hosts you list, one per line: names with `*` wildcards (`*.mes.corp`) or address ranges (`10.42.0.0/16`). An environment can instead send all its requests through one tunnel (**Tunnel** under its color), or through none. Host names are resolved on the far side, so internal DNS names work.
 
-Everything goes through the tunnel: Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app's own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). **Open** / **Check** opens a tunnel and can try a `host:port` through it.
+Everything goes through the tunnel (except gRPC requests, for now): Send, the Runner, Monitors, Compare, health reads, WebSockets, and the app's own calls such as service discovery syncs, OAuth sign-ins and imports from a URL. A Consul server inside a plant is reached the same way as its services. The Timeline shows the time the tunnel took and notes that the address and route are on the far side, and the status bar shows while a tunnel is open (red if it failed). **Open** / **Check** opens a tunnel and can try a `host:port` through it.
 
 The CLI uses the tunnels saved in a `workspace.json` from HttpDash's data folder (with the environment's choice; HttpDash backups don't include tunnels), or `--socks5 host:port` for every request, for example through an `ssh -D` started by your CI job. `--no-tunnels` ignores the saved ones.
 
@@ -507,7 +551,7 @@ Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.
 
 | Shortcut | What it does |
 | --- | --- |
-| Ctrl/Cmd+Enter | Send the request. On a WebSocket tab: connect, and once connected, send the message |
+| Ctrl/Cmd+Enter | Send the request. On a WebSocket tab: connect, and once connected, send the message. On a gRPC tab: invoke, and in an open streaming call, send the message |
 | Ctrl/Cmd+Z | Undo the last change to the request |
 | Ctrl/Cmd+Shift+Z, Ctrl/Cmd+Y | Redo |
 | Ctrl/Cmd+F | Find: in the editor you're typing in, otherwise in the response (or its table or message filter) |
@@ -532,12 +576,13 @@ Ctrl on Windows and Linux, Cmd on macOS. They also appear in the menus.
 **Requests**
 - Any HTTP method, URL bar with `{{variable}}` highlighting, hover tooltips and autocomplete
 - Query params table synced with the URL, path variables (`/users/:id`), headers with bulk edit
-- Bodies: raw (JSON / XML / HTML / JavaScript / text, with beautify and JSON linting), `form-data` with file uploads, `x-www-form-urlencoded`, binary file, GraphQL (query + variables)
+- Bodies: raw (JSON / XML / HTML / JavaScript / text, with beautify and JSON linting), `form-data` with file uploads, `x-www-form-urlencoded`, binary file, and GraphQL with schema autocomplete, checks, an explorer, operation picking and subscriptions ([GraphQL](#graphql))
 - Auth: inherit from parent, Basic, Bearer, API key (header or query), Digest, AWS Signature v4, and OAuth 2.0 with every common grant:
   - **Authorization Code**, with or without **PKCE**, and **Implicit**: sign in in an HttpDash window, which catches the redirect to any registered callback URL, or in your own browser with a callback on `127.0.0.1` (RFC 8252)
   - **Client Credentials** and **Password**
   - Refresh tokens, expiry display and "Sign Out of Providers". Tokens you get by signing in are never shared through team sync; each person keeps their own.
 - Per-request settings: follow redirects, SSL verification, cookies, timeout
+- **WebSocket** and **gRPC** requests (unary and every kind of streaming, from `.proto` files or server reflection) alongside HTTP
 - Paste a cURL command into the URL bar to import it
 - **Tags** on requests, suggested as you type, and **versions**: the last 50 versions you sent by hand are kept with their responses, to switch back to in a click
 - Connections are kept open and reused (keep-alive), so repeat requests skip DNS, TCP and TLS

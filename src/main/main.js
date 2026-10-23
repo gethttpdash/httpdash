@@ -255,7 +255,7 @@ handle('lock:test', async ({ username, password }) => {
 });
 handle('lock:enable', (opts) => audited('lock.enable', { allowedUsers: opts && opts.allowedUsers }, () => appLock.enable(opts)));
 handle('lock:update', (opts) => audited('lock.update', opts || {}, () => appLock.updateLock(opts)));
-handle('lock:lock', () => audited('lock.lock', {}, async () => { await stopAllMocks(); closeAllWebSockets('HttpDash was locked'); return appLock.lock(); }));
+handle('lock:lock', () => audited('lock.lock', {}, async () => { await stopAllMocks(); closeAllWebSockets('HttpDash was locked'); cancelAllGrpc(); return appLock.lock(); }));
 handle('lock:unlock', ({ username, password }) => audited('lock.unlock', { username }, () => appLock.unlock(username, password)));
 handle('lock:recover', (code) => audited('lock.recover', {}, () => appLock.recover(code)));
 handle('lock:disable', ({ username, password }) => audited('lock.disable', { username }, () => appLock.disable(username, password)));
@@ -478,6 +478,91 @@ handle('ws:send', ({ id, text, scopes }) => {
 });
 handle('ws:close', ({ id, code, reason }) => { const conn = wsConnections.get(id); if (conn) conn.close(code || 1000, reason || ''); return !!conn; });
 
+// ---- gRPC ---------------------------------------------------------------------------------------
+// One call per tab. The target, metadata and message take {{variables}}, and the collection's or
+// folder's auth becomes metadata (authorization: Bearer …), as it would for an HTTP request.
+// Events stream to the window as 'grpc:event'.
+const grpcCore = require('../core/grpc');
+const grpcCalls = new Map(); // tab id -> call
+const grpcReflected = new Map(); // target -> definitions read by reflection, until Refresh
+const grpcEmit = (id, evt) => { if (win && !win.isDestroyed()) win.webContents.send('grpc:event', { id, time: Date.now(), ...evt }); };
+const cancelAllGrpc = () => { for (const c of grpcCalls.values()) c.cancel(); };
+
+function grpcPrepare({ request, chain, scopes, settings }) {
+  const s = settings || {};
+  const g = request.grpc || {};
+  const vars = mergeScopes(scopes || {});
+  const target = resolveVars(String(request.url || ''), vars).trim();
+  const t = grpcCore.parseTarget(target, g.tls || 'auto');
+  const prepared = prepare({ ...request, method: 'POST', body: { mode: 'none' }, url: `${t.secure ? 'https' : 'http'}://${t.address}/` }, { chain, vars, settings: s, jar: [], defaultHeaders: false });
+  const metadata = prepared.headers.filter(([k]) => !/^(host|cookie|content-length|content-type|accept|accept-encoding|connection|user-agent)$/i.test(k));
+  return {
+    target, tls: g.tls || 'auto', vars, metadata,
+    deadlineMs: Number(g.deadlineMs) || s.timeout || 0,
+    verifySSL: s.verifySSL !== false,
+    tlsFor: (u) => certificates.tlsFor(u, s),
+    userAgent: s.userAgent || `HttpDash/${app.getVersion()}`,
+  };
+}
+
+async function grpcDefinitions(request, p, refresh) {
+  const g = request.grpc || {};
+  if (g.source === 'proto') return grpcCore.loadProtoFiles(g.protoFiles || [], g.importPaths || []);
+  const key = `${p.tls} ${p.target}`;
+  if (!refresh && grpcReflected.has(key)) return grpcReflected.get(key);
+  const root = await grpcCore.reflect({ ...p, deadlineMs: p.deadlineMs || 15000 });
+  grpcReflected.set(key, root);
+  return root;
+}
+
+const parseMessage = (text, vars) => {
+  const raw = resolveVars(String(text || ''), vars).trim();
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (e) { throw new Error(`The message is not valid JSON: ${e.message}`); }
+};
+
+handle('grpc:describe', async ({ request, chain, scopes, settings, refresh }) => {
+  const p = grpcPrepare({ request, chain, scopes, settings });
+  return { services: grpcCore.describe(await grpcDefinitions(request, p, refresh)) };
+});
+handle('grpc:start', async ({ id, request, chain, scopes, settings }) => {
+  const old = grpcCalls.get(id);
+  if (old) old.cancel();
+  const g = request.grpc || {};
+  const p = grpcPrepare({ request, chain, scopes, settings });
+  const root = await grpcDefinitions(request, p, false);
+  const streamingIn = (() => { try { const m = root.lookupService(g.service).methods[g.method]; return !!(m && m.requestStream); } catch { return false; } })();
+  const call = grpcCore.start({ ...p, root, service: g.service, method: g.method, message: streamingIn ? undefined : parseMessage(g.message, p.vars) });
+  grpcCalls.set(id, call);
+  const path = `/${g.service}/${g.method}`;
+  call.on('headers', (headers) => grpcEmit(id, { type: 'headers', headers }));
+  call.on('message', (message) => grpcEmit(id, { type: 'message', dir: 'in', message }));
+  call.on('sent', (message) => grpcEmit(id, { type: 'message', dir: 'out', message }));
+  call.on('status', (status) => {
+    if (grpcCalls.get(id) === call) grpcCalls.delete(id);
+    audit.append('grpc.call', { target: p.target, method: path, status: status.name });
+    grpcEmit(id, { type: 'status', ...status });
+  });
+  return { kind: call.kind, path, target: p.target, metadata: p.metadata };
+});
+handle('grpc:write', ({ id, text, scopes }) => {
+  const call = grpcCalls.get(id);
+  if (!call) throw new Error('The call has ended');
+  call.write(parseMessage(text, mergeScopes(scopes || {})));
+  return true;
+});
+handle('grpc:end', ({ id }) => { const call = grpcCalls.get(id); if (call) call.end(); return !!call; });
+handle('grpc:cancel', ({ id }) => { const call = grpcCalls.get(id); if (call) call.cancel(); return !!call; });
+handle('grpc:example', async ({ request, chain, scopes, settings }) => {
+  const g = request.grpc || {};
+  const p = grpcPrepare({ request, chain, scopes, settings });
+  const root = await grpcDefinitions(request, p, false);
+  const m = root.lookupService(g.service).methods[g.method];
+  if (!m) throw new Error(`The service ${g.service} has no method "${g.method}"`);
+  m.resolve();
+  return grpcCore.example(m.resolvedRequestType);
+});
+
 handle('codegen:targets', () => codegen.targets());
 handle('codegen:generate', ({ target, request, chain, scopes }) => {
   const p = prepare(request, { chain, vars: mergeScopes(scopes), defaultHeaders: false });
@@ -647,6 +732,10 @@ handle('response:save', async ({ name, bodyText, bodyBase64 }) => {
   return r.filePath;
 });
 
+handle('dialog:openFolder', async ({ title } = {}) => {
+  const r = await dialog.showOpenDialog(win, { title: title || 'Choose a folder', properties: ['openDirectory'] });
+  return r.canceled ? null : r.filePaths[0];
+});
 handle('dialog:openFile', async ({ multi, filters } = {}) => {
   const r = await dialog.showOpenDialog(win, { properties: multi ? ['openFile', 'multiSelections'] : ['openFile'], filters });
   return r.canceled ? [] : r.filePaths;

@@ -288,6 +288,7 @@
     return [
       { label: 'Add request', onClick: () => addRequest(node) },
       { label: 'Add WebSocket request', onClick: () => addRequest(node, HD.newWebSocketDef()) },
+      { label: 'Add gRPC request', onClick: () => addRequest(node, HD.newGrpcDef()) },
       { label: 'Add folder', onClick: async () => {
         const name = await HD.prompt('New folder', 'Name', 'New Folder');
         if (!name) return;

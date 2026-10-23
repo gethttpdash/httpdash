@@ -37,24 +37,29 @@
     "dist:win": "electron-builder --win --publish never",
     "cli": "node bin/httpdash.js",
     "dist:linux": "electron-builder --linux --publish never",
-    "vendor": "node scripts/vendor-chai.js",
+    "vendor": "node scripts/vendor-chai.js && node scripts/vendor-graphql.js",
     "docs": "node scripts/build-docs.js",
     "bench": "node bench/run.js",
     "audit:contrast": "electron scripts/contrast/main.js",
     "icon:win": "electron scripts/icon/main.js"
   },
   "dependencies": {
+    "@grpc/grpc-js": "1.14.6",
     "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "codemirror": "5.65.21",
     "ldapts": "^9.2.0",
+    "protobufjs": "7.6.6",
     "quickjs-emscripten-core": "0.32.0",
     "yaml": "2.9.1"
   },
   "devDependencies": {
+    "@grpc/reflection": "1.0.4",
     "chai": "4.5.0",
+    "codemirror-graphql": "2.2.9",
     "electron": "43.7.8",
     "electron-builder": "26.15.3",
     "esbuild": "0.25.10",
+    "graphql": "16.14.2",
     "ldapjs": "^3.0.7",
     "marked": "18.1.1",
     "ws": "8.22.0"

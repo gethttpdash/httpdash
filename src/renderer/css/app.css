@@ -40,6 +40,7 @@
   --m-options: #be185d;
   --m-other: #57606a;
   --m-ws: #0e716a;
+  --m-grpc: #9a3412;
   --shadow: 0 8px 28px rgba(0, 0, 0, .14);
   --radius: 6px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -88,6 +89,7 @@
   --m-options: #f57ebc;
   --m-other: #a9adb5;
   --m-ws: #2dd4bf;
+  --m-grpc: #fdba74;
   --shadow: 0 8px 28px rgba(0, 0, 0, .5);
   color-scheme: dark;
 }
@@ -928,7 +930,7 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .ws-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .ws-top { flex: none; display: flex; flex-direction: column; }
 .ws-tag { display: inline-flex; align-items: center; padding: 0 12px; font: 700 12px var(--mono); color: var(--m-ws); border-right: 1px solid var(--border); }
-.ws-panel { height: 210px; display: flex; flex-direction: column; }
+.ws-panel { flex: none; height: 210px; display: flex; flex-direction: column; } /* .req-panel's flex: 1 would shrink it to its content */
 .ws-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
 .ws-editor > .CodeMirror { flex: 1; height: auto; }
 .ws-msg-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; flex: none; flex-wrap: wrap; }
@@ -1275,3 +1277,37 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .flow-node-result { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 2px 0 8px; font-size: 12px; }
 .flow-raw { font: 12px var(--mono); white-space: pre-wrap; margin: 0; }
 .flow-missing { padding: 12px 0; }
+
+/* gRPC requests (grpc.js); the call log uses the WebSocket styles */
+.method-grpc { --m: var(--m-grpc); color: var(--m); }
+.grpc-tag { color: var(--m-grpc); }
+.grpc-method { display: flex; align-items: center; gap: 2px; padding: 0 4px; border-left: 1px solid var(--border); flex: none; max-width: 42%; }
+.grpc-method-select { height: 28px; max-width: 100%; min-width: 160px; font: 12px var(--mono); border: 0; background: transparent; }
+.grpc-def { display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.grpc-def-source { display: flex; }
+.grpc-def-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grpc-def-label { width: 92px; flex: none; font-size: 12px; color: var(--text-2); }
+.grpc-chip-name { padding: 2px 4px 2px 8px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* GraphQL bodies (graphql.js) */
+.gql-op, .gql-schema { display: inline-flex; align-items: center; gap: 6px; }
+.gql-op-select { max-width: 220px; }
+.gql-schema-state { font-size: 12px; }
+.gql-sub { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--bg-3); color: var(--m-ws); }
+.gql-docs { flex: 0 0 300px; min-width: 220px; overflow: hidden; }
+.gql-docs-top { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.gql-docs-search { width: 100%; height: 26px; font-size: 12px; }
+.gql-docs-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; font-size: 12px; }
+.gql-crumbs { color: var(--text-3); margin-bottom: 8px; }
+.gql-type-head { margin-bottom: 4px; font-size: 13px; }
+.gql-field { padding: 3px 0; font-family: var(--mono); line-height: 1.5; word-break: break-word; }
+.gql-field a, .gql-crumbs a, .gql-type a { color: var(--accent-text); text-decoration: none; }
+.gql-field a:hover, .gql-crumbs a:hover, .gql-type a:hover { text-decoration: underline; }
+.gql-field-name { font-weight: 600; }
+.gql-arg { color: var(--text-2); }
+.gql-desc { font-family: var(--font); color: var(--text-2); margin: 2px 0 4px; white-space: pre-wrap; }
+.gql-deprecated { margin-left: 6px; }
+.CodeMirror-hint-information { padding: 6px 8px; border-top: 1px solid var(--border); font-family: var(--font); white-space: normal; color: var(--text-2); max-width: 420px; }
+.CodeMirror-info, .CodeMirror-lint-tooltip { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); font: 12px var(--font); padding: 6px 10px; max-width: 420px; z-index: 2100; }
+.CodeMirror-info .type-name, .CodeMirror-info .field-name { color: var(--accent-text); }
+.CodeMirror-info .info-description { color: var(--text-2); margin-top: 4px; }

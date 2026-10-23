@@ -103,6 +103,7 @@
 
   HD.views.request = (tab, root) => {
     if (HD.isWebSocket(tab.draft.request)) return HD.views.websocket(tab, root);
+    if (HD.isGrpc(tab.draft.request)) return HD.views.grpc(tab, root);
     const draft = tab.draft;
     const req = draft.request;
     req.settings = req.settings || {};
@@ -413,13 +414,18 @@
           if (f) { b.binary = f; panelChanged(); renderReqPanel(); }
         }, { icon: 'file' }), b.binary ? h('div.muted.mono', b.binary) : null));
       } else if (b.mode === 'graphql') {
-        const split = h('div.graphql-split');
-        const q = h('div.graphql-pane', h('div.pane-label', 'Query'));
-        const v = h('div.graphql-pane', h('div.pane-label', 'GraphQL Variables (JSON)'));
-        split.append(q, v);
-        area.appendChild(split);
-        HD.editor(q, { value: b.graphql.query, mode: 'graphql', variables: true, onChange: (x) => { b.graphql.query = x; markDirty(); } });
-        HD.editor(v, { value: b.graphql.variables, mode: 'json', variables: true, onChange: (x) => { b.graphql.variables = x; markDirty(); } });
+        // The schema is asked for like the request is sent: its auth, login and pre-request
+        // scripts apply; test scripts don't run on it.
+        const introspect = (query) => {
+          const { collection, chain } = context();
+          const probe = { ...HD.clone(req), method: 'POST', testScript: '', payloads: undefined, body: { mode: 'graphql', graphql: { query, variables: '' } } };
+          return window.api.send({
+            id: `${tab.id}:schema`, request: probe, chain: chainFor(chain).map((n) => ({ ...n, testScript: '' })),
+            collection: collection ? HD.clone(collection) : null, scopes: HD.scopesFor(collection), settings: requestSettings(),
+            info: { requestName: `${draft.name} (schema)`, requestId: `${tab.refId || tab.id}:schema` },
+          });
+        };
+        HD.graphqlBody({ area, bar, tab, req, markDirty, introspect });
       }
     };
 

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package shop.v1;
+
+message Item {
+  string sku = 1;
+  int32 qty = 2;
+}
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  OPEN = 1;
+  SHIPPED = 2;
+}

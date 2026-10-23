@@ -24,6 +24,7 @@
 - **AI agents alongside you:** Claude and other agents read, send, run and edit through OpenAPI or MCP, with permissions you choose. [AI agents](USERGUIDE.md#ai-agents-openapi-and-mcp)
 - **In CI and the terminal:** a Newman-style runner with JUnit reports, and `httpdash send`, which works like curl through the app. [Command line](USERGUIDE.md#command-line-runner-ci-and-schedulers)
 - **For teams:** sharing through any git repository, with secrets kept local. [Team sharing](USERGUIDE.md#team-sharing-through-git)
+- **gRPC and GraphQL:** gRPC calls of every kind from `.proto` files or server reflection, and GraphQL with schema autocomplete, an explorer and subscriptions. [gRPC](USERGUIDE.md#grpc-requests) · [GraphQL](USERGUIDE.md#graphql)
 - **And more:** request versions and spec warnings, tags and search, monitors, mock servers, WebSocket and Server-Sent Events, client certificates, a secret scan, an audit log, and an app lock with LDAP sign-in. [Everything](USERGUIDE.md#features-at-a-glance)
 
 Built with Electron and plain JavaScript. Your data stays on your computer as JSON files.
@@ -40,8 +41,8 @@ Built with Electron and plain JavaScript. Your data stays on your computer as JS
 | Agents see and use the app's screen | ✅ | — | — | — | — | — |
 | Agents can reach local and private-network APIs | ✅ | — | — | — | Off by default⁴ | ✅ |
 | Secret values hidden from agents unless you allow them | ✅ | — | — | — | No⁴ | — |
-| gRPC | ❌ | ✅ | ✅ | ✅ | Not confirmed | ✅ |
-| GraphQL | Body mode only | ✅ | ✅ | ✅ | ✅ | ✅ |
+| gRPC | ✅ | ✅ | ✅ | ✅ | Not confirmed | ✅ |
+| GraphQL | ✅ with subscriptions | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 A dash means we found no such feature in their documentation, as of October 2026. Tools change quickly; if a row is out of date, please [open an issue](https://github.com/gethttpdash/httpdash/issues/new/choose) and we'll fix it.
 
@@ -93,7 +94,7 @@ Everything else, from service discovery to tunnels, is in the [user guide](USERG
 
 ## Not included
 
-Compared with Postman, these are not implemented: gRPC, Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead).
+Compared with Postman, these are not implemented: Socket.IO and MQTT requests; NTLM, Hawk and Akamai auth; API documentation publishing and hosted cloud sync (team sharing works through git instead).
 
 ## Sponsors
 
