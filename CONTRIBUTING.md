@@ -69,6 +69,8 @@ Without certificates, the Mac build is ad-hoc signed and the Windows build is un
 
 The site for httpdash.com lives in `website/`: plain HTML, CSS and a little JavaScript, with no build step. The documentation pages in `website/docs/` are the exception: `npm run docs` (`scripts/build-docs.js`) builds them from `USERGUIDE.md`, one page per topic with the topics on the left and the page's sections on the right, and they are committed like the rest. The download buttons link to the latest GitHub release.
 
+The host lets browsers keep stylesheets for a week, so every page links its stylesheets and scripts with a hash of their content (`styles.css?v=1a2b3c4d5e`). `npm run docs` writes these links, in the docs pages and in `index.html` and `sponsors.html`: run it after changing any of the site's CSS or JavaScript, or browsers that visited before keep the old file. A test fails when a link is out of date.
+
 `.github/workflows/website.yml` uploads it to the web host over SSH whenever `website/` changes on `main`. It needs the `DEPLOY_*` repository secrets listed at the top of that file; until they are set, the job is skipped. To publish by hand instead:
 
 ```bash

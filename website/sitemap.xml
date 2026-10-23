@@ -58,6 +58,16 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://httpdash.com/docs/graphql.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://httpdash.com/docs/grpc-requests.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://httpdash.com/docs/streaming-responses-server-sent-events.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -108,6 +118,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://httpdash.com/docs/environment-diagrams.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://httpdash.com/docs/health-while-it-runs-profiling.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -139,21 +154,6 @@
   </url>
   <url>
     <loc>https://httpdash.com/docs/secret-scan-and-audit-log.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://httpdash.com/docs/environment-diagrams.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://httpdash.com/docs/graphql.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://httpdash.com/docs/grpc-requests.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

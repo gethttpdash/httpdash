@@ -17,8 +17,8 @@
   <meta property="og:title" content="Documentation · HttpDash">
   <meta property="og:description" content="How every part of HttpDash works: sending and testing requests, flows, the command-line runner, service discovery, AI agents, team sharing and security.">
   <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
-  <link rel="stylesheet" href="../styles.css">
-  <link rel="stylesheet" href="docs.css">
+  <link rel="stylesheet" href="../styles.css?v=46c49ca03c">
+  <link rel="stylesheet" href="docs.css?v=684007b149">
 </head>
 <body class="docs">
   <a class="skip" href="#main">Skip to content</a>
@@ -59,6 +59,8 @@
             <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
             <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
             <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
+            <li><a href="grpc-requests.html" data-search="grpc requests ">gRPC requests</a></li>
             <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
             <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
             <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
@@ -75,6 +77,7 @@
           <p class="docs-group">Services and networks</p>
           <ul>
             <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="environment-diagrams.html" data-search="environment diagrams ">Environment diagrams</a></li>
             <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
             <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
             <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
@@ -85,12 +88,6 @@
             <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
             <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
             <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
-          </ul>
-          <p class="docs-group">More</p>
-          <ul>
-            <li><a href="environment-diagrams.html" data-search="environment diagrams ">Environment diagrams</a></li>
-            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
-            <li><a href="grpc-requests.html" data-search="grpc requests ">gRPC requests</a></li>
           </ul>
           <p class="docs-none" hidden>No topic matches.</p>
         </details>
@@ -118,6 +115,8 @@
             <li><a href="data-files-data-driven-runs.html"><strong>Data files (data-driven runs)</strong><span>A data file runs the same requests once per row: one row per iteration, in the Collection Runner, the command line (-d) and for AI agents…</span></a></li>
             <li><a href="request-versions-and-spec-warnings.html"><strong>Request versions and spec warnings</strong><span>Every distinct version of a request you send by hand (method, URL, params, headers, body, auth) is kept with the response it got. Open…</span></a></li>
             <li><a href="tags-and-search.html"><strong>Tags and search</strong><span>Tag requests (smoke, orders, admin, up to 20 of 40 characters each) in the field under the request's name, which suggests the tags already…</span></a></li>
+            <li><a href="graphql.html"><strong>GraphQL</strong><span>Pick GraphQL as a request's body type, then write the query and its variables (JSON). It's sent as a POST with query, variables and, when…</span></a></li>
+            <li><a href="grpc-requests.html"><strong>gRPC requests</strong><span>Create one with New → gRPC Request, or Add gRPC request on a collection or folder. It's saved like any request (shown as GRPC), so it lives…</span></a></li>
             <li><a href="streaming-responses-server-sent-events.html"><strong>Streaming responses (Server-Sent Events)</strong><span>When a response is text/event-stream, as with AI APIs that stream their answers, HttpDash shows each event the moment it arrives instead of…</span></a></li>
             <li><a href="websocket-requests.html"><strong>WebSocket requests</strong><span>Create one with New → WebSocket Request, or Add WebSocket request on a collection or folder. It's saved like any request (shown as WS), so…</span></a></li>
             <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html"><strong>Spoofing Referer, Origin, User-Agent and other headers</strong><span>Requests are sent from Node's HTTP stack, not a browser, so none of the browser's &quot;forbidden header&quot; rules apply. Whatever you put in the…</span></a></li>
@@ -138,6 +137,7 @@
           <h2 id="services-and-networks">Services and networks</h2>
           <ul class="docs-cards">
             <li><a href="service-discovery-auto-create-environments.html"><strong>Service discovery (auto-create environments)</strong><span>Point HttpDash at a service registry and it builds an environment with one variable per service. For example, {{orders_url}} =…</span></a></li>
+            <li><a href="environment-diagrams.html"><strong>Environment diagrams</strong><span>An environment's Diagram page (next to Variables) draws where its requests go, from what HttpDash already knows. No agent runs in your…</span></a></li>
             <li><a href="health-while-it-runs-profiling.html"><strong>Health while it runs (profiling)</strong><span>Give a request, a folder or a collection a health URL, and HttpDash reads it before the request is sent, while it is in flight, and after…</span></a></li>
             <li><a href="where-a-request-went-on-the-network.html"><strong>Where a request went on the network</strong><span>The Timeline tab has a Network section for every request.</span></a></li>
             <li><a href="tunnels-into-internal-networks.html"><strong>Tunnels into internal networks</strong><span>Reach services on a private network (a plant, a data center, a Kubernetes cluster) without a VPN. Add tunnels in Settings → Tunnels.</span></a></li>
@@ -152,14 +152,6 @@
             <li><a href="secret-scan-and-audit-log.html"><strong>Secret scan and audit log</strong><span>Tools → Scan for Secrets (also in Settings → Security and the Export dialog) looks for credentials typed directly into requests.</span></a></li>
           </ul>
         </section>
-        <section class="docs-overview-group">
-          <h2 id="more">More</h2>
-          <ul class="docs-cards">
-            <li><a href="environment-diagrams.html"><strong>Environment diagrams</strong><span>An environment's Diagram page (next to Variables) draws where its requests go, from what HttpDash already knows. No agent runs in your…</span></a></li>
-            <li><a href="graphql.html"><strong>GraphQL</strong><span>Pick GraphQL as a request's body type, then write the query and its variables (JSON). It's sent as a POST with query, variables and, when…</span></a></li>
-            <li><a href="grpc-requests.html"><strong>gRPC requests</strong><span>Create one with New → gRPC Request, or Add gRPC request on a collection or folder. It's saved like any request (shown as GRPC), so it lives…</span></a></li>
-          </ul>
-        </section>
       </article>
     </main>
 
@@ -172,7 +164,6 @@
           <li><a href="#automation">Automation</a></li>
           <li><a href="#services-and-networks">Services and networks</a></li>
           <li><a href="#teams-and-security">Teams and security</a></li>
-          <li><a href="#more">More</a></li>
         </ul>
       </nav>
     </aside>
@@ -190,7 +181,7 @@
       <p class="footer-copy">© HttpDash</p>
     </div>
   </footer>
-  <script src="../nav.js"></script>
-  <script src="docs.js"></script>
+  <script src="../nav.js?v=78d06bd9ed"></script>
+  <script src="docs.js?v=99dfe60dc1"></script>
 </body>
 </html>

@@ -12,21 +12,34 @@
  * test/docs.test.js fails when they are out of date with USERGUIDE.md.
  *
  * `node scripts/build-docs.js --out <dir>` writes somewhere else (the test uses it).
+ *
+ * Stylesheets and scripts are linked with a hash of their content (styles.css?v=1a2b3c4d5e), in
+ * these pages and in the site's own (index.html, sponsors.html), because the host lets browsers
+ * keep them for a week: without it, a changed page could arrive with last week's stylesheet.
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { Marked } = require('marked');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'https://github.com/gethttpdash/httpdash';
 const SITE = 'https://httpdash.com';
+const WEBSITE = path.join(ROOT, 'website');
+const versionOf = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
+const V = {
+  styles: versionOf(path.join(WEBSITE, 'styles.css')),
+  nav: versionOf(path.join(WEBSITE, 'nav.js')),
+  docsCss: versionOf(path.join(__dirname, 'docs', 'docs.css')),
+  docsJs: versionOf(path.join(__dirname, 'docs', 'docs.js')),
+};
 
 // Topics in the left-hand navigation, by group (by slug); a topic not listed goes under "More".
 const GROUPS = [
   ['Getting started', ['install-and-update', 'import-and-export-everything', 'keyboard-shortcuts', 'features-at-a-glance']],
-  ['Sending and testing', ['auth-dependencies-auto-refresh-tokens', 'data-files-data-driven-runs', 'request-versions-and-spec-warnings', 'tags-and-search', 'streaming-responses-server-sent-events', 'websocket-requests', 'spoofing-referer-origin-user-agent-and-other-headers', 'script-sandbox']],
+  ['Sending and testing', ['auth-dependencies-auto-refresh-tokens', 'data-files-data-driven-runs', 'request-versions-and-spec-warnings', 'tags-and-search', 'graphql', 'grpc-requests', 'streaming-responses-server-sent-events', 'websocket-requests', 'spoofing-referer-origin-user-agent-and-other-headers', 'script-sandbox']],
   ['Automation', ['flows-request-orchestration', 'command-line-runner-ci-and-schedulers', 'monitors', 'mock-server', 'ai-agents-openapi-and-mcp']],
-  ['Services and networks', ['service-discovery-auto-create-environments', 'health-while-it-runs-profiling', 'where-a-request-went-on-the-network', 'tunnels-into-internal-networks', 'client-certificates-and-custom-cas']],
+  ['Services and networks', ['service-discovery-auto-create-environments', 'environment-diagrams', 'health-while-it-runs-profiling', 'where-a-request-went-on-the-network', 'tunnels-into-internal-networks', 'client-certificates-and-custom-cas']],
   ['Teams and security', ['team-sharing-through-git', 'app-lock-with-ldap-sign-in', 'secret-scan-and-audit-log']],
 ];
 
@@ -168,8 +181,8 @@ const head = ({ title, description, canonical, depth = 1 }) => {
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:image" content="${SITE}/assets/og.jpg">
-  <link rel="stylesheet" href="${up}styles.css">
-  <link rel="stylesheet" href="docs.css">
+  <link rel="stylesheet" href="${up}styles.css?v=${V.styles}">
+  <link rel="stylesheet" href="docs.css?v=${V.docsCss}">
 </head>`;
 };
 
@@ -203,8 +216,8 @@ const siteFooter = `  <footer class="footer">
       <p class="footer-copy">© HttpDash</p>
     </div>
   </footer>
-  <script src="../nav.js"></script>
-  <script src="docs.js"></script>`;
+  <script src="../nav.js?v=${V.nav}"></script>
+  <script src="docs.js?v=${V.docsJs}"></script>`;
 
 /** The left-hand navigation: groups of topics, the current one marked, with a filter. */
 function topicNav(groups, currentSlug) {
@@ -328,6 +341,18 @@ ${siteFooter}
   return { pages: Object.keys(files), images: [...images], anchors };
 }
 
+/** Links the site's own pages to the current versions of its stylesheet and scripts. */
+function stampSitePages() {
+  for (const page of ['index.html', 'sponsors.html']) {
+    const file = path.join(WEBSITE, page);
+    const html = fs.readFileSync(file, 'utf8').replace(/((?:href|src)=")([\w-]+\.(?:css|js))(?:\?v=[0-9a-f]+)?"/g, (m, attr, name) => {
+      const asset = path.join(WEBSITE, name);
+      return fs.existsSync(asset) ? `${attr}${name}?v=${versionOf(asset)}"` : m;
+    });
+    fs.writeFileSync(file, html);
+  }
+}
+
 /** Lists the docs pages in website/sitemap.xml, replacing the ones listed before. */
 function updateSitemap(pages) {
   const file = path.join(ROOT, 'website', 'sitemap.xml');
@@ -340,7 +365,7 @@ if (require.main === module) {
   const i = process.argv.indexOf('--out');
   const out = i !== -1 ? path.resolve(process.argv[i + 1]) : path.join(ROOT, 'website', 'docs');
   const res = build(out);
-  if (i === -1) updateSitemap(['index.html', ...res.pages.filter((p) => p !== 'index.html')]);
+  if (i === -1) { updateSitemap(['index.html', ...res.pages.filter((p) => p !== 'index.html')]); stampSitePages(); }
   console.log(`Built ${res.pages.length} pages and copied ${res.images.length} screenshots into ${path.relative(ROOT, out) || out}`);
 }
 

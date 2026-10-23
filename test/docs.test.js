@@ -28,11 +28,22 @@ test('every page has the topics on the left, and links inside the docs lead to a
     const html = fs.readFileSync(path.join(fresh, p), 'utf8');
     assert.match(html, /class="docs-topics"/, `${p} has the topic navigation`);
     for (const [, href] of html.matchAll(/href="([^"]+)"/g)) {
-      if (/^(https?:|mailto:|\.\.\/)/.test(href) || /\.(css|svg|png)$/.test(href)) continue;
+      if (/^(https?:|mailto:|\.\.\/)/.test(href) || /\.(css|svg|png)(\?v=[0-9a-f]+)?$/.test(href)) continue; // stylesheets carry their version
       const [file, hash] = href.split('#');
       const target = file || p;
       assert.ok(ids.has(target), `${p} links to ${href}, which is not a docs page`);
       if (hash) assert.ok(ids.get(target).has(hash), `${p} links to ${href}, which has no such section`);
+    }
+  }
+});
+
+test('the site\'s pages link to the current version of each stylesheet and script (run npm run docs after changing one)', () => {
+  const site = path.join(__dirname, '..', 'website');
+  for (const page of ['index.html', 'sponsors.html']) {
+    const html = fs.readFileSync(path.join(site, page), 'utf8');
+    for (const [, name, v] of html.matchAll(/(?:href|src)="([\w-]+\.(?:css|js))(?:\?v=([0-9a-f]+))?"/g)) {
+      const want = require('crypto').createHash('sha256').update(fs.readFileSync(path.join(site, name))).digest('hex').slice(0, 10);
+      assert.strictEqual(v, want, `${page} links to an old ${name}: run npm run docs`);
     }
   }
 });
