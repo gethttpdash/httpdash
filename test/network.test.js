@@ -69,7 +69,8 @@ test('a trace marks the address connected to and its reverse-DNS name', async ()
   assert.deepStrictEqual(t.connected.ptr, ['orders-7.rack12.dc2.corp']);
   assert.strictEqual(t.connected.segment, '10.42.7.0/24');
   assert.deepStrictEqual(t.resolution.addresses.map((a) => a.used), [true, false]);
-  assert.deepStrictEqual(t.local, { address: '10.42.7.5', adapter: 'en0', cidr: '10.42.7.0/24' });
+  const { address, adapter, cidr, kind, octets, segment } = t.local;
+  assert.deepStrictEqual({ address, adapter, cidr, kind, octets: [...octets], segment }, { address: '10.42.7.5', adapter: 'en0', cidr: '10.42.7.0/24', kind: 'private', octets: [10, 42, 7, 5], segment: '10.42.7.0/24' }, 'this computer\'s end, described like any address');
 });
 
 test('traceroute output from macOS/Linux and Windows is read hop by hop', () => {

@@ -79,15 +79,33 @@
         HD.clear(route).appendChild(h('div.runner-progress', h('div.spinner.small'), `Tracing the route to ${host}… (up to a minute)`));
         try {
           const hops = await HD.traceRoute({ host });
-          HD.clear(route).appendChild(hops.length ? h('div.table-wrap.no-pad', h('table.data-table.net-hops',
-            h('thead', h('tr', h('th.num', 'Hop'), h('th', 'Address'), h('th', 'Segment'), h('th', 'Kind'), h('th.num', 'Time'))),
-            h('tbody', hops.map((x) => h('tr',
-              h('td.num', String(x.hop)),
-              h('td', x.address ? octets(x) : h('span.muted', 'no answer')),
-              h('td.mono.small', x.segment || ''),
-              h('td', x.address ? kindPill(x) : null),
-              h('td.num', x.ms == null ? '—' : HD.formatMs(x.ms)))))))
-            : h('div.muted.small', 'No hops came back.'));
+          // The route starts at this computer ("you", which traceroute doesn't list) and should end
+          // at the address the request connected to ("instance", or the proxy's).
+          const mine = net.local && net.local.address;
+          const target = c && c.address;
+          const end = net.viaProxy ? 'proxy' : 'instance';
+          const chip = (kind, title) => h(`span.pill.net-chip.net-chip-${kind}`, { title }, kind);
+          const chipsFor = (x) => [
+            mine && x.address === mine ? chip('you', `This computer${net.local.adapter ? `, on ${net.local.adapter}` : ''}`) : null,
+            target && x.address === target ? chip(end, net.viaProxy ? 'The proxy the request went through' : 'The address the request connected to') : null,
+          ];
+          const hopRow = (x, hop, cls = '') => h(`tr${cls}`,
+            h('td.num', hop),
+            h('td', h('div.net-hop-addr', x.address ? octets(x) : h('span.muted', 'no answer'), ...chipsFor(x))),
+            h('td.mono.small', x.segment || x.cidr || ''),
+            h('td', x.address ? kindPill(x) : null),
+            h('td.num', x.ms == null ? '—' : HD.formatMs(x.ms)));
+          const rows = [
+            mine ? hopRow({ ...net.local, ms: null }, '0', '.net-hop-you') : null,
+            ...hops.map((x) => hopRow(x, String(x.hop), target && x.address === target ? '.net-hop-end' : '')),
+          ].filter(Boolean);
+          const reached = !target || hops.some((x) => x.address === target);
+          HD.clear(route).append(...(hops.length ? [
+            h('div.table-wrap.no-pad', h('table.data-table.net-hops',
+              h('thead', h('tr', h('th.num', 'Hop'), h('th', 'Address'), h('th', 'Segment'), h('th', 'Kind'), h('th.num', 'Time'))),
+              h('tbody', rows))),
+            reached ? null : h('div.muted.small', `The ${end} (${target}) didn't answer the trace; firewalls often hide the last hops.`),
+          ].filter(Boolean) : [h('div.muted.small', 'No hops came back.')]));
         } catch (e) {
           HD.clear(route).appendChild(h('div.test-script-error', HD.cleanErr(e)));
         }

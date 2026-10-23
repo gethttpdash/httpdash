@@ -49,6 +49,7 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 - **Search sees open tabs:** a tag, name or URL typed in an open tab counts in the sidebar search and tag suggestions right away, before it's saved. Open tabs that aren't saved yet appear under **Open tabs, not saved**.
 
 ### Changed
+- **Trace route marks both ends:** the table starts with this computer, marked **you** (its address, adapter, segment and kind), and the hop that is the address the request connected to is marked **instance**, or **proxy**. When that address never answers the trace, a note says so.
 - **Collection Runner results:** Passed and Failed (the cards and the filter) appear only when the requests have tests. A run without tests shows its requests, errors and average response time, with an **Errors** filter when a request couldn't be sent.
 - **Sidebar search suggestions open beside the sidebar,** when there's room, so they no longer cover the results while you type.
 - **Search suggestions work with screen readers:** the highlighted suggestion is announced (`aria-activedescendant`, `aria-selected`), in the sidebar search, the Runner's filter and the tag field.

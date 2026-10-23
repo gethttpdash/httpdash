@@ -238,7 +238,9 @@ async function trace({ url, remoteAddress, localAddress, viaProxy = false, tunne
   // would describe it.
   if (tunnel) return { host, viaProxy: false, tunnel, connected: null, local: null, resolution: null };
   const own = opts.interfaces || interfaces();
-  const out = { host, viaProxy: !!viaProxy, connected: null, local: localAddress ? adapterOf(localAddress, own) : null, resolution: null };
+  // This computer's end, described like any address (octets, segment, kind) with its adapter.
+  const local = localAddress ? { ...describe(localAddress, { ...opts, own }), ...adapterOf(localAddress, own) } : null;
+  const out = { host, viaProxy: !!viaProxy, connected: null, local, resolution: null };
   const literal = !!parse(host);
   // DNS details are waited for only briefly: they carry on in the background and are cached, so
   // a slow or blocked DNS server never holds up a response.

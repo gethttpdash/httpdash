@@ -1367,3 +1367,9 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .dg-flag-slow { background: var(--warn-soft); color: var(--warn); }
 .dg-flag-failing, .dg-flag-unhealthy { background: var(--err-soft, var(--warn-soft)); color: var(--err); }
 .dg-flag-left { background: var(--bg-3); color: var(--text-2); }
+
+/* Trace route: this computer ("you") and where the request went ("instance" or "proxy") */
+.net-hop-addr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pill.net-chip-you { background: var(--accent-soft, var(--bg-3)); color: var(--accent-text); }
+.pill.net-chip-instance, .pill.net-chip-proxy { background: var(--ok-soft); color: var(--ok); }
+.net-hops tr.net-hop-you td, .net-hops tr.net-hop-end td { background: var(--bg-2); }

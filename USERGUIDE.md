@@ -435,7 +435,7 @@ The **Timeline** tab has a **Network** section for every request:
 - **Connected to:** the address the request was sent to, split into its octets with the network segment highlighted (`10 . 42 . 7 . 31`, segment `10.42.7.0/24`). It also shows the kind of address (private, shared/VPN `100.64.0.0/10`, loopback, link-local, multicast, benchmark, public), its reverse-DNS name (often the host, rack or data center), and whether it sits on one of your own computer's segments.
 - **From:** your own address and the network adapter the request left from (Ethernet, Wi-Fi, a VPN).
 - **Resolves to:** every address the name resolves to, in the order your resolver gives them, each with its segment, kind and TTL, and the one that was used marked. If DNS servers asked directly give a different answer than your computer's resolver (hosts file, VPN or split DNS), it says so.
-- **Trace route:** runs your system's `traceroute` (`tracert` on Windows) and lists each hop (up to 20) with its address, segment and time. It can take up to a minute, and some networks don't answer.
+- **Trace route:** runs your system's `traceroute` (`tracert` on Windows) and lists each hop (up to 20) with its address, segment and time. The table starts with this computer, marked **you**, and marks the hop that is the address the request connected to as **instance** (or **proxy**); if that address never answers, a note says so. It can take up to a minute, and some networks don't answer.
 
 Through a proxy, the address shown is the proxy's, and the trace says so. Segment size is /24 for IPv4 and /64 for IPv6; change it for this section, or turn tracing off, in **Settings → General**. Lookups are cached for a minute, so a collection run asks once per host.
 
