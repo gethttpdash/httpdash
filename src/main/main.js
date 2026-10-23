@@ -1104,6 +1104,22 @@ handle('discovery:sync', async ({ config, values, collection, serviceCollections
 handle('discovery:metrics', (sourceId) => balancer.metrics(sourceId));
 handle('discovery:resetMetrics', (sourceId) => { balancer.reset(sourceId); return true; });
 
+// The environment diagram (topology.js): its sources' instances and traffic, the addresses DNS
+// gives its other URLs' hosts, and this computer's interfaces. Through a tunnel, names resolve on
+// the far side, so this computer's DNS isn't asked.
+const topology = require('../core/topology');
+handle('topology:build', async ({ environment, sources, tunnel, settings }) => {
+  const s = settings || {};
+  const dnsAnswers = {};
+  if (!tunnel) {
+    await Promise.all(topology.hostsToResolve(environment, sources).map(async (host) => {
+      try { dnsAnswers[host] = await network.resolveHost(host); } catch (e) { dnsAnswers[host] = { addresses: [], error: e.message }; }
+    }));
+  }
+  const metrics = Object.fromEntries((sources || []).map((src) => [src.id, balancer.metrics(src.id)]));
+  return topology.build({ environment, sources, metrics, dns: dnsAnswers, local: network.interfaces(), tunnel, bits4: s.segmentBits4, bits6: s.segmentBits6 });
+});
+
 // ---- HttpDash API for AI agents (Settings → AI access) -------------------------------------
 // The server checks the host, token, lock, pause and permission (see ai-server.js); most operations
 // are answered by the window, which holds the workspace and the screen.

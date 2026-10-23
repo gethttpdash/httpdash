@@ -143,6 +143,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://httpdash.com/docs/environment-diagrams.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://httpdash.com/docs/graphql.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

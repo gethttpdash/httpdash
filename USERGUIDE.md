@@ -21,6 +21,7 @@ How every part of HttpDash works, in detail. For what HttpDash is and a quick st
 - [Tags and search](#tags-and-search)
 - [Health while it runs (profiling)](#health-while-it-runs-profiling)
 - [Where a request went on the network](#where-a-request-went-on-the-network)
+- [Environment diagrams](#environment-diagrams)
 - [Streaming responses (Server-Sent Events)](#streaming-responses-server-sent-events)
 - [GraphQL](#graphql)
 - [WebSocket requests](#websocket-requests)
@@ -439,6 +440,25 @@ The **Timeline** tab has a **Network** section for every request:
 Through a proxy, the address shown is the proxy's, and the trace says so. Segment size is /24 for IPv4 and /64 for IPv6; change it for this section, or turn tracing off, in **Settings → General**. Lookups are cached for a minute, so a collection run asks once per host.
 
 For services from service discovery, the **Traffic** page adds a **By network segment** table when instances answer from more than one segment, so a slow data center or VLAN stands out from a slow instance (always /24 and /64). It's in every export format except CSV, which has the instances only, and **Compare** shows the address each instance answered from.
+
+## Environment diagrams
+
+An environment's **Diagram** page (next to **Variables**) draws where its requests go, from what HttpDash already knows. No agent runs in your services:
+
+- **This computer:** its network adapters and segments, and the tunnel if the environment sends its requests through one.
+- **Service endpoints:** each URL variable (`{{orders_url}}`) and the address it holds.
+- **Load balancers:**
+  - **HttpDash itself,** for a discovered service with several instances: round robin, random or the first healthy one, as the source is set.
+  - **A Kubernetes Service,** with its type, cluster IP and outside address. Its pods are listed only in the source's **Pods** address mode.
+  - **A load balancer that names who answered:** with the source's **instance header** (such as `X-Served-By`), the backends behind it are the ones the responses named.
+  - **DNS,** when a URL's host resolves to several addresses.
+- **Instances:** each pod, Consul or Eureka instance, or DNS address, with its health and its traffic since HttpDash started: requests, share, p95 and failures. Slow and failing instances are flagged as on the **Traffic** page. So is an instance that answered but **left the pool**, and an **unhealthy** one.
+- **Network clusters:** instances are grouped by their Kubernetes namespace, Consul datacenter or Eureka zone, and by network segment (`10.42.7.0/24`, using the segment size from **Settings → General**), with the kind of address (private, public…). A segment this computer is on says so.
+- **Lines** grow thicker with the requests they carried, turn red where one in five or more failed, and are dashed where nothing has gone yet.
+
+The diagram refreshes every two seconds while it's shown, so traffic you send appears as it happens. Click a node for its details (address, node, namespace, datacenter or zone, type, traffic) and a link to the source's **Traffic** page. Drag nodes to arrange them; where you put them is kept on this computer, and **Tidy** puts everything back. Zoom with Ctrl/Cmd + wheel, or use **Fit**.
+
+A discovery source synced before this version has no namespaces, nodes or zones yet: sync it again to group its instances. Through a tunnel, host names resolve on the far side, so this computer's DNS isn't asked about them.
 
 ## Streaming responses (Server-Sent Events)
 

@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('api', {
   saveResponse: invoke('response:save'),
   openFile: invoke('dialog:openFile'),
   openFolder: invoke('dialog:openFolder'),
+  topology: invoke('topology:build'),
 
   readDataFile: invoke('runner:readData'),
   payloadsFromRows: invoke('payloads:fromRows'),

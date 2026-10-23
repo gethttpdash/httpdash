@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Environment diagrams · HttpDash docs</title>
+  <meta name="description" content="An environment's Diagram page (next to Variables) draws where its requests go, from what HttpDash already knows. No agent runs in your services.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#e8590c">
+  <link rel="canonical" href="https://httpdash.com/docs/environment-diagrams.html">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="HttpDash">
+  <meta property="og:url" content="https://httpdash.com/docs/environment-diagrams.html">
+  <meta property="og:title" content="Environment diagrams · HttpDash docs">
+  <meta property="og:description" content="An environment's Diagram page (next to Variables) draws where its requests go, from what HttpDash already knows. No agent runs in your services.">
+  <meta property="og:image" content="https://httpdash.com/assets/og.jpg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap nav-inner docs-nav-inner">
+      <a class="brand" href="../index.html" aria-label="HttpDash home"><img src="../assets/logo.png" alt="" width="28" height="28"><span>HttpDash</span></a>
+      <nav aria-label="Main">
+        <ul class="nav-links" id="site-menu">
+          <li><a href="../index.html#features">Features</a></li>
+          <li><a href="../index.html#automation">Automation</a></li>
+          <li><a href="../index.html#cli">CLI</a></li>
+          <li><a href="index.html" aria-current="page">Docs</a></li>
+          <li><a href="../sponsors.html">Sponsors</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm nav-cta" href="../index.html#download">Download</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="nav-toggle-open" d="M4 7h16M4 12h16M4 17h16"/><path class="nav-toggle-close" d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </header>
+
+  <div class="wrap docs-layout">
+    <aside class="docs-left">
+      <nav class="docs-topics" aria-label="Topics">
+        <details class="docs-topics-toggle" open>
+          <summary>Topics</summary>
+          <input class="docs-filter" type="search" placeholder="Filter topics" aria-label="Filter topics">
+          <a class="docs-home" href="index.html">Overview</a>
+          <p class="docs-group">Getting started</p>
+          <ul>
+            <li><a href="install-and-update.html" data-search="install and update ">Install and update</a></li>
+            <li><a href="import-and-export-everything.html" data-search="import and export everything ">Import and export everything</a></li>
+            <li><a href="keyboard-shortcuts.html" data-search="keyboard shortcuts ">Keyboard shortcuts</a></li>
+            <li><a href="features-at-a-glance.html" data-search="features at a glance requests responses organisation collection runner import / export &amp; tools">Features at a glance</a></li>
+          </ul>
+          <p class="docs-group">Sending and testing</p>
+          <ul>
+            <li><a href="auth-dependencies-auto-refresh-tokens.html" data-search="auth dependencies (auto-refresh tokens) ">Auth dependencies (auto-refresh tokens)</a></li>
+            <li><a href="data-files-data-driven-runs.html" data-search="data files (data-driven runs) nested json in a data file">Data files (data-driven runs)</a></li>
+            <li><a href="request-versions-and-spec-warnings.html" data-search="request versions and spec warnings ">Request versions and spec warnings</a></li>
+            <li><a href="tags-and-search.html" data-search="tags and search ">Tags and search</a></li>
+            <li><a href="streaming-responses-server-sent-events.html" data-search="streaming responses (server-sent events) ">Streaming responses (Server-Sent Events)</a></li>
+            <li><a href="websocket-requests.html" data-search="websocket requests ">WebSocket requests</a></li>
+            <li><a href="spoofing-referer-origin-user-agent-and-other-headers.html" data-search="spoofing referer, origin, user-agent and other headers ">Spoofing Referer, Origin, User-Agent and other headers</a></li>
+            <li><a href="script-sandbox.html" data-search="script sandbox ">Script sandbox</a></li>
+          </ul>
+          <p class="docs-group">Automation</p>
+          <ul>
+            <li><a href="flows-request-orchestration.html" data-search="flows (request orchestration) nodes designing running">Flows (request orchestration)</a></li>
+            <li><a href="command-line-runner-ci-and-schedulers.html" data-search="command-line runner (ci and schedulers) ">Command-line runner (CI and schedulers)</a></li>
+            <li><a href="monitors.html" data-search="monitors ">Monitors</a></li>
+            <li><a href="mock-server.html" data-search="mock server ">Mock server</a></li>
+            <li><a href="ai-agents-openapi-and-mcp.html" data-search="ai agents (openapi and mcp) instead of curl: test an endpoint and keep it scripts and data files for agents">AI agents (OpenAPI and MCP)</a></li>
+          </ul>
+          <p class="docs-group">Services and networks</p>
+          <ul>
+            <li><a href="service-discovery-auto-create-environments.html" data-search="service discovery (auto-create environments) a collection for every discovered service openapi documents, versioned load balancing and traffic by instance payloads compare instances">Service discovery (auto-create environments)</a></li>
+            <li><a href="health-while-it-runs-profiling.html" data-search="health while it runs (profiling) ">Health while it runs (profiling)</a></li>
+            <li><a href="where-a-request-went-on-the-network.html" data-search="where a request went on the network ">Where a request went on the network</a></li>
+            <li><a href="tunnels-into-internal-networks.html" data-search="tunnels into internal networks ">Tunnels into internal networks</a></li>
+            <li><a href="client-certificates-and-custom-cas.html" data-search="client certificates and custom cas ">Client certificates and custom CAs</a></li>
+          </ul>
+          <p class="docs-group">Teams and security</p>
+          <ul>
+            <li><a href="team-sharing-through-git.html" data-search="team sharing through git ">Team sharing through git</a></li>
+            <li><a href="app-lock-with-ldap-sign-in.html" data-search="app lock with ldap sign-in ">App lock with LDAP sign-in</a></li>
+            <li><a href="secret-scan-and-audit-log.html" data-search="secret scan and audit log ">Secret scan and audit log</a></li>
+          </ul>
+          <p class="docs-group">More</p>
+          <ul>
+            <li><a href="environment-diagrams.html" data-search="environment diagrams " class="current" aria-current="page">Environment diagrams</a></li>
+            <li><a href="graphql.html" data-search="graphql subscriptions">GraphQL</a></li>
+            <li><a href="grpc-requests.html" data-search="grpc requests ">gRPC requests</a></li>
+          </ul>
+          <p class="docs-none" hidden>No topic matches.</p>
+        </details>
+      </nav>
+    </aside>
+
+    <main id="main" class="docs-main">
+      <p class="docs-crumbs"><a href="index.html">Docs</a> <span aria-hidden="true">›</span> More</p>
+      <article class="docs-article">
+        <h1>Environment diagrams</h1>
+<p>An environment&#39;s <strong>Diagram</strong> page (next to <strong>Variables</strong>) draws where its requests go, from what HttpDash already knows. No agent runs in your services:</p>
+<ul>
+<li><strong>This computer:</strong> its network adapters and segments, and the tunnel if the environment sends its requests through one.</li>
+<li><strong>Service endpoints:</strong> each URL variable (<code>{{orders_url}}</code>) and the address it holds.</li>
+<li><strong>Load balancers:</strong><ul>
+<li><strong>HttpDash itself,</strong> for a discovered service with several instances: round robin, random or the first healthy one, as the source is set.</li>
+<li><strong>A Kubernetes Service,</strong> with its type, cluster IP and outside address. Its pods are listed only in the source&#39;s <strong>Pods</strong> address mode.</li>
+<li><strong>A load balancer that names who answered:</strong> with the source&#39;s <strong>instance header</strong> (such as <code>X-Served-By</code>), the backends behind it are the ones the responses named.</li>
+<li><strong>DNS,</strong> when a URL&#39;s host resolves to several addresses.</li>
+</ul>
+</li>
+<li><strong>Instances:</strong> each pod, Consul or Eureka instance, or DNS address, with its health and its traffic since HttpDash started: requests, share, p95 and failures. Slow and failing instances are flagged as on the <strong>Traffic</strong> page. So is an instance that answered but <strong>left the pool</strong>, and an <strong>unhealthy</strong> one.</li>
+<li><strong>Network clusters:</strong> instances are grouped by their Kubernetes namespace, Consul datacenter or Eureka zone, and by network segment (<code>10.42.7.0/24</code>, using the segment size from <strong>Settings → General</strong>), with the kind of address (private, public…). A segment this computer is on says so.</li>
+<li><strong>Lines</strong> grow thicker with the requests they carried, turn red where one in five or more failed, and are dashed where nothing has gone yet.</li>
+</ul>
+<p>The diagram refreshes every two seconds while it&#39;s shown, so traffic you send appears as it happens. Click a node for its details (address, node, namespace, datacenter or zone, type, traffic) and a link to the source&#39;s <strong>Traffic</strong> page. Drag nodes to arrange them; where you put them is kept on this computer, and <strong>Tidy</strong> puts everything back. Zoom with Ctrl/Cmd + wheel, or use <strong>Fit</strong>.</p>
+<p>A discovery source synced before this version has no namespaces, nodes or zones yet: sync it again to group its instances. Through a tunnel, host names resolve on the far side, so this computer&#39;s DNS isn&#39;t asked about them.</p>
+
+      </article>
+      <nav class="docs-pager" aria-label="Previous and next topic">
+        <a class="docs-prev" href="secret-scan-and-audit-log.html"><span>Previous</span>Secret scan and audit log</a>
+        <a class="docs-next" href="graphql.html"><span>Next</span>GraphQL</a>
+      </nav>
+      <p class="docs-edit"><a href="https://github.com/gethttpdash/httpdash/edit/main/USERGUIDE.md">Edit this page on GitHub</a></p>
+    </main>
+
+    <aside class="docs-right">
+
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" width="22" height="22"><span>HttpDash</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/gethttpdash/httpdash">GitHub</a>
+        <a href="https://github.com/gethttpdash/httpdash/releases">Releases</a>
+        <a href="index.html">Documentation</a>
+        <a href="../sponsors.html">Sponsors</a>
+      </nav>
+      <p class="footer-copy">© HttpDash</p>
+    </div>
+  </footer>
+  <script src="../nav.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

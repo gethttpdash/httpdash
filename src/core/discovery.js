@@ -62,6 +62,9 @@ async function fetchJson(url, cfg, settings, extraHeaders = [], { parse = JSON.p
   }
 }
 
+// Fields with no value are left out, so instances stay small in the workspace.
+const defined = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+
 const hostPort = (scheme, host, port) => {
   const h = host && host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
   const defaultPort = (scheme === 'https' && Number(port) === 443) || (scheme === 'http' && Number(port) === 80);
@@ -88,7 +91,10 @@ async function discoverConsul(cfg, settings) {
     const entries = await fetchJson(joinUrl(cfg.url, `/v1/health/service/${encodeURIComponent(name)}${qs({ passing: cfg.onlyHealthy === false ? '' : '1', tag: cfg.tag })}`), cfg, settings, auth);
     const instances = entries.map((e) => {
       const host = (e.Service && e.Service.Address) || (e.Node && e.Node.Address);
-      return { id: e.Service && e.Service.ID, url: hostPort(scheme, host, e.Service && e.Service.Port), healthy: (e.Checks || []).every((c) => c.Status === 'passing') };
+      return defined({
+        id: e.Service && e.Service.ID, url: hostPort(scheme, host, e.Service && e.Service.Port), healthy: (e.Checks || []).every((c) => c.Status === 'passing'),
+        address: host, node: e.Node && e.Node.Node, dc: (e.Node && e.Node.Datacenter) || cfg.datacenter,
+      });
     });
     if (!instances.length) { warnings.push(`${name}: no ${cfg.onlyHealthy === false ? '' : 'healthy '}instances`); return; }
     services.push({ name, url: instances[0].url, instances, tags: catalog[name] || [] });
@@ -111,7 +117,8 @@ async function discoverEureka(cfg, settings) {
       const port = secure ? i.securePort.$ : i.port && i.port.$;
       const fromParts = hostPort(secure ? 'https' : 'http', i.hostName || i.ipAddr, port);
       const home = i.homePageUrl ? String(i.homePageUrl).replace(/\/+$/, '') : '';
-      return { id: i.instanceId, url: home || fromParts, healthy: i.status === 'UP' };
+      const zone = (i.metadata && i.metadata.zone) || (i.dataCenterInfo && i.dataCenterInfo.metadata && i.dataCenterInfo.metadata['availability-zone']);
+      return defined({ id: i.instanceId, url: home || fromParts, healthy: i.status === 'UP', address: i.ipAddr, node: i.hostName, zone });
     });
     if (!instances.length) { warnings.push(`${app.name}: no instances UP`); continue; }
     services.push({ name: String(app.name).toLowerCase(), url: instances[0].url, instances });
@@ -151,12 +158,12 @@ async function discoverKubernetes(cfg, settings) {
         // The endpoint port with the Service port's name (its target port on the pods), or the only one.
         const epPort = (subset.ports || []).find((x) => (x.name || '') === (port.name || '')) || (subset.ports || [])[0];
         if (!epPort) continue;
-        const inst = (a, healthy) => ({ id: (a.targetRef && a.targetRef.name) || a.hostname || a.ip, url: hostPort(scheme, a.ip, epPort.port), healthy });
+        const inst = (a, healthy) => defined({ id: (a.targetRef && a.targetRef.name) || a.hostname || a.ip, url: hostPort(scheme, a.ip, epPort.port), healthy, address: a.ip, node: a.nodeName, namespace: svcNs });
         instances.push(...(subset.addresses || []).map((a) => inst(a, true)), ...(subset.notReadyAddresses || []).map((a) => inst(a, false)));
       }
       const ready = instances.find((i) => i.healthy);
       if (!ready) { warnings.push(`${name}: no ready pods`); continue; }
-      services.push({ name: svcName, url: ready.url, instances });
+      services.push({ name: svcName, url: ready.url, instances, cluster: k8sService(svc, svcNs) });
       continue;
     }
     if (mode === 'external') {
@@ -170,9 +177,18 @@ async function discoverKubernetes(cfg, settings) {
     } else {
       host = `${name}.${svcNs}.svc.cluster.local`;
     }
-    services.push({ name: svcName, url: hostPort(scheme, host, p), instances: [{ id: name, url: hostPort(scheme, host, p), healthy: true }] });
+    const address = mode === 'cluster-dns' ? undefined : host;
+    services.push({ name: svcName, url: hostPort(scheme, host, p), instances: [defined({ id: name, url: hostPort(scheme, host, p), healthy: true, address, namespace: svcNs })], cluster: k8sService(svc, svcNs) });
   }
   return { services, warnings };
+}
+
+// What a Kubernetes Service is, for the environment diagram: its type, cluster IP and outside address.
+function k8sService(svc, namespace) {
+  const spec = svc.spec || {};
+  const ing = ((svc.status && svc.status.loadBalancer && svc.status.loadBalancer.ingress) || [])[0];
+  const external = (ing && (ing.hostname || ing.ip)) || (spec.externalIPs && spec.externalIPs[0]) || undefined;
+  return defined({ kind: 'kubernetes', namespace, name: svc.metadata.name, type: spec.type || 'ClusterIP', clusterIp: spec.clusterIP !== 'None' ? spec.clusterIP : undefined, headless: spec.clusterIP === 'None' || undefined, external });
 }
 
 const authorization = (token) => (token ? [['Authorization', /^(basic|bearer) /i.test(token) ? token : `Bearer ${token}`]] : []);

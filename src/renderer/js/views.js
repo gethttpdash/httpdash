@@ -116,12 +116,22 @@
     }
     HD.variableInfo = () => HD.variableInfoFor(null);
     const active = S.ws.activeEnvironmentId === env.id;
-    root.appendChild(h('div.container-view',
-      h('div.req-header',
+    tab.ui = tab.ui || {};
+    // Variables, or the diagram of where its requests go (diagram.js).
+    const page = tab.ui.envPage || 'variables';
+    const pages = HD.tabStrip([{ id: 'variables', label: 'Variables' }, { id: 'diagram', label: 'Diagram' }], page, (id) => { tab.ui.envPage = id; HD.save(); HD.renderActiveTab(); });
+    const header = h('div.req-header',
         h('div.breadcrumb', h('span.kind-label', 'Environment'), h('input.title-input', { 'aria-label': 'Name', value: env.name, spellcheck: 'false', oninput: (e) => { env.name = e.target.value; tab.title = env.name; touch(); HD.renderSidebar(); HD.renderTabBar(); HD.renderEnvSelect(); } })),
         h('div.req-header-actions',
           active ? h('span.pill', 'Active') : HD.button('Set active', () => { S.ws.activeEnvironmentId = env.id; touch(); HD.renderEnvSelect(); HD.renderSidebar(); HD.renderActiveTab(); }, { small: true }),
-          HD.button('Export', () => window.api.exportEnvironment(env), { small: true, icon: 'upload' }))),
+          HD.button('Export', () => window.api.exportEnvironment(env), { small: true, icon: 'upload' })));
+    if (page === 'diagram') {
+      root.appendChild(h('div.env-diagram-page', header, h('div.env-pages', pages), HD.envDiagram(tab, env)));
+      return;
+    }
+    root.appendChild(h('div.container-view',
+      header,
+      h('div.env-pages', pages),
       HD.discoveryBannerFor(env),
       h('div.panel-pad.env-color-row',
         h('span.small', 'Color'),

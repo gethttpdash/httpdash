@@ -5,6 +5,14 @@ Notable changes to HttpDash. The format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Environment diagrams:** an environment's **Diagram** page draws where its requests go:
+  - this computer and its tunnel
+  - the service endpoints (its URL variables)
+  - the load balancers in front of them: HttpDash's own spreading, a Kubernetes Service, a load balancer that names its backends in the instance header, or DNS with several addresses
+  - the instances behind, grouped into network clusters by namespace, datacenter or zone and by network segment
+
+  Built from discovery, DNS and the requests you send, with no agent in your services. Each instance shows its health and traffic (requests, share, p95, failures), flagged slow, failing, unhealthy or left the pool. Lines thicken with traffic and turn red where requests fail. It refreshes while shown; click a node for its details, and drag nodes to arrange them.
+- Service discovery keeps where each instance runs (address, node, Kubernetes namespace, Consul datacenter, Eureka zone) and what a Kubernetes Service is (type, cluster IP, outside address). Sync a source again to fill these in.
 - **gRPC requests:** **New → gRPC Request**, saved in collections like any request.
   - **Definitions** from server reflection (v1 and v1alpha) or from `.proto` files with import paths; Google's well-known types are built in.
   - **Every kind of call:** unary and server streaming with **Invoke**; client and bidirectional streaming stay open to **Send** messages one at a time, then **End stream**.

@@ -135,9 +135,11 @@ test('Kubernetes pods mode: every pod behind a Service is an instance', async ()
   const cart = r.services.find((s) => s.name === 'cart');
   assert.strictEqual(cart.url, 'http://10.244.0.5:8081');
   assert.deepStrictEqual(cart.instances, [
-    { id: 'cart-7f9c-abc', url: 'http://10.244.0.5:8081', healthy: true },
-    { id: 'cart-7f9c-def', url: 'http://10.244.1.7:8081', healthy: true },
-    { id: 'cart-7f9c-ghi', url: 'http://10.244.2.9:8081', healthy: false },
-  ]);
+    { id: 'cart-7f9c-abc', url: 'http://10.244.0.5:8081', healthy: true, address: '10.244.0.5', namespace: 'shop' },
+    { id: 'cart-7f9c-def', url: 'http://10.244.1.7:8081', healthy: true, address: '10.244.1.7', namespace: 'shop' },
+    { id: 'cart-7f9c-ghi', url: 'http://10.244.2.9:8081', healthy: false, address: '10.244.2.9', namespace: 'shop' },
+  ], 'each pod with its address and namespace, for the environment diagram');
+  assert.strictEqual(cart.cluster.kind, 'kubernetes');
+  assert.strictEqual(cart.cluster.namespace, 'shop');
   assert.ok(r.warnings.includes('web: no ready pods'));
 });

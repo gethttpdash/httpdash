@@ -93,6 +93,16 @@ app.on('browser-window-created', (_e, win) => {
       if (!window.__sseTab) { window.__sseTab = HD.openNewRequest({ method: 'GET', url: 'http://127.0.0.1:${P}/sse' }, 'SSE'); HD.renderActiveTab(); await wait(100); document.querySelector('.send-btn').click(); await wait(500); }
       else { HD.S.ws.activeTabId = window.__sseTab.id; HD.renderTabBar(); HD.renderActiveTab(); }`);
     await run('runner', `HD.openRunner(HD.S.ws.collections[0].id); await wait(150);`);
+    await run('environment diagram', `
+      if (!window.__dgEnv) {
+        const env = HD.newEnvironment('Diagram'); window.__dgEnv = env;
+        const src = { id: 'audit-src', name: 'Cluster', provider: 'kubernetes', addressMode: 'pods', balance: 'round-robin', environmentId: env.id,
+          lastSync: { services: [{ name: 'orders', variable: 'orders_url', url: 'http://10.244.0.5:8080', cluster: { kind: 'kubernetes', namespace: 'shop', name: 'orders', type: 'ClusterIP' },
+            instances: [{ id: 'orders-a', url: 'http://10.244.0.5:8080', healthy: true, address: '10.244.0.5', namespace: 'shop' }, { id: 'orders-b', url: 'http://10.244.1.6:8080', healthy: false, address: '10.244.1.6', namespace: 'shop' }] }] } };
+        env.values = [{ key: 'orders_url', value: 'http://10.244.0.5:8080', enabled: true, discovered: src.id }, { key: 'local_url', value: 'http://127.0.0.1:${P}', enabled: true }];
+        HD.S.ws.environments.push(env); HD.S.ws.discoverySources = [...(HD.S.ws.discoverySources || []), src];
+      }
+      HD.openEnvironment(window.__dgEnv.id); await wait(50); HD.currentTab().ui.envPage = 'diagram'; HD.currentTab().ui.dgSelected = 'in:ep:orders_url:orders-b'; HD.renderActiveTab(); await wait(900);`);
     await run('secret scan', `HD.command('secrets'); await wait(200);`);
     await run('audit log', `HD.command('audit'); await wait(200);`);
     await run('codegen', `HD.S.ws.activeTabId = window.__reqTab.id; HD.renderActiveTab(); await wait(100); HD.command('codegen'); await wait(200);`);

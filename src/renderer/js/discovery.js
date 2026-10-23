@@ -202,6 +202,7 @@
     return { ...HD.listToObject(S.ws.globals), ...(env ? HD.listToObject(env.values) : {}) };
   };
 
+  const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] != null && o[k] !== '').map((k) => [k, o[k]]));
   const collectionOf = (src) => (src.collectionId && S.ws.collections.find((c) => c.id === src.collectionId)) || null;
 
   // The environment a collection belongs with: the one the discovery source that keeps it syncs into (its OpenAPI
@@ -308,7 +309,11 @@
       const rq = res.requests || null;
       src.lastSync = {
         time: Date.now(), count: res.operations ? res.operations.length : res.services.length, diff: res.diff, warnings: res.warnings, error: null,
-        services: res.services.map((s) => ({ name: s.name, variable: s.variable, url: s.url, instances: (s.instances || []).map((i) => ({ id: i.id || '', url: i.url, healthy: i.healthy })) })),
+        // Where each instance runs (address, node, datacenter, zone, namespace) is kept for the environment diagram.
+        services: res.services.map((s) => ({
+          name: s.name, variable: s.variable, url: s.url, ...(s.cluster ? { cluster: s.cluster } : {}),
+          instances: (s.instances || []).map((i) => ({ id: i.id || '', url: i.url, healthy: i.healthy, ...pick(i, ['address', 'node', 'dc', 'zone', 'namespace']) })),
+        })),
         spec: res.spec || null, requests: trimReport(rq),
         ...(res.shapes ? { shapes: res.shapes } : {}),
         ...(res.specs ? { specs: res.specs.map((x) => (x.status === 'skipped' && lastSpecs.has(x.service) ? lastSpecs.get(x.service) : specRecord(x))), missingSpecs: res.missingSpecs || [] } : {}),

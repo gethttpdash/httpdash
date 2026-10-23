@@ -20,6 +20,7 @@
 - **Every instance of a service:** spread requests over them, count what each answered, and compare their answers to find the one that differs. [Load balancing](USERGUIDE.md#load-balancing-and-traffic-by-instance) · [Compare](USERGUIDE.md#compare-instances)
 - **What the server went through:** its health endpoint read before, during and after your request. [Health](USERGUIDE.md#health-while-it-runs-profiling)
 - **Where the request went:** addresses, segments, reverse DNS, your network adapter and a route trace. [Network](USERGUIDE.md#where-a-request-went-on-the-network)
+- **A diagram of each environment:** its service endpoints, the load balancers in front of them and the instances behind, grouped into network clusters, with live traffic on every line. Drawn from discovery, DNS and the requests you send, with no agent in your services. [Environment diagrams](USERGUIDE.md#environment-diagrams)
 - **Into internal networks without a VPN:** SSH jump hosts and SOCKS5. [Tunnels](USERGUIDE.md#tunnels-into-internal-networks)
 - **AI agents alongside you:** Claude and other agents read, send, run and edit through OpenAPI or MCP, with permissions you choose. [AI agents](USERGUIDE.md#ai-agents-openapi-and-mcp)
 - **In CI and the terminal:** a Newman-style runner with JUnit reports, and `httpdash send`, which works like curl through the app. [Command line](USERGUIDE.md#command-line-runner-ci-and-schedulers)
@@ -36,6 +37,7 @@ Built with Electron and plain JavaScript. Your data stays on your computer as JS
 | License | [FSL-1.1-ALv2](#license), source-available (Apache 2.0 after two years) | Proprietary | Apache-2.0 | MIT | MIT | MIT source; commercial use of the builds needs a licence |
 | Environments from a service registry (Consul, Eureka, Kubernetes) | ✅ | —¹ | — | — | — | — |
 | Requests spread over every instance, traffic per instance, instances compared | ✅ | — | — | — | — | — |
+| Diagram of an environment's endpoints, load balancers, instances and network clusters | ✅ | — | — | — | — | — |
 | MCP server for AI agents | ✅ built in | ✅ | MCP client only² | Community servers³ | ✅ separate package | ✅ plugin |
 | Agents run collections with data files over MCP | ✅ | — | — | — | — | — |
 | Agents see and use the app's screen | ✅ | — | — | — | — | — |

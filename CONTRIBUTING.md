@@ -99,6 +99,7 @@ src/core/      request engine (no Electron dependency, unit-tested)
   openapi-sync.js versioned sync of an OpenAPI document into a collection
   request-shape.js  checks a request against its operation in the spec
   balancer.js     spreads requests over instances; traffic by instance, payload and segment
+  topology.js     the environment diagram: endpoints, load balancers, instances and network clusters
   payloads.js     the variations a request is sent with
   compare.js      compares the answers of every instance
   dns-instances.js  a host's addresses in DNS, for Compare

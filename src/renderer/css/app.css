@@ -1311,3 +1311,59 @@ body.is-locked > :not(.lock-screen):not(#toasts) { visibility: hidden; }
 .CodeMirror-info, .CodeMirror-lint-tooltip { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); font: 12px var(--font); padding: 6px 10px; max-width: 420px; z-index: 2100; }
 .CodeMirror-info .type-name, .CodeMirror-info .field-name { color: var(--accent-text); }
 .CodeMirror-info .info-description { color: var(--text-2); margin-top: 4px; }
+
+/* Environment diagrams (diagram.js) */
+.env-pages { padding: 0 12px; border-bottom: 1px solid var(--border); flex: none; }
+.env-diagram-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.dg-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.dg-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--border); flex: none; }
+.dg-zoom { min-width: 38px; text-align: center; color: var(--text-2); }
+.dg-main { flex: 1; min-height: 0; display: flex; }
+.dg-wrap { flex: 1; min-width: 0; overflow: auto; background: var(--bg-2); }
+.dg-sizer { position: relative; }
+.dg-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.dg-empty { position: absolute; left: 24px; top: 24px; width: 520px; }
+.dg-panel { flex: 0 0 290px; border-left: 1px solid var(--border); padding: 12px 14px; overflow: auto; font-size: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+.dg-panel-kind { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-3); }
+.dg-panel-title { font-size: 14px; font-weight: 600; word-break: break-word; }
+.dg-props { border-collapse: collapse; width: 100%; }
+.dg-props th { text-align: left; font-weight: 500; color: var(--text-2); padding: 3px 8px 3px 0; vertical-align: top; white-space: nowrap; }
+.dg-props td { padding: 3px 0; word-break: break-all; font-family: var(--mono); font-size: 11.5px; }
+.dg-legend { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); }
+.dg-swatch { display: inline-block; width: 22px; height: 0; border-top: 3px solid; margin-right: 8px; vertical-align: middle; }
+.dg-swatch.dg-ok { border-color: var(--ok); }
+.dg-swatch.dg-err { border-color: var(--err); }
+.dg-swatch.dg-idle { border-top: 2px dashed var(--border-strong); }
+.dg-warn { color: var(--warn); }
+.dg-flags { display: flex; gap: 6px; flex-wrap: wrap; }
+.dg-group { position: absolute; border: 1px dashed var(--border-strong); border-radius: 10px; background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.dg-group-label { position: absolute; left: 10px; top: 6px; right: 10px; font-size: 11px; font-weight: 600; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dg-edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.dg-edge { fill: none; stroke-linecap: round; pointer-events: stroke; }
+.dg-edge-ok { stroke: var(--ok); opacity: .7; }
+.dg-edge-errors { stroke: var(--err); opacity: .85; }
+.dg-edge-idle { stroke: var(--border-strong); stroke-dasharray: 5 5; }
+.dg-node { position: absolute; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border-strong); border-left: 4px solid var(--dg-c, var(--border-strong)); border-radius: 8px; padding: 7px 10px 6px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; cursor: grab; user-select: none; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.dg-node:hover { box-shadow: var(--shadow); }
+.dg-node.selected { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+.dg-client { --dg-c: var(--text-2); }
+.dg-tunnel { --dg-c: var(--m-ws); }
+.dg-endpoint { --dg-c: var(--accent-text); }
+.dg-balancer { --dg-c: var(--m-patch); }
+.dg-instance { --dg-c: var(--ok); }
+.dg-node.dg-down, .dg-node.dg-flagged-failing { --dg-c: var(--err); }
+.dg-node.dg-flagged-slow { --dg-c: var(--warn); }
+.dg-node.dg-left, .dg-node.dg-hidden { border-style: dashed; border-left-style: solid; opacity: .8; }
+.dg-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dg-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--text-3); }
+.dg-dot.dg-ok { background: var(--ok); }
+.dg-dot.dg-down { background: var(--err); }
+.dg-label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; }
+.dg-kind { font-size: 10px; color: var(--text-3); text-transform: uppercase; flex: none; }
+.dg-detail { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; }
+.dg-foot { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dg-stats { color: var(--text-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.dg-flag { font-size: 10px; font-weight: 600; padding: 0 6px; border-radius: 999px; flex: none; }
+.dg-flag-slow { background: var(--warn-soft); color: var(--warn); }
+.dg-flag-failing, .dg-flag-unhealthy { background: var(--err-soft, var(--warn-soft)); color: var(--err); }
+.dg-flag-left { background: var(--bg-3); color: var(--text-2); }
