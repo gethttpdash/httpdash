@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const net = require('net');
 const path = require('path');
 const grpcJs = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
@@ -143,7 +144,10 @@ test('errors: a status from the server, an unknown field, a deadline and no serv
     assert.strictEqual(slow.status.name, 'DEADLINE_EXCEEDED');
     assert.ok(slow.messages.length >= 1 && slow.messages.length < 5, 'messages that arrived in time are kept');
   } finally { s.stop(); }
-  const down = await grpc.invoke({ target: `127.0.0.1:${s.port}`, root, service: 'shop.v1.Orders', method: 'GetOrder', message: {}, deadlineMs: 2000 });
+  // A port nothing listens on. (The stopped server's port can still take a connection for a
+  // moment, and a call cut off that way is CANCELLED rather than UNAVAILABLE.)
+  const free = await new Promise((resolve) => { const srv = net.createServer().listen(0, '127.0.0.1', () => { const { port } = srv.address(); srv.close(() => resolve(port)); }); });
+  const down = await grpc.invoke({ target: `127.0.0.1:${free}`, root, service: 'shop.v1.Orders', method: 'GetOrder', message: {}, deadlineMs: 2000 });
   assert.strictEqual(down.status.name, 'UNAVAILABLE');
 });
 
