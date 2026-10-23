@@ -30,8 +30,11 @@ Key facts:
 - [Health while it runs](https://httpdash.com/docs/health-while-it-runs-profiling.html): read a health endpoint before, during and after each request
 - [Network trace](https://httpdash.com/docs/where-a-request-went-on-the-network.html): resolved addresses, octets and segments, reverse DNS, local adapter, split DNS, traceroute
 - [Tunnels](https://httpdash.com/docs/tunnels-into-internal-networks.html): SSH jump hosts (the system's ssh -D) and SOCKS5 proxies, per host or per environment
+- [Environment diagrams](https://httpdash.com/docs/environment-diagrams.html): each environment's service endpoints, load balancers and instances, grouped into network clusters (namespace, datacenter, zone, network segment), with live traffic per instance; drawn from discovery, DNS and the requests sent, with no agent
+- [gRPC requests](https://httpdash.com/docs/grpc-requests.html): unary, server, client and bidirectional streaming calls, with methods from server reflection or .proto files, JSON messages, metadata and TLS
+- [GraphQL](https://httpdash.com/docs/graphql.html): schema by introspection, autocomplete and checks, a schema explorer, operation picking, and subscriptions over a WebSocket
 - [Request versions and spec warnings](https://httpdash.com/docs/request-versions-and-spec-warnings.html) and [tags and search](https://httpdash.com/docs/tags-and-search.html)
-- [AI agents](https://httpdash.com/docs/ai-agents-openapi-and-mcp.html): 30 operations through OpenAPI or MCP, with permissions and an access history
+- [AI agents](https://httpdash.com/docs/ai-agents-openapi-and-mcp.html): 33 operations through OpenAPI or MCP, with permissions and an access history
 - [Command-line runner](https://httpdash.com/docs/command-line-runner-ci-and-schedulers.html), [monitors](https://httpdash.com/docs/monitors.html), [mock server](https://httpdash.com/docs/mock-server.html), [team sharing through git](https://httpdash.com/docs/team-sharing-through-git.html), [WebSocket](https://httpdash.com/docs/websocket-requests.html), [Server-Sent Events](https://httpdash.com/docs/streaming-responses-server-sent-events.html), [client certificates](https://httpdash.com/docs/client-certificates-and-custom-cas.html), [LDAP app lock](https://httpdash.com/docs/app-lock-with-ldap-sign-in.html)
 
 ## Website

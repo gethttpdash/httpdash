@@ -335,7 +335,7 @@
               <p>Claude and other AI agents can use HttpDash the way you do: find requests, send them, add and update them, start runs and read the results, and look at the screen. They connect through an OpenAPI document or MCP, on your own computer only, and you decide what they are allowed to do.</p>
             </div>
             <ul class="ticks">
-              <li>30 operations, described in an OpenAPI 3.1 document, or <code>httpdash mcp</code> for MCP clients</li>
+              <li>33 operations, described in an OpenAPI 3.1 document, or <code>httpdash mcp</code> for MCP clients</li>
               <li>Reading always, and separate permissions to run, edit, use the screen and see secrets</li>
               <li>Instead of curl: an agent tests endpoints with your logins and keeps the ones that work, as saved requests</li>
               <li>A status bar light while an agent works, and a history of every call it made</li>
@@ -381,7 +381,7 @@
               <p>Requests leave from a native HTTP client, not a browser, so every header goes out as typed, including <code>Referer</code>, <code>Origin</code>, <code>User-Agent</code>, <code>Host</code> and <code>Cookie</code>. The timeline shows the exact request that was sent and how long each step took.</p>
             </div>
             <ul class="ticks">
-              <li>JSON, XML, form-data with files, URL-encoded, binary and GraphQL bodies</li>
+              <li>JSON, XML, form-data with files, URL-encoded, binary and GraphQL bodies, with schema autocomplete for GraphQL</li>
               <li>Basic, Bearer, API key, Digest, OAuth 2.0 and AWS Signature auth</li>
               <li>Paste a cURL command into the URL bar to import it</li>
             </ul>
@@ -449,6 +449,8 @@
           <li class="card"><span class="card-icon" aria-hidden="true">&lt;/&gt;</span><h3>Code generation</h3><p>Turn any request into cURL, fetch, Axios, Python, Go, PHP, C#, Java, PowerShell, wget or raw HTTP.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇅</span><h3>Import &amp; export</h3><p>Bring in Postman collections, OpenAPI and Swagger (JSON or YAML) and cURL. Export everything as a backup, or as portable collection files.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⑂</span><h3>Team sharing through git</h3><p>Share collections and environments through any git repository. One readable file per request, merges that just work, and secrets that never leave your computer.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">⇌</span><h3>gRPC</h3><p>Unary and every kind of streaming call, with methods from server reflection or your <code>.proto</code> files, JSON messages and metadata.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">◇</span><h3>GraphQL</h3><p>Fetch the schema, then autocomplete, error checks and a schema explorer. Pick the operation to run, and watch subscriptions stream in.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇄</span><h3>WebSocket</h3><p>Connect, send text or JSON, and follow a live log of every message, with your headers and auth in the handshake.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇶</span><h3>Streaming responses</h3><p>Server-Sent Events appear as they arrive, so streaming and AI APIs are easy to watch and debug.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">▦</span><h3>Table view &amp; export</h3><p>Read JSON arrays as sortable tables and export them to Excel, CSV or an image.</p></li>
@@ -464,6 +466,7 @@
           <li class="card"><span class="card-icon" aria-hidden="true">⋔</span><h3>Network trace</h3><p>Every address a name resolves to, the one it went to in octets and segments, your adapter, and the route hop by hop.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">↻</span><h3>Auth dependencies</h3><p>Run the login first when the token is missing or expired, save the new token and send your request, without copying anything.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">◎</span><h3>Service discovery</h3><p>Environments built from Consul, Eureka, Kubernetes or an OpenAPI document, and kept in step with every sync.</p></li>
+          <li class="card"><span class="card-icon" aria-hidden="true">⊞</span><h3>Environment diagrams</h3><p>See each environment's endpoints, load balancers and instances, grouped into network clusters, with live traffic on every line. No agent in your services.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⇥</span><h3>Tunnels</h3><p>Reach private networks through an SSH jump host or a SOCKS5 proxy, by host or for a whole environment, without a VPN.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">$_</span><h3>Command line</h3><p>Run collections in CI with JUnit reports, tags, data files and tunnels, or send one request like curl with <code>httpdash send</code>.</p></li>
           <li class="card"><span class="card-icon" aria-hidden="true">⌕</span><h3>Secret scan</h3><p>Finds keys, tokens and passwords typed straight into requests and moves them into masked variables in one click.</p></li>
