@@ -183,7 +183,7 @@ const head = ({ title, description, canonical, depth = 1 }) => {
   <meta property="og:image" content="${SITE}/assets/og.jpg">
   <link rel="stylesheet" href="${up}styles.css?v=${V.styles}">
   <link rel="stylesheet" href="docs.css?v=${V.docsCss}">
-  <script src="https://domainmascots.com/mascot.js" data-site="WvEZKHw5_GucXP6s" defer></script>
+  <script src="https://domainmascots.com/m/WvEZKHw5_GucXP6s.js" referrerpolicy="origin" defer></script>
 </head>`;
 };
 
